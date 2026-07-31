@@ -107,16 +107,17 @@
         }
         button.clear-btn:hover { background-color: var(--danger-hover); }
 
-        .show-more-btn {
-            background-color: #334155;
-            color: var(--text);
-            font-size: 0.9rem;
-            padding: 8px 12px;
-            margin-top: 10px;
-            border-radius: 6px;
-            transition: background 0.2s;
+        .btn-toggle-view {
+            background-color: #334155 !important;
+            color: var(--text) !important;
+            font-size: 0.9rem !important;
+            padding: 10px 15px !important;
+            margin-top: 12px !important;
+            border-radius: 6px !important;
+            display: block !important;
+            text-align: center;
         }
-        .show-more-btn:hover { background-color: #475569; }
+        .btn-toggle-view:hover { background-color: #475569 !important; }
 
         .winner-box {
             display: none;
@@ -251,18 +252,18 @@
     <div id="winnersCountCard" class="card">
         <h3>🥇 Usuarios Premiados y Recuento de Victorias</h3>
         <ul id="winnersCountList" class="custom-list">
-            <li style="text-align: center; color: var(--muted);">No hay usuarios premiados registrados.</li>
+            <li style="text-align: center; color: var(--muted);">Cargando usuarios...</li>
         </ul>
-        <button id="btnMoreWinners" class="show-more-btn hidden" onclick="toggleWinnersCount()">⬇️ Ver todos los usuarios premiados</button>
+        <button id="btnToggleWinners" class="btn-toggle-view hidden" onclick="toggleWinnersView()">⬇️ Ver todos los usuarios premiados</button>
     </div>
 
     <!-- HISTORIAL DE SORTEOS -->
     <div id="historyCard" class="card">
         <h3>📜 Historial de Ganadores Anteriores</h3>
         <ul id="historyList" class="custom-list">
-            <li style="text-align: center; color: var(--muted);">No hay sorteos anteriores registrados.</li>
+            <li style="text-align: center; color: var(--muted);">Cargando historial...</li>
         </ul>
-        <button id="btnMoreHistory" class="show-more-btn hidden" onclick="toggleHistory()">⬇️ Ver todo el historial</button>
+        <button id="btnToggleHistory" class="btn-toggle-view hidden" onclick="toggleHistoryView()">⬇️ Ver todo el historial</button>
     </div>
 
     <div style="text-align: center;">
@@ -298,11 +299,12 @@
 
     let actualGanadorUser = "";
     
-    // Variables para controlar el pliegue/despliegue de listas
-    let showAllWinners = false;
-    let showAllHistory = false;
-    let cachedHistoryItems = [];
-    let cachedConteoUsuarios = [];
+    // Control de vista plegada/desplegada
+    let isWinnersExpanded = false;
+    let isHistoryExpanded = false;
+    
+    let rawHistoryItems = [];
+    let rawWinnersCount = [];
 
     // Verificar si el ganador actual es repetido
     function verificarRepetidoVisual() {
@@ -344,7 +346,6 @@
             const logBox = document.getElementById('publicLog');
             logBox.innerHTML = "<b>Historial de tiradas:</b><br>" + data.log.join('<br>');
 
-            // Renderizar Lista "Eligen Arcade del Mes"
             const arcadeList = document.getElementById('arcadeList');
             arcadeList.innerHTML = '';
             if (data.arcadeGroup && data.arcadeGroup.length > 0) {
@@ -363,97 +364,96 @@
         }
     });
 
-    // Escuchar Historial y Recuento
+    // Escuchar Historial Global (Optimizado para soportar años de datos)
     db.ref('historial_ganadores').on('value', function(snapshot) {
         const data = snapshot.val();
 
         if (data) {
-            cachedHistoryItems = Object.values(data).reverse();
+            rawHistoryItems = Object.values(data).reverse();
+            
             let mapaConteo = {};
-
-            cachedHistoryItems.forEach(function(item) {
+            rawHistoryItems.forEach(function(item) {
                 const userKey = item.user;
                 mapaConteo[userKey] = (mapaConteo[userKey] || 0) + 1;
             });
 
-            // Convertir objeto a array ordenado por victorias desc
-            cachedConteoUsuarios = Object.keys(mapaConteo).map(function(usr) {
+            rawWinnersCount = Object.keys(mapaConteo).map(function(usr) {
                 return { user: usr, total: mapaConteo[usr] };
             }).sort(function(a, b) { return b.total - a.total; });
 
+            renderWinnersList();
             renderHistoryList();
-            renderWinnersCountList();
             verificarRepetidoVisual();
 
         } else {
-            cachedHistoryItems = [];
-            cachedConteoUsuarios = [];
+            rawHistoryItems = [];
+            rawWinnersCount = [];
             document.getElementById('historyList').innerHTML = '<li style="text-align: center; color: var(--muted);">No hay sorteos anteriores registrados.</li>';
             document.getElementById('winnersCountList').innerHTML = '<li style="text-align: center; color: var(--muted);">No hay usuarios premiados registrados.</li>';
-            document.getElementById('btnMoreHistory').classList.add('hidden');
-            document.getElementById('btnMoreWinners').classList.add('hidden');
+            document.getElementById('btnToggleHistory').classList.add('hidden');
+            document.getElementById('btnToggleWinners').classList.add('hidden');
         }
     });
 
-    // Renderizar Historial de Sorteos (con límite de 3)
+    // Dibuja la lista de Usuarios Premiados
+    function renderWinnersList() {
+        const listEl = document.getElementById('winnersCountList');
+        const btn = document.getElementById('btnToggleWinners');
+        listEl.innerHTML = '';
+
+        if (rawWinnersCount.length === 0) return;
+
+        const visibleItems = isWinnersExpanded ? rawWinnersCount : rawWinnersCount.slice(0, 3);
+
+        visibleItems.forEach(function(item) {
+            const li = document.createElement('li');
+            li.className = 'custom-item';
+            const textoVez = item.total === 1 ? 'vez premiado' : 'veces premiado';
+            li.innerHTML = '<div><strong>' + item.user + '</strong></div><span class="item-badge">' + item.total + ' ' + textoVez + '</span>';
+            listEl.appendChild(li);
+        });
+
+        if (rawWinnersCount.length > 3) {
+            btn.classList.remove('hidden');
+            btn.innerText = isWinnersExpanded ? '⬆️ Mostrar solo los 3 principales' : '⬇️ Ver todos los usuarios premiados (' + rawWinnersCount.length + ')';
+        } else {
+            btn.classList.add('hidden');
+        }
+    }
+
+    // Dibuja la lista del Historial
     function renderHistoryList() {
-        const historyList = document.getElementById('historyList');
-        const btn = document.getElementById('btnMoreHistory');
-        historyList.innerHTML = '';
+        const listEl = document.getElementById('historyList');
+        const btn = document.getElementById('btnToggleHistory');
+        listEl.innerHTML = '';
 
-        if (cachedHistoryItems.length === 0) return;
+        if (rawHistoryItems.length === 0) return;
 
-        const itemsToDisplay = showAllHistory ? cachedHistoryItems : cachedHistoryItems.slice(0, 3);
+        const visibleItems = isHistoryExpanded ? rawHistoryItems : rawHistoryItems.slice(0, 3);
 
-        itemsToDisplay.forEach(function(item) {
+        visibleItems.forEach(function(item) {
             const li = document.createElement('li');
             li.className = 'custom-item';
             li.innerHTML = '<div><strong>' + item.user + '</strong> <span style="color: var(--muted);">(' + item.ticket + ')</span></div><div style="font-size: 0.8rem; color: var(--muted);">' + item.fecha + '</div>';
-            historyList.appendChild(li);
+            listEl.appendChild(li);
         });
 
-        if (cachedHistoryItems.length > 3) {
+        if (rawHistoryItems.length > 3) {
             btn.classList.remove('hidden');
-            btn.innerText = showAllHistory ? '⬆️ Mostrar menos' : '⬇️ Ver todo el historial (' + cachedHistoryItems.length + ')';
+            btn.innerText = isHistoryExpanded ? '⬆️ Mostrar solo los últimos 3 sorteos' : '⬇️ Ver todo el historial (' + rawHistoryItems.length + ')';
         } else {
             btn.classList.add('hidden');
         }
     }
 
-    // Renderizar Recuento de Victorias (con límite de 3)
-    function renderWinnersCountList() {
-        const winnersCountList = document.getElementById('winnersCountList');
-        const btn = document.getElementById('btnMoreWinners');
-        winnersCountList.innerHTML = '';
-
-        if (cachedConteoUsuarios.length === 0) return;
-
-        const itemsToDisplay = showAllWinners ? cachedConteoUsuarios : cachedConteoUsuarios.slice(0, 3);
-
-        itemsToDisplay.forEach(function(item) {
-            const liCount = document.createElement('li');
-            liCount.className = 'custom-item';
-            const textoVez = item.total === 1 ? 'vez premiado' : 'veces premiado';
-            liCount.innerHTML = '<div><strong>' + item.user + '</strong></div><span class="item-badge">' + item.total + ' ' + textoVez + '</span>';
-            winnersCountList.appendChild(liCount);
-        });
-
-        if (cachedConteoUsuarios.length > 3) {
-            btn.classList.remove('hidden');
-            btn.innerText = showAllWinners ? '⬆️ Mostrar menos' : '⬇️ Ver todos los usuarios premiados (' + cachedConteoUsuarios.length + ')';
-        } else {
-            btn.classList.add('hidden');
-        }
+    function toggleWinnersView() {
+        isWinnersExpanded = !isWinnersExpanded;
+        renderWinnersList();
     }
 
-    function toggleHistory() {
-        showAllHistory = !showAllHistory;
+    function toggleHistoryView() {
+        isHistoryExpanded = !isHistoryExpanded;
         renderHistoryList();
-    }
-
-    function toggleWinnersCount() {
-        showAllWinners = !showAllWinners;
-        renderWinnersCountList();
     }
 
     function toggleAdminPanel() {
@@ -588,7 +588,6 @@
 
         const arcadeGroup = anteriores.concat([ganadorEncontrado], posteriores);
 
-        // Comprobar en el historial local previo si ya ha ganado antes
         db.ref('historial_ganadores').once('value', function(snapshot) {
             const historial = snapshot.val();
             let yaHaGanadoAntes = false;
@@ -613,7 +612,6 @@
                 const ahora = new Date();
                 const fechaFormateada = ahora.toLocaleDateString('es-ES') + ' ' + ahora.toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'});
 
-                // 1. Guardar primero en el historial
                 db.ref('historial_ganadores').push({
                     user: ganadorEncontrado.user,
                     ticket: ganadorEncontrado.ticket,
@@ -621,7 +619,6 @@
                     timestamp: Date.now()
                 });
 
-                // 2. Guardar el estado del sorteo actual
                 db.ref('sorteo_actual').set({
                     ganador: ganadorEncontrado,
                     arcadeGroup: arcadeGroup,
