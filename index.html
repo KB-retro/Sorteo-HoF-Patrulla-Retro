@@ -3,632 +3,304 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sorteo HoF Patrulla Retro</title>
-    <!-- Firebase JS SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <title>Patrulla Retro - Sorteo Mensual</title>
+    <!-- Tailwind CSS para utilidades rápidas de diseño -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    
     <style>
-        :root {
-            --bg: #0f172a;
-            --card: #1e293b;
-            --accent: #6366f1;
-            --accent-hover: #4f46e5;
-            --text: #f8fafc;
-            --muted: #94a3b8;
-            --danger: #ef4444;
-            --danger-hover: #dc2626;
-            --warning: #f59e0b;
-            --warning-hover: #d97706;
-            --success: #22c55e;
-            --success-hover: #16a34a;
-            --gold: #f59e0b;
-        }
-
+        /* Estilos generales y fondo adaptable */
         body {
-            font-family: system-ui, -apple-system, sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
+            background-color: #0f172a;
+            background-image: url('fondo-retro.jpg');
+            background-repeat: no-repeat;
+            background-position: center top;
+            background-size: cover;
+            background-attachment: fixed;
+            color: #f8fafc;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             min-height: 100vh;
+            margin: 0;
+            padding: 20px 12px;
         }
 
+        /* Contenedor central limitado a 800px para encajar en el centro limpio */
         .container {
             max-width: 800px;
+            margin: 0 auto;
             width: 100%;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
         }
 
+        /* Logo con soporte transparente nativo */
         .header-logo {
-            display: block;
-            margin: 0 auto 10px auto;
             max-width: 180px;
             height: auto;
-        }
-
-        .card {
-            background-color: var(--card);
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3);
-        }
-
-        h1, h2, h3 { margin-top: 0; text-align: center; }
-        
-        textarea {
-            width: 100%;
-            height: 140px;
-            background: #0f172a;
-            color: var(--text);
-            border: 1px solid #334155;
-            border-radius: 6px;
-            padding: 10px;
-            box-sizing: border-box;
-            font-family: monospace;
-            resize: vertical;
-        }
-
-        button {
-            background-color: var(--accent);
-            color: white;
+            display: block;
+            margin: 0 auto 15px auto;
+            background: transparent;
             border: none;
-            padding: 12px 20px;
-            border-radius: 6px;
-            font-weight: bold;
-            cursor: pointer;
-            width: 100%;
-            font-size: 16px;
-            transition: background 0.2s, transform 0.1s;
         }
 
-        button:active { transform: scale(0.98); }
-
-        button.admin-btn { 
-            background-color: var(--success); 
-            font-size: 18px; 
-            margin-top: 15px; 
-            padding: 14px;
-        }
-        button.admin-btn:hover { background-color: var(--success-hover); }
-
-        button.warning-btn { 
-            background-color: var(--warning); 
-            margin-top: 10px; 
-        }
-        button.warning-btn:hover { background-color: var(--warning-hover); }
-
-        button.clear-btn { 
-            background-color: var(--danger); 
-            margin-top: 10px; 
-        }
-        button.clear-btn:hover { background-color: var(--danger-hover); }
-
-        .btn-toggle-view {
-            background-color: #334155 !important;
-            color: var(--text) !important;
-            font-size: 0.9rem !important;
-            padding: 10px 15px !important;
-            margin-top: 12px !important;
-            border-radius: 6px !important;
-            display: block !important;
-            text-align: center;
-        }
-        .btn-toggle-view:hover { background-color: #475569 !important; }
-
-        .winner-box {
-            display: none;
-            text-align: center;
-            background: linear-gradient(135deg, #1e1b4b 0%, #311042 100%);
-            border: 2px solid var(--gold);
-            padding: 30px;
+        /* Estilo para las tarjetas con leve opacidad para integrar el fondo */
+        .card {
+            background-color: rgba(30, 41, 59, 0.92);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 12px;
-            animation: fadeIn 0.5s ease-in;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
         }
 
-        .winner-title { color: var(--gold); font-size: 1.5rem; text-transform: uppercase; letter-spacing: 2px; }
-        .winner-name { font-size: 2.5rem; font-weight: bold; margin: 15px 0; color: #fff; }
-        .winner-ticket { font-size: 1.2rem; color: var(--muted); }
-
-        .repeat-winner-banner {
-            background: rgba(245, 158, 11, 0.2);
-            border: 2px solid var(--gold);
-            color: #fef08a;
-            padding: 14px;
-            border-radius: 8px;
-            margin: 15px 0;
-            font-size: 1.05rem;
-            font-weight: bold;
-            line-height: 1.4;
-        }
-
-        .arcade-box {
-            background: rgba(15, 23, 42, 0.8);
-            border: 1px solid var(--accent);
-            border-radius: 8px;
-            padding: 15px;
-            margin-top: 20px;
-            text-align: left;
-        }
-
-        .arcade-title {
-            font-size: 1.1rem;
-            font-weight: bold;
-            color: var(--gold);
-            margin-bottom: 10px;
-            text-align: center;
-        }
-
-        .log-box {
-            background: #090d16;
-            border: 1px solid #334155;
-            border-radius: 6px;
-            padding: 10px;
-            max-height: 150px;
-            overflow-y: auto;
-            font-family: monospace;
-            font-size: 0.9rem;
-            color: var(--muted);
-            margin-top: 15px;
-            text-align: left;
-        }
-
-        .custom-list {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-
-        .custom-item {
-            background: #0f172a;
-            border: 1px solid #334155;
-            padding: 10px 15px;
-            border-radius: 6px;
-            margin-bottom: 8px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .item-badge {
-            background: var(--accent);
+        .btn-primary {
+            background-color: #ef4444;
             color: white;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 0.8rem;
             font-weight: bold;
+            padding: 12px 24px;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            width: 100%;
+            display: block;
+            text-align: center;
         }
 
-        .admin-panel {
-            border-top: 2px dashed #334155;
-            margin-top: 20px;
-            padding-top: 20px;
+        .btn-primary:hover {
+            background-color: #dc2626;
+            transform: translateY(-1px);
         }
 
-        .hidden { display: none !important; }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
+        .badge {
+            background-color: #334155;
+            color: #94a3b8;
+            font-size: 0.8rem;
+            padding: 2px 8px;
+            border-radius: 4px;
         }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <img src="logo.jpg" alt="Logo Patrulla Retro" class="header-logo">
-    <h1>🏆 Sorteo HoF Patrulla Retro</h1>
+    <div class="container">
+        <!-- Logo PNG con transparencia -->
+        <header class="text-center mb-6">
+            <img src="logo.png" alt="Logo Patrulla Retro" class="header-logo">
+            <h1 class="text-2xl font-bold tracking-wide text-red-500">SORTEO PATRULLA RETRO</h1>
+        </header>
 
-    <!-- PANTALLA GANADOR -->
-    <div id="winnerCard" class="winner-box">
-        <div class="winner-title">🎉 ¡Tenemos Ganador Oficial! 🎉</div>
-        <div id="winnerName" class="winner-name">Cargando...</div>
-        <div id="winnerTicket" class="winner-ticket"></div>
-
-        <!-- AVISO DE CAMISETA REPETIDA -->
-        <div id="repeatNotice" class="repeat-winner-banner hidden">
-            🕹️ <b>¡Campeón!</b> Como ya cuentas con la camiseta en tu colección, puedes elegir a uno de tus compañeros de la lista de este mes para traspasarle el premio y que reciba la camiseta.
+        <!-- Bloque Principal: Último Ganador -->
+        <div class="card text-center" id="winner-card">
+            <h2 class="text-xl font-bold mb-2 text-slate-300">Último Ganador Oficial</h2>
+            <div id="latest-winner-display" class="py-4">
+                <p class="text-slate-400">Cargando datos del último sorteo...</p>
+            </div>
         </div>
 
-        <!-- LISTA PARALELA: ELIGEN EL ARCADE DEL MES -->
-        <div class="arcade-box">
-            <div class="arcade-title">🕹️ Eligen el Arcade del Mes (5 Usuarios):</div>
-            <ul id="arcadeList" class="custom-list"></ul>
+        <!-- Bloque: Top Ganadores (Optimizado a 3 entradas) -->
+        <div class="card">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-slate-200">🏆 Más Victorias</h3>
+                <span class="badge" id="top-count-badge">Top 3</span>
+            </div>
+            <ul id="top-winners-list" class="space-y-2">
+                <!-- Se rellena dinámicamente -->
+            </ul>
+            <button id="toggle-top-btn" onclick="toggleTopWinners()" class="mt-3 text-xs text-slate-400 hover:text-white underline w-full text-center hidden">
+                Mostrar todos
+            </button>
         </div>
 
-        <div class="log-box" id="publicLog"></div>
+        <!-- Bloque: Historial de Sorteos (Optimizado a 3 entradas) -->
+        <div class="card">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-slate-200">📜 Historial Reciente</h3>
+                <span class="badge">Últimos meses</span>
+            </div>
+            <ul id="history-list" class="space-y-2">
+                <!-- Se rellena dinámicamente -->
+            </ul>
+            <button id="toggle-history-btn" onclick="toggleHistory()" class="mt-3 text-xs text-slate-400 hover:text-white underline w-full text-center hidden">
+                Ver historial completo
+            </button>
+        </div>
+
+        <!-- Panel de Administración (Desplegable / Oculto por defecto si prefieres) -->
+        <div class="card border-slate-700">
+            <h3 class="text-lg font-bold text-red-400 mb-3">🛠️ Panel de Administración</h3>
+            <textarea id="participants-input" rows="5" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-slate-200 focus:outline-none focus:border-red-500 mb-3" placeholder="Pega aquí los nombres de los participantes (uno por línea)..."></textarea>
+            
+            <button onclick="realizarSorteo()" class="btn-primary">
+                🎲 REALIZAR Y PUBLICAR SORTEO
+            </button>
+        </div>
     </div>
 
-    <!-- MENSAJE ESPERA -->
-    <div id="waitingCard" class="card" style="text-align: center;">
-        <h2>⏳ El sorteo aún no se ha realizado</h2>
-        <p style="color: var(--muted);">El administrador realizará la tirada en breve. Esta página se actualizará automáticamente cuando haya un ganador.</p>
-    </div>
-
-    <!-- LISTA DE PREMIADOS -->
-    <div id="winnersCountCard" class="card">
-        <h3>🥇 Usuarios Premiados y Recuento de Victorias</h3>
-        <ul id="winnersCountList" class="custom-list">
-            <li style="text-align: center; color: var(--muted);">Cargando usuarios...</li>
-        </ul>
-        <button id="btnToggleWinners" class="btn-toggle-view hidden" onclick="toggleWinnersView()">⬇️ Ver todos los usuarios premiados</button>
-    </div>
-
-    <!-- HISTORIAL DE SORTEOS -->
-    <div id="historyCard" class="card">
-        <h3>📜 Historial de Ganadores Anteriores</h3>
-        <ul id="historyList" class="custom-list">
-            <li style="text-align: center; color: var(--muted);">Cargando historial...</li>
-        </ul>
-        <button id="btnToggleHistory" class="btn-toggle-view hidden" onclick="toggleHistoryView()">⬇️ Ver todo el historial</button>
-    </div>
-
-    <div style="text-align: center;">
-        <button onclick="toggleAdminPanel()" style="width: auto; background: transparent; color: var(--muted); font-size: 0.8rem; text-decoration: underline;">
-            ¿Eres el Administrador? Haz clic aquí
-        </button>
-    </div>
-
-    <!-- PANEL ADMIN -->
-    <div id="adminPanel" class="card admin-panel hidden">
-        <h2>🛠️ Panel de Control (Administrador)</h2>
+    <!-- Script de Firebase e Interacción -->
+    <script>
+        // Configuración de tu Firebase Realtime Database
+        const firebaseConfig = {
+            databaseURL: "https://TU-DATABASE-NAME.firebaseio.com" // Reemplaza por tu URL de Firebase
+        };
         
-        <label><b>1. Pegar Participantes:</b></label>
-        <textarea id="listInput" placeholder="138-@Themenda987&#10;PUNTO EXTRA&#10;146-@Zapador_1986"></textarea>
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
 
-        <br><br>
-        <label><b>2. Excluidos / Lista Negra (1 por línea):</b></label>
-        <textarea id="blacklistInput" placeholder="@usuario_excluido1&#10;@usuario_excluido2"></textarea>
+        // Variables de estado local para toggles
+        let allTopWinners = [];
+        let showAllTop = false;
+        let allHistory = [];
+        let showAllHistory = false;
 
-        <button class="admin-btn" onclick="realizarSorteoOficial()">🎲 REALIZAR Y PUBLICAR SORTEO</button>
-        <button class="warning-btn" onclick="borrarUltimoSorteo()">↩️ BORRAR ÚLTIMO SORTEO</button>
-        <button class="clear-btn" onclick="borrarTodo()">🧹 BORRAR TODO</button>
-    </div>
-</div>
-
-<script>
-    const firebaseConfig = {
-        databaseURL: "https://sorteo-hof-default-rtdb.europe-west1.firebasedatabase.app"
-    };
-    
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-
-    let actualGanadorUser = "";
-    
-    // Control de vista plegada/desplegada
-    let isWinnersExpanded = false;
-    let isHistoryExpanded = false;
-    
-    let rawHistoryItems = [];
-    let rawWinnersCount = [];
-
-    // Verificar si el ganador actual es repetido
-    function verificarRepetidoVisual() {
-        if (!actualGanadorUser) return;
-        
-        db.ref('historial_ganadores').once('value', function(snapshot) {
-            const data = snapshot.val();
-            let totalVictorias = 0;
-            if (data) {
-                Object.values(data).forEach(function(item) {
-                    if (item.user.toLowerCase() === actualGanadorUser.toLowerCase()) {
-                        totalVictorias++;
-                    }
-                });
-            }
-
-            const noticeEl = document.getElementById('repeatNotice');
-            if (totalVictorias > 1) {
-                noticeEl.classList.remove('hidden');
-            } else {
-                noticeEl.classList.add('hidden');
-            }
-        });
-    }
-
-    // Escuchar Sorteo Actual
-    db.ref('sorteo_actual').on('value', function(snapshot) {
-        const data = snapshot.val();
-        if (data && data.ganador) {
-            document.getElementById('waitingCard').classList.add('hidden');
-            document.getElementById('winnerCard').style.display = 'block';
-            
-            actualGanadorUser = data.ganador.user;
-            document.getElementById('winnerName').innerText = data.ganador.user;
-            document.getElementById('winnerTicket').innerText = "Boleto premiado: " + data.ganador.ticket;
-
-            verificarRepetidoVisual();
-            
-            const logBox = document.getElementById('publicLog');
-            logBox.innerHTML = "<b>Historial de tiradas:</b><br>" + data.log.join('<br>');
-
-            const arcadeList = document.getElementById('arcadeList');
-            arcadeList.innerHTML = '';
-            if (data.arcadeGroup && data.arcadeGroup.length > 0) {
-                data.arcadeGroup.forEach(function(item) {
-                    const li = document.createElement('li');
-                    li.className = 'custom-item';
-                    const esGanador = item.user.toLowerCase() === data.ganador.user.toLowerCase();
-                    li.innerHTML = '<div><strong>' + item.user + '</strong> <span style="color: var(--muted);">(' + item.ticket + ')</span></div>' +
-                        (esGanador ? '<span class="item-badge" style="background: var(--gold); color: black;">¡Ganador Principal!</span>' : '<span class="item-badge" style="background: #334155;">Elección Arcade</span>');
-                    arcadeList.appendChild(li);
-                });
-            }
-        } else {
-            document.getElementById('winnerCard').style.display = 'none';
-            document.getElementById('waitingCard').classList.remove('hidden');
-        }
-    });
-
-    // Escuchar Historial Global (Optimizado para soportar años de datos)
-    db.ref('historial_ganadores').on('value', function(snapshot) {
-        const data = snapshot.val();
-
-        if (data) {
-            rawHistoryItems = Object.values(data).reverse();
-            
-            let mapaConteo = {};
-            rawHistoryItems.forEach(function(item) {
-                const userKey = item.user;
-                mapaConteo[userKey] = (mapaConteo[userKey] || 0) + 1;
-            });
-
-            rawWinnersCount = Object.keys(mapaConteo).map(function(usr) {
-                return { user: usr, total: mapaConteo[usr] };
-            }).sort(function(a, b) { return b.total - a.total; });
-
-            renderWinnersList();
-            renderHistoryList();
-            verificarRepetidoVisual();
-
-        } else {
-            rawHistoryItems = [];
-            rawWinnersCount = [];
-            document.getElementById('historyList').innerHTML = '<li style="text-align: center; color: var(--muted);">No hay sorteos anteriores registrados.</li>';
-            document.getElementById('winnersCountList').innerHTML = '<li style="text-align: center; color: var(--muted);">No hay usuarios premiados registrados.</li>';
-            document.getElementById('btnToggleHistory').classList.add('hidden');
-            document.getElementById('btnToggleWinners').classList.add('hidden');
-        }
-    });
-
-    // Dibuja la lista de Usuarios Premiados
-    function renderWinnersList() {
-        const listEl = document.getElementById('winnersCountList');
-        const btn = document.getElementById('btnToggleWinners');
-        listEl.innerHTML = '';
-
-        if (rawWinnersCount.length === 0) return;
-
-        const visibleItems = isWinnersExpanded ? rawWinnersCount : rawWinnersCount.slice(0, 3);
-
-        visibleItems.forEach(function(item) {
-            const li = document.createElement('li');
-            li.className = 'custom-item';
-            const textoVez = item.total === 1 ? 'vez premiado' : 'veces premiado';
-            li.innerHTML = '<div><strong>' + item.user + '</strong></div><span class="item-badge">' + item.total + ' ' + textoVez + '</span>';
-            listEl.appendChild(li);
+        // Cargar datos al iniciar
+        window.addEventListener('DOMContentLoaded', () => {
+            listenToData();
         });
 
-        if (rawWinnersCount.length > 3) {
-            btn.classList.remove('hidden');
-            btn.innerText = isWinnersExpanded ? '⬆️ Mostrar solo los 3 principales' : '⬇️ Ver todos los usuarios premiados (' + rawWinnersCount.length + ')';
-        } else {
-            btn.classList.add('hidden');
-        }
-    }
-
-    // Dibuja la lista del Historial
-    function renderHistoryList() {
-        const listEl = document.getElementById('historyList');
-        const btn = document.getElementById('btnToggleHistory');
-        listEl.innerHTML = '';
-
-        if (rawHistoryItems.length === 0) return;
-
-        const visibleItems = isHistoryExpanded ? rawHistoryItems : rawHistoryItems.slice(0, 3);
-
-        visibleItems.forEach(function(item) {
-            const li = document.createElement('li');
-            li.className = 'custom-item';
-            li.innerHTML = '<div><strong>' + item.user + '</strong> <span style="color: var(--muted);">(' + item.ticket + ')</span></div><div style="font-size: 0.8rem; color: var(--muted);">' + item.fecha + '</div>';
-            listEl.appendChild(li);
-        });
-
-        if (rawHistoryItems.length > 3) {
-            btn.classList.remove('hidden');
-            btn.innerText = isHistoryExpanded ? '⬆️ Mostrar solo los últimos 3 sorteos' : '⬇️ Ver todo el historial (' + rawHistoryItems.length + ')';
-        } else {
-            btn.classList.add('hidden');
-        }
-    }
-
-    function toggleWinnersView() {
-        isWinnersExpanded = !isWinnersExpanded;
-        renderWinnersList();
-    }
-
-    function toggleHistoryView() {
-        isHistoryExpanded = !isHistoryExpanded;
-        renderHistoryList();
-    }
-
-    function toggleAdminPanel() {
-        const pass = prompt("Introduce la clave de administrador:");
-        if (pass === "patrulla123") {
-            document.getElementById('adminPanel').classList.remove('hidden');
-        } else if (pass !== null) {
-            alert("Contraseña incorrecta.");
-        }
-    }
-
-    function borrarUltimoSorteo() {
-        if (confirm("⚠️ ¿Deseas borrar la tirada actual y eliminar el último registro guardado?")) {
-            db.ref('sorteo_actual').remove();
-            db.ref('historial_ganadores').limitToLast(1).once('value', function(snapshot) {
+        function listenToData() {
+            db.ref('sorteos').on('value', (snapshot) => {
                 const data = snapshot.val();
-                if (data) {
-                    const keyBorrar = Object.keys(data)[0];
-                    db.ref('historial_ganadores/' + keyBorrar).remove();
-                    alert("Último sorteo eliminado.");
+                if (!data) return;
+
+                const list = Object.values(data).reverse(); // Ordenar del más reciente al más antiguo
+                allHistory = list;
+                
+                renderLatestWinner(list[0]);
+                renderHistory();
+                renderTopWinners(list);
+            });
+        }
+
+        // Renderizar tarjeta de ganador principal
+        function renderLatestWinner(latest) {
+            const container = document.getElementById('latest-winner-display');
+            if (!latest) {
+                container.innerHTML = `<p class="text-slate-500">No hay sorteos registrados.</p>`;
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="text-3xl font-extrabold text-yellow-400 tracking-wide mb-1">
+                    🎉 ¡Campeón! 🎉
+                </div>
+                <div class="text-2xl font-bold text-white mb-2">
+                    ${latest.ganador}
+                </div>
+                <div class="text-xs text-slate-400">
+                    Sorteo realizado el ${latest.fecha}
+                </div>
+            `;
+        }
+
+        // Renderizar Historial de Sorteos
+        function renderHistory() {
+            const container = document.getElementById('history-list');
+            const toggleBtn = document.getElementById('toggle-history-btn');
+            container.innerHTML = '';
+
+            const itemsToDisplay = showAllHistory ? allHistory : allHistory.slice(0, 3);
+
+            itemsToDisplay.forEach(item => {
+                const li = document.createElement('li');
+                li.className = 'flex justify-between items-center bg-slate-800/60 px-3 py-2 rounded text-sm';
+                li.innerHTML = `
+                    <span class="font-medium text-slate-200">${item.ganador}</span>
+                    <span class="text-xs text-slate-400">${item.fecha}</span>
+                `;
+                container.appendChild(li);
+            });
+
+            if (allHistory.length > 3) {
+                toggleBtn.classList.remove('hidden');
+                toggleBtn.textContent = showAllHistory ? 'Ver menos' : `Ver historial completo (${allHistory.length})`;
+            } else {
+                toggleBtn.classList.add('hidden');
+            }
+        }
+
+        function toggleHistory() {
+            showAllHistory = !showAllHistory;
+            renderHistory();
+        }
+
+        // Renderizar Top Ganadores
+        function renderTopWinners(historyList) {
+            const counts = {};
+            historyList.forEach(item => {
+                counts[item.ganador] = (counts[item.ganador] || 0) + 1;
+            });
+
+            allTopWinners = Object.entries(counts)
+                .map(([name, count]) => ({ name, count }))
+                .sort((a, b) => b.count - a.count);
+
+            const container = document.getElementById('top-winners-list');
+            const toggleBtn = document.getElementById('toggle-top-btn');
+            container.innerHTML = '';
+
+            const itemsToDisplay = showAllTop ? allTopWinners : allTopWinners.slice(0, 3);
+
+            itemsToDisplay.forEach(item => {
+                const li = document.createElement('li');
+                li.className = 'flex justify-between items-center bg-slate-800/60 px-3 py-2 rounded text-sm';
+                li.innerHTML = `
+                    <span class="font-medium text-slate-200">${item.name}</span>
+                    <span class="text-xs bg-red-950 text-red-300 font-bold px-2 py-0.5 rounded border border-red-800/50">${item.count} victorias</span>
+                `;
+                container.appendChild(li);
+            });
+
+            if (allTopWinners.length > 3) {
+                toggleBtn.classList.remove('hidden');
+                toggleBtn.textContent = showAllTop ? 'Ver menos' : `Mostrar todos (${allTopWinners.length})`;
+            } else {
+                toggleBtn.classList.add('hidden');
+            }
+        }
+
+        function toggleTopWinners() {
+            showAllTop = !showAllTop;
+            renderTopWinners(allHistory);
+        }
+
+        // Función para ejecutar el sorteo
+        function realizarSorteo() {
+            const input = document.getElementById('participants-input').value.trim();
+            if (!input) {
+                alert('Por favor, introduce al menos un participante.');
+                return;
+            }
+
+            const lista = input.split('\n').map(n => n.trim()).filter(n => n.length > 0);
+            if (lista.length === 0) {
+                alert('No se encontraron nombres válidos.');
+                return;
+            }
+
+            // Elegir ganador al azar
+            const ganador = lista[Math.floor(Math.random() * lista.length)];
+            const fechaActual = new Date().toLocaleDateString('es-ES', {
+                day: '2-digit',
+                month: 'long',
+                year: 'numeric'
+            });
+
+            const nuevoSorteo = {
+                ganador: ganador,
+                fecha: fechaActual,
+                timestamp: Date.now()
+            };
+
+            // Guardar en Firebase Realtime Database
+            db.ref('sorteos').push(nuevoSorteo, (error) => {
+                if (error) {
+                    alert('Error al guardar en la base de datos: ' + error.message);
                 } else {
-                    alert("Sorteo actual borrado.");
+                    document.getElementById('participants-input').value = '';
+                    alert(`¡Sorteo realizado con éxito!\nGanador: ${ganador}`);
                 }
             });
         }
-    }
-
-    function borrarTodo() {
-        if (confirm("⚠️ ¿Estás seguro de que quieres BORRAR TODO?")) {
-            document.getElementById('listInput').value = '';
-            document.getElementById('blacklistInput').value = '';
-            db.ref('sorteo_actual').remove();
-            db.ref('historial_ganadores').remove();
-            alert("Todo borrado correctamente.");
-        }
-    }
-
-    function realizarSorteoOficial() {
-        const rawLines = document.getElementById('listInput').value.trim().split('\n');
-        const rawBlacklist = document.getElementById('blacklistInput').value.trim().split('\n');
-
-        let participantesValidos = [];
-        
-        rawLines.forEach(function(line) {
-            let lineaLimpia = line.trim();
-            if (!lineaLimpia) return;
-
-            const matchUser = lineaLimpia.match(/@[\w_]+/);
-            
-            if (matchUser) {
-                let boletoLimpio = lineaLimpia.replace(/PUNTO\s+EXTRA\s*/gi, '').trim();
-                participantesValidos.push({
-                    ticket: boletoLimpio,
-                    user: matchUser[0]
-                });
-            }
-        });
-
-        const total = participantesValidos.length;
-
-        if (total === 0) {
-            alert("No se han encontrado participantes válidos con el formato 'número-@usuario'.");
-            return;
-        }
-
-        const blacklist = rawBlacklist
-            .map(function(u) { return u.trim().toLowerCase(); })
-            .filter(function(u) { return u.length > 0; });
-
-        let log = [];
-        let ganadorEncontrado = null;
-        let indexGanador = -1;
-
-        let listaCopia = participantesValidos.slice();
-
-        while (listaCopia.length > 0) {
-            const indexAleatorio = Math.floor(Math.random() * listaCopia.length);
-            const entrada = listaCopia[indexAleatorio];
-            const usuarioMinusculas = entrada.user.toLowerCase();
-
-            if (blacklist.indexOf(usuarioMinusculas) !== -1) {
-                log.push("❌ Descartado: " + entrada.ticket + " (" + entrada.user + " está en la Lista Negra)");
-                listaCopia.splice(indexAleatorio, 1);
-            } else {
-                ganadorEncontrado = entrada;
-                indexGanador = participantesValidos.findIndex(function(p) { return p.ticket === entrada.ticket; });
-                log.push("✅ ¡TIRADA GANADORA!: " + entrada.ticket);
-                break;
-            }
-        }
-
-        if (!ganadorEncontrado) {
-            alert("No se pudo encontrar un ganador.");
-            return;
-        }
-
-        // Lógica Circular Anillo
-        let anteriores = [];
-        let posteriores = [];
-        let usuariosUsados = {};
-        usuariosUsados[ganadorEncontrado.user.toLowerCase()] = true;
-
-        // 2 Anteriores
-        let curr = indexGanador - 1;
-        let cntAnt = 0;
-        while (anteriores.length < 2 && cntAnt < total) {
-            if (curr < 0) curr = total - 1;
-            let cand = participantesValidos[curr];
-            let uLower = cand.user.toLowerCase();
-            if (!usuariosUsados[uLower]) {
-                anteriores.unshift(cand);
-                usuariosUsados[uLower] = true;
-            }
-            curr--;
-            cntAnt++;
-        }
-
-        // 2 Posteriores
-        curr = indexGanador + 1;
-        let cntPost = 0;
-        while (posteriores.length < 2 && cntPost < total) {
-            if (curr >= total) curr = 0;
-            let cand = participantesValidos[curr];
-            let uLower = cand.user.toLowerCase();
-            if (!usuariosUsados[uLower]) {
-                posteriores.push(cand);
-                usuariosUsados[uLower] = true;
-            }
-            curr++;
-            cntPost++;
-        }
-
-        const arcadeGroup = anteriores.concat([ganadorEncontrado], posteriores);
-
-        db.ref('historial_ganadores').once('value', function(snapshot) {
-            const historial = snapshot.val();
-            let yaHaGanadoAntes = false;
-
-            if (historial) {
-                const listaGanadores = Object.values(historial);
-                for (let i = 0; i < listaGanadores.length; i++) {
-                    if (listaGanadores[i].user.toLowerCase() === ganadorEncontrado.user.toLowerCase()) {
-                        yaHaGanadoAntes = true;
-                        break;
-                    }
-                }
-            }
-
-            let msg = "Ganador extraído: " + ganadorEncontrado.user + " (" + ganadorEncontrado.ticket + ").";
-            if (yaHaGanadoAntes) {
-                msg += "\n\n⚠️ ¡ATENCIÓN! Este usuario YA HA GANADO en un sorteo anterior.";
-            }
-            msg += "\n\n¿Publicar resultado?";
-
-            if (confirm(msg)) {
-                const ahora = new Date();
-                const fechaFormateada = ahora.toLocaleDateString('es-ES') + ' ' + ahora.toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'});
-
-                db.ref('historial_ganadores').push({
-                    user: ganadorEncontrado.user,
-                    ticket: ganadorEncontrado.ticket,
-                    fecha: fechaFormateada,
-                    timestamp: Date.now()
-                });
-
-                db.ref('sorteo_actual').set({
-                    ganador: ganadorEncontrado,
-                    arcadeGroup: arcadeGroup,
-                    log: log,
-                    timestamp: Date.now()
-                });
-            }
-        });
-    }
-</script>
-
+    </script>
 </body>
 </html>
