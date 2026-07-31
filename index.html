@@ -204,7 +204,7 @@
         <div id="winnerName" class="winner-name">Cargando...</div>
         <div id="winnerTicket" class="winner-ticket"></div>
 
-        <!-- LISTA: ELIGEN EL ARCADE DEL MES -->
+        <!-- LISTA PARALELA: ELIGEN EL ARCADE DEL MES -->
         <div class="arcade-box">
             <div class="arcade-title">🕹️ Eligen el Arcade del Mes (5 Usuarios):</div>
             <ul id="arcadeList" class="custom-list"></ul>
@@ -219,7 +219,7 @@
         <p style="color: var(--muted);">El administrador realizará la tirada en breve. Esta página se actualizará automáticamente cuando haya un ganador.</p>
     </div>
 
-    <!-- LISTA DE PREMIADOS (CON CONTEO) -->
+    <!-- LISTA DE PREMIADOS -->
     <div id="winnersCountCard" class="card">
         <h3>🥇 Usuarios Premiados y Recuento de Victorias</h3>
         <ul id="winnersCountList" class="custom-list">
@@ -267,7 +267,7 @@
     const db = firebase.database();
 
     // Escuchar Sorteo Actual
-    db.ref('sorteo_actual').on('value', (snapshot) => {
+    db.ref('sorteo_actual').on('value', function(snapshot) {
         const data = snapshot.val();
         if (data && data.ganador) {
             document.getElementById('waitingCard').classList.add('hidden');
@@ -283,16 +283,12 @@
             const arcadeList = document.getElementById('arcadeList');
             arcadeList.innerHTML = '';
             if (data.arcadeGroup && data.arcadeGroup.length > 0) {
-                data.arcadeGroup.forEach(item => {
+                data.arcadeGroup.forEach(function(item) {
                     const li = document.createElement('li');
                     li.className = 'custom-item';
                     const esGanador = item.user.toLowerCase() === data.ganador.user.toLowerCase();
-                    li.innerHTML = `
-                        <div>
-                            <strong>${item.user}</strong> <span style="color: var(--muted);">(${item.ticket})</span>
-                        </div>
-                        ${esGanador ? '<span class="item-badge" style="background: var(--gold); color: black;">¡Ganador Principal!</span>' : '<span class="item-badge" style="background: #334155;">Elección Arcade</span>'}
-                    `;
+                    li.innerHTML = '<div><strong>' + item.user + '</strong> <span style="color: var(--muted);">(' + item.ticket + ')</span></div>' +
+                        (esGanador ? '<span class="item-badge" style="background: var(--gold); color: black;">¡Ganador Principal!</span>' : '<span class="item-badge" style="background: #334155;">Elección Arcade</span>');
                     arcadeList.appendChild(li);
                 });
             }
@@ -302,8 +298,8 @@
         }
     });
 
-    // Escuchar Historial y Recuento de Premiados
-    db.ref('historial_ganadores').on('value', (snapshot) => {
+    // Escuchar Historial y Recuento
+    db.ref('historial_ganadores').on('value', function(snapshot) {
         const historyList = document.getElementById('historyList');
         const winnersCountList = document.getElementById('winnersCountList');
         
@@ -316,32 +312,22 @@
             const items = Object.values(data).reverse();
             let conteoUsuarios = {};
 
-            items.forEach(item => {
-                // Historial
+            items.forEach(function(item) {
                 const li = document.createElement('li');
                 li.className = 'custom-item';
-                li.innerHTML = `
-                    <div>
-                        <strong>${item.user}</strong> <span style="color: var(--muted);">(${item.ticket})</span>
-                    </div>
-                    <div style="font-size: 0.8rem; color: var(--muted);">${item.fecha}</div>
-                `;
+                li.innerHTML = '<div><strong>' + item.user + '</strong> <span style="color: var(--muted);">(' + item.ticket + ')</span></div><div style="font-size: 0.8rem; color: var(--muted);">' + item.fecha + '</div>';
                 historyList.appendChild(li);
 
-                // Contar victorias por usuario
                 const userKey = item.user;
                 conteoUsuarios[userKey] = (conteoUsuarios[userKey] || 0) + 1;
             });
 
-            // Mostrar recuento acumulado
-            Object.keys(conteoUsuarios).forEach(usuario => {
+            Object.keys(conteoUsuarios).forEach(function(usuario) {
                 const total = conteoUsuarios[usuario];
                 const liCount = document.createElement('li');
                 liCount.className = 'custom-item';
-                liCount.innerHTML = `
-                    <div><strong>${usuario}</strong></div>
-                    <span class="item-badge">${total} ${total === 1 ? 'vez premiado' : 'veces premiado'}</span>
-                `;
+                const textoVez = total === 1 ? 'vez premiado' : 'veces premiado';
+                liCount.innerHTML = '<div><strong>' + usuario + '</strong></div><span class="item-badge">' + total + ' ' + textoVez + '</span>';
                 winnersCountList.appendChild(liCount);
             });
 
@@ -363,7 +349,7 @@
     function borrarUltimoSorteo() {
         if (confirm("⚠️ ¿Deseas borrar la tirada actual y eliminar el último registro guardado?")) {
             db.ref('sorteo_actual').remove();
-            db.ref('historial_ganadores').limitToLast(1).once('value', (snapshot) => {
+            db.ref('historial_ganadores').limitToLast(1).once('value', function(snapshot) {
                 const data = snapshot.val();
                 if (data) {
                     const keyBorrar = Object.keys(data)[0];
@@ -386,14 +372,13 @@
         }
     }
 
-    // Realizar Sorteo Oficial con Lógica Circular
     function realizarSorteoOficial() {
         const rawLines = document.getElementById('listInput').value.trim().split('\n');
         const rawBlacklist = document.getElementById('blacklistInput').value.trim().split('\n');
 
         let participantesValidos = [];
         
-        rawLines.forEach(line => {
+        rawLines.forEach(function(line) {
             let lineaLimpia = line.trim();
             if (!lineaLimpia) return;
 
@@ -401,7 +386,6 @@
             
             if (matchUser) {
                 let boletoLimpio = lineaLimpia.replace(/PUNTO\s+EXTRA\s*/gi, '').trim();
-                
                 participantesValidos.push({
                     ticket: boletoLimpio,
                     user: matchUser[0]
@@ -417,28 +401,27 @@
         }
 
         const blacklist = rawBlacklist
-            .map(u => u.trim().toLowerCase())
-            .filter(u => u.length > 0);
+            .map(function(u) { return u.trim().toLowerCase(); })
+            .filter(function(u) { return u.length > 0; });
 
         let log = [];
         let ganadorEncontrado = null;
-        let indexGanadorEnListaOriginal = -1;
+        let indexGanador = -1;
 
-        // Selección aleatoria
-        let listaCopia = [...participantesValidos];
+        let listaCopia = participantesValidos.slice();
 
         while (listaCopia.length > 0) {
             const indexAleatorio = Math.floor(Math.random() * listaCopia.length);
             const entrada = listaCopia[indexAleatorio];
             const usuarioMinusculas = entrada.user.toLowerCase();
 
-            if (blacklist.includes(usuarioMinusculas)) {
-                log.push(`❌ Descartado: ${entrada.ticket} (${entrada.user} está en la Lista Negra)`);
+            if (blacklist.indexOf(usuarioMinusculas) !== -1) {
+                log.push("❌ Descartado: " + entrada.ticket + " (" + entrada.user + " está en la Lista Negra)");
                 listaCopia.splice(indexAleatorio, 1);
             } else {
                 ganadorEncontrado = entrada;
-                indexGanadorEnListaOriginal = participantesValidos.findIndex(p => p.ticket === entrada.ticket);
-                log.push(`✅ ¡TIRADA GANADORA!: ${entrada.ticket}`);
+                indexGanador = participantesValidos.findIndex(function(p) { return p.ticket === entrada.ticket; });
+                log.push("✅ ¡TIRADA GANADORA!: " + entrada.ticket);
                 break;
             }
         }
@@ -448,58 +431,45 @@
             return;
         }
 
-        // --- LÓGICA CIRCULAR DE 5 USUARIOS ÚNICOS ---
+        // Lógica Circular Anillo
         let anteriores = [];
         let posteriores = [];
-        let usuariosUsados = new Set();
-        usuariosUsados.add(ganadorEncontrado.user.toLowerCase());
+        let usuariosUsados = {};
+        usuariosUsados[ganadorEncontrado.user.toLowerCase()] = true;
 
-        // 1. Buscar 2 usuarios ÚNICOS anteriores (hacia atrás de forma circular)
-        let curr = indexGanadorEnListaOriginal - 1;
-        let intentosAnteriores = 0;
-
-        while (anteriores.length < 2 && intentosAnteriores < total) {
-            if (curr < 0) {
-                curr = total - 1;
-            }
-
+        // 2 Anteriores
+        let curr = indexGanador - 1;
+        let cntAnt = 0;
+        while (anteriores.length < 2 && cntAnt < total) {
+            if (curr < 0) curr = total - 1;
             let cand = participantesValidos[curr];
             let uLower = cand.user.toLowerCase();
-
-            if (!usuariosUsados.has(uLower)) {
+            if (!usuariosUsados[uLower]) {
                 anteriores.unshift(cand);
-                usuariosUsados.add(uLower);
+                usuariosUsados[uLower] = true;
             }
-
             curr--;
-            intentosAnteriores++;
+            cntAnt++;
         }
 
-        // 2. Buscar 2 usuarios ÚNICOS posteriores (hacia adelante de forma circular)
-        curr = indexGanadorEnListaOriginal + 1;
-        let intentosPosteriores = 0;
-
-        while (posteriores.length < 2 && intentosPosteriores < total) {
-            if (curr >= total) {
-                curr = 0;
-            }
-
+        // 2 Posteriores
+        curr = indexGanador + 1;
+        let cntPost = 0;
+        while (posteriores.length < 2 && cntPost < total) {
+            if (curr >= total) curr = 0;
             let cand = participantesValidos[curr];
             let uLower = cand.user.toLowerCase();
-
-            if (!usuariosUsados.has(uLower)) {
+            if (!usuariosUsados[uLower]) {
                 posteriores.push(cand);
-                usuariosUsados.add(uLower);
+                usuariosUsados[uLower] = true;
             }
-
             curr++;
-            intentosPosteriores++;
+            cntPost++;
         }
 
-        // Grupo final ordenado de 5 usuarios
-        const arcadeGroup = [...anteriores, ganadorEncontrado, ...posteriores];
+        const arcadeGroup = anteriores.concat([ganadorEncontrado], posteriores);
 
-        if (confirm(`Ganador extraído: ${ganadorEncontrado.user} (${ganadorEncontrado.ticket}). ¿Publicar resultado?`)) {
+        if (confirm("Ganador extraído: " + ganadorEncontrado.user + " (" + ganadorEncontrado.ticket + "). ¿Publicar resultado?")) {
             const ahora = new Date();
             const fechaFormateada = ahora.toLocaleDateString('es-ES') + ' ' + ahora.toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'});
 
