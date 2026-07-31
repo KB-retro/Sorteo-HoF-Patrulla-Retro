@@ -10,7 +10,7 @@
     <style>
         :root {
             --bg: #0f172a;
-            --card: #1e293b;
+            --card: rgba(30, 41, 59, 0.92); /* Fondo semitransparente para ver el fondo */
             --accent: #6366f1;
             --accent-hover: #4f46e5;
             --text: #f8fafc;
@@ -26,12 +26,18 @@
 
         body {
             font-family: system-ui, -apple-system, sans-serif;
-            background-color: var(--bg);
+            background-color: #000000;
+            background-image: url('fondo.png');
+            background-size: cover;
+            background-position: center center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
             color: var(--text);
             margin: 0;
             padding: 20px;
             display: flex;
             justify-content: center;
+            align-items: flex-start;
             min-height: 100vh;
         }
 
@@ -54,7 +60,8 @@
             background-color: var(--card);
             padding: 20px;
             border-radius: 12px;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
         }
 
         h1, h2, h3 { margin-top: 0; text-align: center; }
@@ -122,11 +129,13 @@
         .winner-box {
             display: none;
             text-align: center;
-            background: linear-gradient(135deg, #1e1b4b 0%, #311042 100%);
+            background: linear-gradient(135deg, rgba(30, 27, 75, 0.95) 0%, rgba(49, 16, 66, 0.95) 100%);
             border: 2px solid var(--gold);
             padding: 30px;
             border-radius: 12px;
             animation: fadeIn 0.5s ease-in;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
         }
 
         .winner-title { color: var(--gold); font-size: 1.5rem; text-transform: uppercase; letter-spacing: 2px; }
@@ -231,6 +240,8 @@
         <!-- AVISO DE CAMISETA REPETIDA -->
         <div id="repeatNotice" class="repeat-winner-banner hidden">
             🚨 <b>¡Campeón!</b> ¡Teniendo ya la camiseta en el armario, es hora de repartir el botín! Elige a un compañero de la lista de este mes para cederle el premio.
+        </div>
+
         <!-- LISTA PARALELA: ELIGEN EL ARCADE DEL MES -->
         <div class="arcade-box">
             <div class="arcade-title">🕹️ Eligen el Arcade del Mes (5 Usuarios):</div>
@@ -303,6 +314,16 @@
     
     let rawHistoryItems = [];
     let rawWinnersCount = [];
+
+    // Cargar logo con fallback de extensión si fuera necesario
+    const logoImg = document.querySelector('.header-logo');
+    if (logoImg) {
+        logoImg.onerror = function() {
+            if (this.src.endsWith('logo.png')) {
+                this.src = 'logo.jpg';
+            }
+        };
+    }
 
     // Verificar si el ganador actual es repetido
     function verificarRepetidoVisual() {
