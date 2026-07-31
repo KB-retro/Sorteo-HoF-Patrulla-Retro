@@ -16,6 +16,7 @@
             --text: #f8fafc;
             --muted: #94a3b8;
             --danger: #ef4444;
+            --danger-hover: #dc2626;
             --success: #22c55e;
             --gold: #f59e0b;
         }
@@ -45,7 +46,7 @@
             box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3);
         }
 
-        h1, h2 { margin-top: 0; text-align: center; }
+        h1, h2, h3 { margin-top: 0; text-align: center; }
         
         textarea {
             width: 100%;
@@ -74,7 +75,9 @@
         }
 
         button:hover { background-color: var(--accent-hover); }
-        button.admin-btn { background-color: var(--success); margin-top: 10px; font-size: 18px; }
+        button.admin-btn { background-color: var(--success); font-size: 18px; margin-top: 10px; }
+        button.clear-btn { background-color: var(--danger); margin-top: 15px; }
+        button.clear-btn:hover { background-color: var(--danger-hover); }
 
         .winner-box {
             display: none;
@@ -103,6 +106,25 @@
             margin-top: 15px;
             text-align: left;
         }
+
+        .history-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .history-item {
+            background: #0f172a;
+            border: 1px solid #334155;
+            padding: 10px 15px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .history-date { font-size: 0.8rem; color: var(--muted); }
 
         .admin-panel {
             border-top: 2px dashed #334155;
@@ -137,6 +159,14 @@
         <p style="color: var(--muted);">El administrador realizará la tirada en breve. Esta página se actualizará automáticamente cuando haya un ganador.</p>
     </div>
 
+    <!-- SECCIÓN: GANADORES ANTERIORES -->
+    <div id="historyCard" class="card">
+        <h3>📜 Historial de Ganadores Anteriores</h3>
+        <ul id="historyList" class="history-list">
+            <li style="text-align: center; color: var(--muted);">No hay sorteos anteriores registrados.</li>
+        </ul>
+    </div>
+
     <!-- BOTÓN PARA ABRIR MODO ADMIN -->
     <div style="text-align: center;">
         <button onclick="toggleAdminPanel()" style="width: auto; background: transparent; color: var(--muted); font-size: 0.8rem; text-decoration: underline;">
@@ -155,7 +185,7 @@
         <label><b>2. Excluidos / Lista Negra (1 por línea, vacía por defecto):</b></label>
         <textarea id="blacklistInput" placeholder="@usuario_excluido1&#10;@usuario_excluido2"></textarea>
 
-        <br><br>
+        <button class="clear-btn" onclick="borrarTodo()">🧹 BORRAR TODO (Cajas de texto, sorteo actual e historial de pruebas)</button>
         <button class="admin-btn" onclick="realizarSorteoOficial()">🎲 REALIZAR Y PUBLICAR SORTEO</button>
     </div>
 </div>
@@ -163,14 +193,14 @@
 <script>
     // Configuración de Firebase (Realtime Database)
     const firebaseConfig = {
-        databaseURL: "https://sorteo-patrulla-retro-default-rtdb.firebaseio.com" // Reemplazar si creas la tuya
+        databaseURL: "https://sorteo-patrulla-retro-default-rtdb.firebaseio.com"
     };
     
     // Inicializar Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // 1. Escuchar cambios en tiempo real (Para los espectadores)
+    // 1. Escuchar cambios en tiempo real del GANADOR ACTUAL
     db.ref('sorteo_actual').on('value', (snapshot) => {
         const data = snapshot.val();
         if (data && data.ganador) {
@@ -182,16 +212,61 @@
             
             const logBox = document.getElementById('publicLog');
             logBox.innerHTML = "<b>Historial de tiradas:</b><br>" + data.log.join('<br>');
+        } else {
+            // Si no hay sorteo activo
+            document.getElementById('winnerCard').style.display = 'none';
+            document.getElementById('waitingCard').classList.remove('hidden');
+        }
+    });
+
+    // 2. Escuchar cambios en tiempo real del HISTORIAL DE GANADORES
+    db.ref('historial_ganadores').on('value', (snapshot) => {
+        const historyList = document.getElementById('historyList');
+        historyList.innerHTML = '';
+        const data = snapshot.val();
+
+        if (data) {
+            // Convertir objeto a array y ordenar de más reciente a más antiguo
+            const items = Object.values(data).reverse();
+            items.forEach(item => {
+                const li = document.createElement('li');
+                li.className = 'history-item';
+                li.innerHTML = `
+                    <div>
+                        <strong>${item.user}</strong> <span style="color: var(--muted);">(${item.ticket})</span>
+                    </div>
+                    <div class="history-date">${item.fecha}</div>
+                `;
+                historyList.appendChild(li);
+            });
+        } else {
+            historyList.innerHTML = '<li style="text-align: center; color: var(--muted);">No hay sorteos anteriores registrados.</li>';
         }
     });
 
     // Mostrar/Ocultar Panel Admin
     function toggleAdminPanel() {
         const pass = prompt("Introduce la clave de administrador:");
-        if (pass === "patrulla123") { // Puedes cambiar esta contraseña
+        if (pass === "patrulla123") {
             document.getElementById('adminPanel').classList.remove('hidden');
         } else if (pass !== null) {
             alert("Contraseña incorrecta.");
+        }
+    }
+
+    // Función para Limpiar/Borrar Todo
+    function borrarTodo() {
+        const confirmacion = confirm("⚠️ ¿Estás seguro de que quieres BORRAR TODO?\n\n- Se limpiarán los cuadros de texto.\n- Se cancelará el ganador del sorteo actual.\n- Se ELIMINARÁ el historial de ganadores de prueba guardados.");
+        
+        if (confirmacion) {
+            document.getElementById('listInput').value = '';
+            document.getElementById('blacklistInput').value = '';
+            
+            // Borrar de Firebase el sorteo actual y el historial
+            db.ref('sorteo_actual').remove();
+            db.ref('historial_ganadores').remove();
+
+            alert("Todo ha sido borrado correctamente. La web queda limpia para el uso público.");
         }
     }
 
@@ -209,20 +284,18 @@
         let log = [];
         let ganadorEncontrado = null;
 
-        // Mezclar y seleccionar
         let listaCopia = [...rawList];
         
         while (listaCopia.length > 0) {
             const indexAleatorio = Math.floor(Math.random() * listaCopia.length);
             const entrada = listaCopia[indexAleatorio];
             
-            // Extraer usuario (@algo)
             const matchUser = entrada.match(/@[\w_]+/);
             const usuario = matchUser ? matchUser[0].toLowerCase() : entrada.toLowerCase();
 
             if (blacklist.includes(usuario)) {
                 log.push(`❌ Tirada descartada: ${entrada} (Usuario en Lista Negra)`);
-                listaCopia.splice(indexAleatorio, 1); // Quitar y reintentar
+                listaCopia.splice(indexAleatorio, 1);
             } else {
                 ganadorEncontrado = {
                     ticket: entrada,
@@ -239,10 +312,21 @@
         }
 
         if (confirm(`El ganador es ${ganadorEncontrado.user} (${ganadorEncontrado.ticket}). ¿Publicar resultado para toda la comunidad?`)) {
-            // Guardar en la nube (Firebase)
+            const ahora = new Date();
+            const fechaFormateada = ahora.toLocaleDateString('es-ES') + ' ' + ahora.toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'});
+
+            // 1. Guardar como Sorteo Actual
             db.ref('sorteo_actual').set({
                 ganador: ganadorEncontrado,
                 log: log,
+                timestamp: Date.now()
+            });
+
+            // 2. Añadir al Historial de Ganadores
+            db.ref('historial_ganadores').push({
+                user: ganadorEncontrado.user,
+                ticket: ganadorEncontrado.ticket,
+                fecha: fechaFormateada,
                 timestamp: Date.now()
             });
         }
