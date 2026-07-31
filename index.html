@@ -107,6 +107,17 @@
         }
         button.clear-btn:hover { background-color: var(--danger-hover); }
 
+        .show-more-btn {
+            background-color: #334155;
+            color: var(--text);
+            font-size: 0.9rem;
+            padding: 8px 12px;
+            margin-top: 10px;
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+        .show-more-btn:hover { background-color: #475569; }
+
         .winner-box {
             display: none;
             text-align: center;
@@ -242,6 +253,7 @@
         <ul id="winnersCountList" class="custom-list">
             <li style="text-align: center; color: var(--muted);">No hay usuarios premiados registrados.</li>
         </ul>
+        <button id="btnMoreWinners" class="show-more-btn hidden" onclick="toggleWinnersCount()">⬇️ Ver todos los usuarios premiados</button>
     </div>
 
     <!-- HISTORIAL DE SORTEOS -->
@@ -250,6 +262,7 @@
         <ul id="historyList" class="custom-list">
             <li style="text-align: center; color: var(--muted);">No hay sorteos anteriores registrados.</li>
         </ul>
+        <button id="btnMoreHistory" class="show-more-btn hidden" onclick="toggleHistory()">⬇️ Ver todo el historial</button>
     </div>
 
     <div style="text-align: center;">
@@ -284,8 +297,14 @@
     const db = firebase.database();
 
     let actualGanadorUser = "";
+    
+    // Variables para controlar el pliegue/despliegue de listas
+    let showAllWinners = false;
+    let showAllHistory = false;
+    let cachedHistoryItems = [];
+    let cachedConteoUsuarios = [];
 
-    // Verificar si el ganador actual es repetido basándonos en el historial
+    // Verificar si el ganador actual es repetido
     function verificarRepetidoVisual() {
         if (!actualGanadorUser) return;
         
@@ -301,7 +320,6 @@
             }
 
             const noticeEl = document.getElementById('repeatNotice');
-            // Si tiene más de 1 victoria acumulada en el historial, es repetido
             if (totalVictorias > 1) {
                 noticeEl.classList.remove('hidden');
             } else {
@@ -347,45 +365,96 @@
 
     // Escuchar Historial y Recuento
     db.ref('historial_ganadores').on('value', function(snapshot) {
-        const historyList = document.getElementById('historyList');
-        const winnersCountList = document.getElementById('winnersCountList');
-        
-        historyList.innerHTML = '';
-        winnersCountList.innerHTML = '';
-        
         const data = snapshot.val();
 
         if (data) {
-            const items = Object.values(data).reverse();
-            let conteoUsuarios = {};
+            cachedHistoryItems = Object.values(data).reverse();
+            let mapaConteo = {};
 
-            items.forEach(function(item) {
-                const li = document.createElement('li');
-                li.className = 'custom-item';
-                li.innerHTML = '<div><strong>' + item.user + '</strong> <span style="color: var(--muted);">(' + item.ticket + ')</span></div><div style="font-size: 0.8rem; color: var(--muted);">' + item.fecha + '</div>';
-                historyList.appendChild(li);
-
+            cachedHistoryItems.forEach(function(item) {
                 const userKey = item.user;
-                conteoUsuarios[userKey] = (conteoUsuarios[userKey] || 0) + 1;
+                mapaConteo[userKey] = (mapaConteo[userKey] || 0) + 1;
             });
 
-            Object.keys(conteoUsuarios).forEach(function(usuario) {
-                const total = conteoUsuarios[usuario];
-                const liCount = document.createElement('li');
-                liCount.className = 'custom-item';
-                const textoVez = total === 1 ? 'vez premiado' : 'veces premiado';
-                liCount.innerHTML = '<div><strong>' + usuario + '</strong></div><span class="item-badge">' + total + ' ' + textoVez + '</span>';
-                winnersCountList.appendChild(liCount);
-            });
+            // Convertir objeto a array ordenado por victorias desc
+            cachedConteoUsuarios = Object.keys(mapaConteo).map(function(usr) {
+                return { user: usr, total: mapaConteo[usr] };
+            }).sort(function(a, b) { return b.total - a.total; });
 
-            // Recomprobar el banner de repetido al actualizar el historial
+            renderHistoryList();
+            renderWinnersCountList();
             verificarRepetidoVisual();
 
         } else {
-            historyList.innerHTML = '<li style="text-align: center; color: var(--muted);">No hay sorteos anteriores registrados.</li>';
-            winnersCountList.innerHTML = '<li style="text-align: center; color: var(--muted);">No hay usuarios premiados registrados.</li>';
+            cachedHistoryItems = [];
+            cachedConteoUsuarios = [];
+            document.getElementById('historyList').innerHTML = '<li style="text-align: center; color: var(--muted);">No hay sorteos anteriores registrados.</li>';
+            document.getElementById('winnersCountList').innerHTML = '<li style="text-align: center; color: var(--muted);">No hay usuarios premiados registrados.</li>';
+            document.getElementById('btnMoreHistory').classList.add('hidden');
+            document.getElementById('btnMoreWinners').classList.add('hidden');
         }
     });
+
+    // Renderizar Historial de Sorteos (con límite de 3)
+    function renderHistoryList() {
+        const historyList = document.getElementById('historyList');
+        const btn = document.getElementById('btnMoreHistory');
+        historyList.innerHTML = '';
+
+        if (cachedHistoryItems.length === 0) return;
+
+        const itemsToDisplay = showAllHistory ? cachedHistoryItems : cachedHistoryItems.slice(0, 3);
+
+        itemsToDisplay.forEach(function(item) {
+            const li = document.createElement('li');
+            li.className = 'custom-item';
+            li.innerHTML = '<div><strong>' + item.user + '</strong> <span style="color: var(--muted);">(' + item.ticket + ')</span></div><div style="font-size: 0.8rem; color: var(--muted);">' + item.fecha + '</div>';
+            historyList.appendChild(li);
+        });
+
+        if (cachedHistoryItems.length > 3) {
+            btn.classList.remove('hidden');
+            btn.innerText = showAllHistory ? '⬆️ Mostrar menos' : '⬇️ Ver todo el historial (' + cachedHistoryItems.length + ')';
+        } else {
+            btn.classList.add('hidden');
+        }
+    }
+
+    // Renderizar Recuento de Victorias (con límite de 3)
+    function renderWinnersCountList() {
+        const winnersCountList = document.getElementById('winnersCountList');
+        const btn = document.getElementById('btnMoreWinners');
+        winnersCountList.innerHTML = '';
+
+        if (cachedConteoUsuarios.length === 0) return;
+
+        const itemsToDisplay = showAllWinners ? cachedConteoUsuarios : cachedConteoUsuarios.slice(0, 3);
+
+        itemsToDisplay.forEach(function(item) {
+            const liCount = document.createElement('li');
+            liCount.className = 'custom-item';
+            const textoVez = item.total === 1 ? 'vez premiado' : 'veces premiado';
+            liCount.innerHTML = '<div><strong>' + item.user + '</strong></div><span class="item-badge">' + item.total + ' ' + textoVez + '</span>';
+            winnersCountList.appendChild(liCount);
+        });
+
+        if (cachedConteoUsuarios.length > 3) {
+            btn.classList.remove('hidden');
+            btn.innerText = showAllWinners ? '⬆️ Mostrar menos' : '⬇️ Ver todos los usuarios premiados (' + cachedConteoUsuarios.length + ')';
+        } else {
+            btn.classList.add('hidden');
+        }
+    }
+
+    function toggleHistory() {
+        showAllHistory = !showAllHistory;
+        renderHistoryList();
+    }
+
+    function toggleWinnersCount() {
+        showAllWinners = !showAllWinners;
+        renderWinnersCountList();
+    }
 
     function toggleAdminPanel() {
         const pass = prompt("Introduce la clave de administrador:");
