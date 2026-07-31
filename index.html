@@ -39,6 +39,13 @@
             gap: 20px;
         }
 
+        .header-logo {
+            display: block;
+            margin: 0 auto 10px auto;
+            max-width: 180px;
+            height: auto;
+        }
+
         .card {
             background-color: var(--card);
             padding: 20px;
@@ -143,6 +150,8 @@
 <body>
 
 <div class="container">
+    <!-- LOGO DE LA WEB -->
+    <img src="logo.png" alt="Logo Patrulla Retro" class="header-logo">
     <h1>🏆 Sorteo HoF Patrulla Retro</h1>
 
     <!-- PANTALLA DEL GANADOR (Lo que ven los espectadores) -->
@@ -213,7 +222,6 @@
             const logBox = document.getElementById('publicLog');
             logBox.innerHTML = "<b>Historial de tiradas:</b><br>" + data.log.join('<br>');
         } else {
-            // Si no hay sorteo activo
             document.getElementById('winnerCard').style.display = 'none';
             document.getElementById('waitingCard').classList.remove('hidden');
         }
@@ -226,7 +234,6 @@
         const data = snapshot.val();
 
         if (data) {
-            // Convertir objeto a array y ordenar de más reciente a más antiguo
             const items = Object.values(data).reverse();
             items.forEach(item => {
                 const li = document.createElement('li');
@@ -262,11 +269,10 @@
             document.getElementById('listInput').value = '';
             document.getElementById('blacklistInput').value = '';
             
-            // Borrar de Firebase el sorteo actual y el historial
             db.ref('sorteo_actual').remove();
             db.ref('historial_ganadores').remove();
 
-            alert("Todo ha sido borrado correctamente. La web queda limpia para el uso público.");
+            alert("Todo ha sido borrado correctamente.");
         }
     }
 
@@ -315,14 +321,12 @@
             const ahora = new Date();
             const fechaFormateada = ahora.toLocaleDateString('es-ES') + ' ' + ahora.toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'});
 
-            // 1. Guardar como Sorteo Actual
             db.ref('sorteo_actual').set({
                 ganador: ganadorEncontrado,
                 log: log,
                 timestamp: Date.now()
             });
 
-            // 2. Añadir al Historial de Ganadores
             db.ref('historial_ganadores').push({
                 user: ganadorEncontrado.user,
                 ticket: ganadorEncontrado.ticket,
@@ -335,3 +339,4 @@
 
 </body>
 </html>
+```http://googleusercontent.com/image_generation_content/597
