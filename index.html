@@ -594,8 +594,11 @@
                 alert("¡Sorteo programado a las " + timeVal + "! La cuenta atrás ya está activa.");
             });
         } else {
-            // Si deja la hora en blanco, realiza el sorteo al instante
-            calcularYEjecutarTirada(rawLines, rawBlacklist);
+            // Si deja la hora en blanco, pide confirmación previa
+            const confirmarInmediato = confirm("El sorteo se realizara ahora si no configuras una hora");
+            if (confirmarInmediato) {
+                calcularYEjecutarTirada(rawLines, rawBlacklist);
+            }
         }
     }
 
