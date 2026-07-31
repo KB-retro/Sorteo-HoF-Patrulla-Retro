@@ -10,25 +10,36 @@
     <style>
         :root {
             --bg: #0f172a;
-            --card: #1e293b;
+            --card: rgba(30, 41, 59, 0.92); /* Fondo semitransparente para ver la imagen detrás */
             --accent: #6366f1;
             --accent-hover: #4f46e5;
             --text: #f8fafc;
             --muted: #94a3b8;
             --danger: #ef4444;
             --danger-hover: #dc2626;
+            --warning: #f59e0b;
+            --warning-hover: #d97706;
             --success: #22c55e;
+            --success-hover: #16a34a;
             --gold: #f59e0b;
         }
 
         body {
             font-family: system-ui, -apple-system, sans-serif;
             background-color: var(--bg);
+            /* --- CONFIGURACIÓN DE IMAGEN DE FONDO --- */
+            background-image: url('fondo.jpg'); /* Cambia 'fondo.jpg' por el nombre de tu archivo */
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            background-repeat: no-repeat;
+            /* ----------------------------------------- */
             color: var(--text);
             margin: 0;
             padding: 20px;
             display: flex;
             justify-content: center;
+            min-height: 100vh;
         }
 
         .container {
@@ -44,13 +55,16 @@
             margin: 0 auto 10px auto;
             max-width: 180px;
             height: auto;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5));
         }
 
         .card {
             background-color: var(--card);
+            backdrop-filter: blur(8px); /* Efecto cristal si hay fondo */
             padding: 20px;
             border-radius: 12px;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+            border: 1px solid rgba(255,255,255,0.05);
         }
 
         h1, h2, h3 { margin-top: 0; text-align: center; }
@@ -58,7 +72,7 @@
         textarea {
             width: 100%;
             height: 140px;
-            background: #0f172a;
+            background: rgba(15, 23, 42, 0.8);
             color: var(--text);
             border: 1px solid #334155;
             border-radius: 6px;
@@ -78,22 +92,40 @@
             cursor: pointer;
             width: 100%;
             font-size: 16px;
-            transition: background 0.2s;
+            transition: background 0.2s, transform 0.1s;
         }
 
-        button:hover { background-color: var(--accent-hover); }
-        button.admin-btn { background-color: var(--success); font-size: 18px; margin-top: 10px; }
-        button.clear-btn { background-color: var(--danger); margin-top: 15px; }
+        button:active { transform: scale(0.98); }
+
+        button.admin-btn { 
+            background-color: var(--success); 
+            font-size: 18px; 
+            margin-top: 15px; 
+            padding: 14px;
+        }
+        button.admin-btn:hover { background-color: var(--success-hover); }
+
+        button.warning-btn { 
+            background-color: var(--warning); 
+            margin-top: 10px; 
+        }
+        button.warning-btn:hover { background-color: var(--warning-hover); }
+
+        button.clear-btn { 
+            background-color: var(--danger); 
+            margin-top: 10px; 
+        }
         button.clear-btn:hover { background-color: var(--danger-hover); }
 
         .winner-box {
             display: none;
             text-align: center;
-            background: linear-gradient(135deg, #1e1b4b 0%, #311042 100%);
+            background: linear-gradient(135deg, rgba(30, 27, 75, 0.95) 0%, rgba(49, 16, 66, 0.95) 100%);
             border: 2px solid var(--gold);
             padding: 30px;
             border-radius: 12px;
             animation: fadeIn 0.5s ease-in;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
         }
 
         .winner-title { color: var(--gold); font-size: 1.5rem; text-transform: uppercase; letter-spacing: 2px; }
@@ -101,7 +133,7 @@
         .winner-ticket { font-size: 1.2rem; color: var(--muted); }
 
         .log-box {
-            background: #090d16;
+            background: rgba(9, 13, 22, 0.85);
             border: 1px solid #334155;
             border-radius: 6px;
             padding: 10px;
@@ -121,7 +153,7 @@
         }
 
         .history-item {
-            background: #0f172a;
+            background: rgba(15, 23, 42, 0.7);
             border: 1px solid #334155;
             padding: 10px 15px;
             border-radius: 6px;
@@ -192,8 +224,12 @@
         <label><b>2. Excluidos / Lista Negra (1 por línea):</b></label>
         <textarea id="blacklistInput" placeholder="@usuario_excluido1&#10;@usuario_excluido2"></textarea>
 
-        <button class="clear-btn" onclick="borrarTodo()">🧹 BORRAR TODO (Cajas de texto, sorteo actual e historial)</button>
+        <!-- OPCIONES ORDENADAS: PRIMERO EL REALIZAR Y DEBAJO LOS BORRADOS -->
         <button class="admin-btn" onclick="realizarSorteoOficial()">🎲 REALIZAR Y PUBLICAR SORTEO</button>
+        
+        <button class="warning-btn" onclick="borrarUltimoSorteo()">↩️ BORRAR ÚLTIMO SORTEO (Deshacer tirada actual e historial)</button>
+        
+        <button class="clear-btn" onclick="borrarTodo()">🧹 BORRAR TODO (Cajas de texto, sorteo e historial completo)</button>
     </div>
 </div>
 
@@ -256,8 +292,29 @@
         }
     }
 
+    // Función para Borrar Solo el Último Sorteo
+    function borrarUltimoSorteo() {
+        if (confirm("⚠️ ¿Deseas borrar la tirada actual y eliminar el último registro guardado en el historial?")) {
+            // 1. Quitar el ganador actual de la pantalla
+            db.ref('sorteo_actual').remove();
+
+            // 2. Obtener la última entrada del historial y borrarla
+            db.ref('historial_ganadores').limitToLast(1).once('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    const keyBorrar = Object.keys(data)[0];
+                    db.ref('historial_ganadores/' + keyBorrar).remove();
+                    alert("Último sorteo eliminado del historial.");
+                } else {
+                    alert("Sorteo actual borrado (no había registros en el historial).");
+                }
+            });
+        }
+    }
+
+    // Función para Borrar Todo
     function borrarTodo() {
-        if (confirm("⚠️ ¿Estás seguro de que quieres BORRAR TODO?")) {
+        if (confirm("⚠️ ¿Estás seguro de que quieres BORRAR TODO (Cajas de texto, sorteo e historial completo)?")) {
             document.getElementById('listInput').value = '';
             document.getElementById('blacklistInput').value = '';
             db.ref('sorteo_actual').remove();
@@ -266,29 +323,25 @@
         }
     }
 
-    // Lógica depurada del Sorteo
+    // Lógica del Sorteo
     function realizarSorteoOficial() {
         const rawLines = document.getElementById('listInput').value.trim().split('\n');
         const rawBlacklist = document.getElementById('blacklistInput').value.trim().split('\n');
 
-        // Filtrar y limpiar la lista de participantes
         let participantesValidos = [];
         
         rawLines.forEach(line => {
             let lineaLimpia = line.trim();
             if (!lineaLimpia) return;
 
-            // Extraer el usuario @usuario
             const matchUser = lineaLimpia.match(/@[\w_]+/);
             
-            // Si la línea contiene un usuario válido
             if (matchUser) {
-                // Limpiar la etiqueta PUNTO EXTRA si viene pegada para dejar solo el boleto y el usuario
                 let boletoLimpio = lineaLimpia.replace(/PUNTO\s+EXTRA\s*/gi, '').trim();
                 
                 participantesValidos.push({
                     ticket: boletoLimpio,
-                    user: matchUser[0] // ej: @Themenda987
+                    user: matchUser[0]
                 });
             }
         });
