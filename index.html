@@ -66,7 +66,7 @@
 
         h1, h2, h3 { margin-top: 0; text-align: center; }
         
-        textarea, input[type="datetime-local"] {
+        textarea, input[type="time"] {
             width: 100%;
             background: #0f172a;
             color: var(--text);
@@ -160,7 +160,7 @@
 
         /* Estilo para la cuenta atrás */
         .countdown-timer {
-            font-size: 2.2rem;
+            font-size: 2.5rem;
             font-weight: bold;
             color: var(--gold);
             letter-spacing: 2px;
@@ -267,9 +267,9 @@
 
     <!-- TARJETA DE CUENTA ATRÁS -->
     <div id="countdownCard" class="card hidden" style="text-align: center;">
-        <h2>⏳ ¡El Sorteo se celebrará muy pronto!</h2>
+        <h2>⏳ ¡El Sorteo se celebrará hoy!</h2>
         <p style="color: var(--muted);">Tiempo restante para la tirada oficial:</p>
-        <div id="timerDisplay" class="countdown-timer">00d 00h 00m 00s</div>
+        <div id="timerDisplay" class="countdown-timer">00h 00m 00s</div>
     </div>
 
     <!-- MENSAJE ESPERA (SIN PROGRAMAR) -->
@@ -314,8 +314,8 @@
         <textarea id="blacklistInput" placeholder="@usuario_excluido1&#10;@usuario_excluido2"></textarea>
 
         <br><br>
-        <label><b>3. Fecha y Hora del Sorteo (Opcional):</b></label>
-        <input type="datetime-local" id="drawTimeInput">
+        <label><b>3. Hora Exacta del Sorteo (Opcional):</b></label>
+        <input type="time" id="drawTimeInput">
 
         <button class="admin-btn" onclick="programarOEjecutarSorteo()">🎲 GUARDAR Y PROGRAMAR SORTEO</button>
         <button class="warning-btn" onclick="borrarUltimoSorteo()">↩️ BORRAR ÚLTIMO SORTEO</button>
@@ -562,9 +562,9 @@
         }
     }
 
-    // Método para guardar y programar
+    // Método para guardar y programar usando la hora del día actual
     function programarOEjecutarSorteo() {
-        const timeVal = document.getElementById('drawTimeInput').value;
+        const timeVal = document.getElementById('drawTimeInput').value; // Formato "HH:MM"
         const rawLines = document.getElementById('listInput').value.trim();
         const rawBlacklist = document.getElementById('blacklistInput').value.trim();
 
@@ -574,11 +574,16 @@
         }
 
         if (timeVal) {
-            const targetTime = new Date(timeVal).getTime();
-            if (targetTime <= Date.now()) {
-                alert("La hora elegida debe ser en el futuro.");
-                return;
+            const parts = timeVal.split(':');
+            const targetDate = new Date();
+            targetDate.setHours(parseInt(parts[0], 10), parseInt(parts[1], 10), 0, 0);
+
+            // Si la hora introducida ya pasó hoy, se programa para la de mañana automáticamente
+            if (targetDate.getTime() <= Date.now()) {
+                targetDate.setDate(targetDate.getDate() + 1);
             }
+
+            const targetTime = targetDate.getTime();
 
             db.ref('sorteo_actual').set({
                 status: 'programado',
@@ -586,10 +591,10 @@
                 rawLines: rawLines,
                 rawBlacklist: rawBlacklist
             }).then(function() {
-                alert("¡Sorteo programado correctamente! La cuenta atrás ya está activa en la web.");
+                alert("¡Sorteo programado a las " + timeVal + "! La cuenta atrás ya está activa.");
             });
         } else {
-            // Si no pone hora, se ejecuta de inmediato
+            // Si deja la hora en blanco, realiza el sorteo al instante
             calcularYEjecutarTirada(rawLines, rawBlacklist);
         }
     }
