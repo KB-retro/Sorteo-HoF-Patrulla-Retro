@@ -13,17 +13,17 @@
     <meta property="og:url" content="https://kb-retro.github.io/Sorteo-HoF-Patrulla-Retro/" />
     
     <!-- Imagen OG -->
-    <meta property="og:image" content="https://kb-retro.github.io/Sorteo-HoF-Patrulla-Retro/logo.png?v=3" />
-    <meta property="og:image:secure_url" content="https://kb-retro.github.io/Sorteo-HoF-Patrulla-Retro/logo.png?v=3" />
+    <meta property="og:image" content="https://kb-retro.github.io/Sorteo-HoF-Patrulla-Retro/logo.png" />
+    <meta property="og:image:secure_url" content="https://kb-retro.github.io/Sorteo-HoF-Patrulla-Retro/logo.png" />
     <meta property="og:image:type" content="image/png" />
     <meta property="og:image:width" content="600" />
     <meta property="og:image:height" content="600" />
 
-    <!-- Twitter Cards (Fuerza la previsualización en Telegram si falla OG) -->
+    <!-- Twitter Cards -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="🏆 Sorteo HoF Patrulla Retro">
     <meta name="twitter:description" content="Entra para ver la cuenta atrás en directo y el resultado del sorteo de la Patrulla Retro.">
-    <meta name="twitter:image" content="https://kb-retro.github.io/Sorteo-HoF-Patrulla-Retro/logo.png?v=3">
+    <meta name="twitter:image" content="https://kb-retro.github.io/Sorteo-HoF-Patrulla-Retro/logo.png">
 
     <!-- Firebase JS SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -87,7 +87,7 @@
 
         h1, h2, h3 { margin-top: 0; text-align: center; }
         
-        textarea, input[type="time"], input[type="date"] {
+        textarea, input[type="time"], input[type="date"], select {
             width: 100%;
             background: #0f172a;
             color: var(--text);
@@ -96,6 +96,7 @@
             padding: 10px;
             box-sizing: border-box;
             font-family: inherit;
+            font-size: 1rem;
         }
 
         textarea {
@@ -250,6 +251,14 @@
             font-weight: bold;
         }
 
+        .admin-section {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid #334155;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
         .admin-panel {
             border-top: 2px dashed #334155;
             margin-top: 20px;
@@ -268,7 +277,7 @@
 
 <div class="container">
     <img src="logo.png" alt="Logo Patrulla Retro" class="header-logo">
-    <h1>🏆 Sorteo HoF Patrulla Retro</h1>
+    <h1 id="mainTitle">🏆 Sorteo HoF Patrulla Retro</h1>
 
     <!-- PANTALLA GANADOR -->
     <div id="winnerCard" class="winner-box">
@@ -331,21 +340,47 @@
     <div id="adminPanel" class="card admin-panel hidden">
         <h2>🛠️ Panel de Control (Administrador)</h2>
         
-        <label><b>1. Pegar Participantes:</b></label>
-        <textarea id="listInput" placeholder="138-@Themenda987&#10;PUNTO EXTRA&#10;146-@Zapador_1986"></textarea>
+        <!-- SECCIÓN 1: MES CORRESPONDIENTE AL SORTEO -->
+        <div class="admin-section">
+            <label><b>📅 Mes correspondiente al Sorteo:</b></label>
 
-        <br><br>
-        <label><b>2. Excluidos / Lista Negra (1 por línea):</b></label>
-        <textarea id="blacklistInput" placeholder="@usuario_excluido1&#10;@usuario_excluido2"></textarea>
-
-        <br><br>
-        <label><b>3. Fecha y Hora Exacta del Sorteo (Opcional):</b></label>
-        <div class="datetime-group">
-            <input type="date" id="drawDateInput">
-            <input type="time" id="drawTimeInput">
+            <select id="monthSelect" style="margin-top: 8px;">
+                <option value="">-- Selecciona el mes --</option>
+                <option value="Enero">Enero</option>
+                <option value="Febrero">Febrero</option>
+                <option value="Marzo">Marzo</option>
+                <option value="Abril">Abril</option>
+                <option value="Mayo">Mayo</option>
+                <option value="Junio">Junio</option>
+                <option value="Julio">Julio</option>
+                <option value="Agosto">Agosto</option>
+                <option value="Septiembre">Septiembre</option>
+                <option value="Octubre">Octubre</option>
+                <option value="Noviembre">Noviembre</option>
+                <option value="Diciembre">Diciembre</option>
+            </select>
+            <button style="margin-top: 10px; background-color: var(--accent);" onclick="guardarMesSorteo()">💾 GUARDAR MES DEL SORTEO</button>
         </div>
 
-        <button class="admin-btn" onclick="programarOEjecutarSorteo()">🎲 GUARDAR Y PROGRAMAR SORTEO</button>
+        <!-- SECCIÓN 2: DATOS Y FECHA DEL SORTEO -->
+        <div class="admin-section">
+            <label><b>1. Pegar Participantes:</b></label>
+            <textarea id="listInput" placeholder="138-@Themenda987&#10;PUNTO EXTRA&#10;146-@Zapador_1986"></textarea>
+
+            <br><br>
+            <label><b>2. Excluidos / Lista Negra (1 por línea):</b></label>
+            <textarea id="blacklistInput" placeholder="@usuario_excluido1&#10;@usuario_excluido2"></textarea>
+
+            <br><br>
+            <label><b>3. Fecha y Hora Exacta del Sorteo (Opcional):</b></label>
+            <div class="datetime-group">
+                <input type="date" id="drawDateInput">
+                <input type="time" id="drawTimeInput">
+            </div>
+
+            <button class="admin-btn" onclick="programarOEjecutarSorteo()">🎲 GUARDAR Y PROGRAMAR SORTEO</button>
+        </div>
+
         <button class="warning-btn" onclick="borrarUltimoSorteo()">↩️ BORRAR ÚLTIMO SORTEO</button>
         <button class="clear-btn" onclick="borrarTodo()">🧹 BORRAR TODO</button>
     </div>
@@ -368,31 +403,13 @@
     let timerInterval = null;
     let programData = null;
 
-    // Lista de premiados históricos iniciales a cargar si el historial está vacío
-    const inicialesPremiados = [
+    // Lista fija de ganadores de meses anteriores (poseedores de la camiseta)
+    const ganadoresHistoricosFijos = [
         "@Imazor77", "@igortekno", "@MistermaestroevilJ", "@elblete",
         "@PsYcO_PsYcO_PsYcO", "@Zapador_1986", "@tinako83", "@cerebrosolido",
         "@OtakuFerreDavid", "@Idryl", "@RHernandezM", "@albgr1979",
         "@Fransd88", "@davrodri", "@JorgeManiaco", "@maxmad1984"
     ];
-
-    // Cargar premiados anteriores por defecto si Firebase no tiene registros
-    function inicializarHistorialSiVacio() {
-        db.ref('historial_ganadores').once('value', function(snapshot) {
-            if (!snapshot.exists() || snapshot.val() === null) {
-                inicialesPremiados.forEach(function(user, idx) {
-                    db.ref('historial_ganadores').push({
-                        user: user,
-                        ticket: "Ganador Anterior",
-                        fecha: "Sorteo Histórico",
-                        timestamp: Date.now() - ((inicialesPremiados.length - idx) * 86400000)
-                    });
-                });
-            }
-        });
-    }
-
-    inicializarHistorialSiVacio();
 
     // Fallback logo
     const logoImg = document.querySelector('.header-logo');
@@ -402,6 +419,34 @@
         };
     }
 
+    // Escuchar cambios en el Mes del Sorteo en Firebase
+    db.ref('mes_sorteo').on('value', function(snapshot) {
+        const mes = snapshot.val();
+        const titleEl = document.getElementById('mainTitle');
+        if (mes) {
+            titleEl.innerText = "🏆 Sorteo HoF Patrulla Retro de " + mes;
+            document.getElementById('monthSelect').value = mes;
+        } else {
+            titleEl.innerText = "🏆 Sorteo HoF Patrulla Retro";
+        }
+    });
+
+    // Función para guardar el mes del sorteo con confirmación
+    function guardarMesSorteo() {
+        const mes = document.getElementById('monthSelect').value;
+        if (!mes) {
+            alert("Por favor, selecciona un mes del desplegable.");
+            return;
+        }
+
+        const confirmar = confirm("¿Confirmas que deseas cambiar el título del sorteo al mes de " + mes + "?");
+        if (confirmar) {
+            db.ref('mes_sorteo').set(mes).then(function() {
+                alert("¡Mes actualizado con éxito a: " + mes + "!");
+            });
+        }
+    }
+
     // Verificar si el ganador actual es repetido
     function verificarRepetidoVisual() {
         if (!actualGanadorUser) return;
@@ -409,6 +454,13 @@
         db.ref('historial_ganadores').once('value', function(snapshot) {
             const data = snapshot.val();
             let totalVictorias = 0;
+
+            ganadoresHistoricosFijos.forEach(function(usr) {
+                if (usr.toLowerCase() === actualGanadorUser.toLowerCase()) {
+                    totalVictorias++;
+                }
+            });
+
             if (data) {
                 Object.values(data).forEach(function(item) {
                     if (item.user.toLowerCase() === actualGanadorUser.toLowerCase()) {
@@ -504,33 +556,32 @@
         timerInterval = setInterval(actualizar, 1000);
     }
 
-    // Escuchar Historial Global
+    // Escuchar Historial Global y combinarlo con la lista fija
     db.ref('historial_ganadores').on('value', function(snapshot) {
         const data = snapshot.val();
+        let mapaConteo = {};
+
+        ganadoresHistoricosFijos.forEach(function(usr) {
+            mapaConteo[usr] = 1;
+        });
 
         if (data) {
             rawHistoryItems = Object.values(data).reverse();
-            let mapaConteo = {};
             rawHistoryItems.forEach(function(item) {
                 const userKey = item.user;
                 mapaConteo[userKey] = (mapaConteo[userKey] || 0) + 1;
             });
-
-            rawWinnersCount = Object.keys(mapaConteo).map(function(usr) {
-                return { user: usr, total: mapaConteo[usr] };
-            }).sort(function(a, b) { return b.total - a.total; });
-
-            renderWinnersList();
-            renderHistoryList();
-            verificarRepetidoVisual();
         } else {
             rawHistoryItems = [];
-            rawWinnersCount = [];
-            document.getElementById('historyList').innerHTML = '<li style="text-align: center; color: var(--muted);">No hay sorteos anteriores registrados.</li>';
-            document.getElementById('winnersCountList').innerHTML = '<li style="text-align: center; color: var(--muted);">No hay usuarios premiados registrados.</li>';
-            document.getElementById('btnToggleHistory').classList.add('hidden');
-            document.getElementById('btnToggleWinners').classList.add('hidden');
         }
+
+        rawWinnersCount = Object.keys(mapaConteo).map(function(usr) {
+            return { user: usr, total: mapaConteo[usr] };
+        }).sort(function(a, b) { return b.total - a.total; });
+
+        renderWinnersList();
+        renderHistoryList();
+        verificarRepetidoVisual();
     });
 
     function renderWinnersList() {
@@ -560,7 +611,12 @@
         const listEl = document.getElementById('historyList');
         const btn = document.getElementById('btnToggleHistory');
         listEl.innerHTML = '';
-        if (rawHistoryItems.length === 0) return;
+        
+        if (rawHistoryItems.length === 0) {
+            listEl.innerHTML = '<li style="text-align: center; color: var(--muted);">Sin sorteos web recientes registrados.</li>';
+            btn.classList.add('hidden');
+            return;
+        }
 
         const visibleItems = isHistoryExpanded ? rawHistoryItems : rawHistoryItems.slice(0, 3);
         visibleItems.forEach(function(item) {
@@ -607,7 +663,7 @@
     }
 
     function borrarTodo() {
-        if (confirm("⚠️ ¿Estás seguro de que quieres BORRAR TODO el historial?")) {
+        if (confirm("⚠️ ¿Estás seguro de que quieres BORRAR TODO el historial de la web?")) {
             document.getElementById('listInput').value = '';
             document.getElementById('blacklistInput').value = '';
             document.getElementById('drawDateInput').value = '';
@@ -618,10 +674,9 @@
         }
     }
 
-    // Guardar y programar sorteo con FECHA Y HORA
     function programarOEjecutarSorteo() {
-        const dateVal = document.getElementById('drawDateInput').value; // Formato "YYYY-MM-DD"
-        const timeVal = document.getElementById('drawTimeInput').value; // Formato "HH:MM"
+        const dateVal = document.getElementById('drawDateInput').value;
+        const timeVal = document.getElementById('drawTimeInput').value;
         const rawLines = document.getElementById('listInput').value.trim();
         const rawBlacklist = document.getElementById('blacklistInput').value.trim();
 
@@ -641,7 +696,6 @@
 
             targetDate.setHours(parseInt(timeParts[0], 10), parseInt(timeParts[1], 10), 0, 0);
 
-            // Si se pone hora pasada sin especificar fecha, asumir mañana
             if (!dateVal && targetDate.getTime() <= Date.now()) {
                 targetDate.setDate(targetDate.getDate() + 1);
             }
