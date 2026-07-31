@@ -17,7 +17,7 @@
     }
 
     body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background-color: var(--bg-color);
       color: var(--text-main);
       margin: 0;
@@ -194,7 +194,7 @@
       background: #dc2626;
     }
 
-    .hidden { display: none; }
+    .hidden { display: none !important; }
     
     .alert-repeat {
       background: #451a03;
@@ -226,9 +226,7 @@
         🕹️ ¡Campeón! Como ya cuentas con la camiseta en tu colección, puedes elegir a uno de tus compañeros de la lista de este mes para traspasarle el premio y que reciba la camiseta.
       </div>
 
-      <div class="neighbors-list" id="neighbors-container">
-        <!-- Vecinos -->
-      </div>
+      <div class="neighbors-list" id="neighbors-container"></div>
     </div>
 
     <!-- MÁS VICTORIAS -->
@@ -249,7 +247,7 @@
       <button id="btn-more-history" class="btn-more hidden" onclick="toggleHistory()">Mostrar más</button>
     </div>
 
-    <!-- PANEL ADMIN (OCULTO POR DEFECTO) -->
+    <!-- PANEL ADMIN -->
     <div class="admin-section">
       <button id="btn-show-admin" class="btn-more" onclick="unlockAdmin()">⚙️ Panel de Administración</button>
       <div id="admin-panel" class="card hidden" style="margin-top: 10px;">
@@ -260,7 +258,6 @@
     </div>
   </div>
 
-  <!-- FIREBASE SDKs -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
@@ -276,16 +273,14 @@
     let showAllTop = false;
     let showAllHistory = false;
 
-    // Cargar datos al iniciar con lectura a prueba de errores
     db.ref('sorteos').on('value', (snapshot) => {
       try {
         const data = snapshot.val();
         if (!data) {
-          document.getElementById('main-winner-name').innerText = "Sin datos aún";
+          document.getElementById('main-winner-name').innerText = "Sin sorteos en la base de datos";
           return;
         }
 
-        // Convertir a array seguro tanto si data es Objeto como si es Array
         if (Array.isArray(data)) {
           fullHistory = data.filter(item => item !== null).reverse();
         } else {
@@ -298,8 +293,8 @@
           renderHistory();
         }
       } catch (err) {
-        console.error("Error al procesar datos de Firebase:", err);
-        document.getElementById('main-winner-name').innerText = "Error de carga";
+        console.error(err);
+        document.getElementById('main-winner-name').innerText = "Error leyendo datos";
       }
     });
 
@@ -308,7 +303,6 @@
       document.getElementById('main-winner-name').innerText = latest.winner ? `@${latest.winner}` : 'Desconocido';
       document.getElementById('main-winner-ticket').innerText = latest.winnerTicket ? `Boleto premiado: ${latest.winnerTicket}` : '';
 
-      // Comprobar si es repetido
       const previousWins = fullHistory.slice(1).filter(h => h && h.winner === latest.winner).length;
       if (previousWins > 0) {
         document.getElementById('repeat-msg').classList.remove('hidden');
@@ -316,7 +310,6 @@
         document.getElementById('repeat-msg').classList.add('hidden');
       }
 
-      // Renderizar el grupo de 5
       const container = document.getElementById('neighbors-container');
       container.innerHTML = '<div style="font-weight:bold; margin-bottom:5px; font-size:0.8rem; color:var(--text-sub);">🕹️ Eligen el Arcade del Mes (5 Usuarios):</div>';
 
@@ -407,7 +400,7 @@
       if (pass === "patrulla2026") {
         document.getElementById('admin-panel').classList.remove('hidden');
         document.getElementById('btn-show-admin').classList.add('hidden');
-      } else if (pass) {
+      } else if (pass !== null) {
         alert("Contraseña incorrecta");
       }
     }
