@@ -1,452 +1,634 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sorteo HoF Patrulla Retro</title>
-  <style>
-    :root {
-      --bg-color: #0f172a;
-      --card-bg: #1e293b;
-      --accent-color: #f59e0b;
-      --text-main: #f8fafc;
-      --text-sub: #94a3b8;
-      --border-color: #334155;
-      --winner-bg: #422006;
-      --winner-border: #78350f;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sorteo HoF Patrulla Retro</title>
+    <!-- Firebase JS SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --accent: #6366f1;
+            --accent-hover: #4f46e5;
+            --text: #f8fafc;
+            --muted: #94a3b8;
+            --danger: #ef4444;
+            --danger-hover: #dc2626;
+            --warning: #f59e0b;
+            --warning-hover: #d97706;
+            --success: #22c55e;
+            --success-hover: #16a34a;
+            --gold: #f59e0b;
+        }
 
-    body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background-color: var(--bg-color);
-      color: var(--text-main);
-      margin: 0;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-height: 100vh;
-    }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
 
-    .container {
-      max-width: 600px;
-      width: 100%;
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
+        .container {
+            max-width: 800px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
 
-    .header {
-      text-align: center;
-      margin-bottom: 10px;
-    }
+        .header-logo {
+            display: block;
+            margin: 0 auto 10px auto;
+            max-width: 180px;
+            height: auto;
+        }
 
-    .header img {
-      max-width: 120px;
-      margin-bottom: 10px;
-    }
+        .card {
+            background-color: var(--card);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3);
+        }
 
-    .header h1 {
-      margin: 0;
-      font-size: 1.5rem;
-      color: var(--text-main);
-    }
+        h1, h2, h3 { margin-top: 0; text-align: center; }
+        
+        textarea {
+            width: 100%;
+            height: 140px;
+            background: #0f172a;
+            color: var(--text);
+            border: 1px solid #334155;
+            border-radius: 6px;
+            padding: 10px;
+            box-sizing: border-box;
+            font-family: monospace;
+            resize: vertical;
+        }
 
-    .card {
-      background-color: var(--card-bg);
-      border: 1px solid var(--border-color);
-      border-radius: 12px;
-      padding: 20px;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
-    }
+        button {
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+            transition: background 0.2s, transform 0.1s;
+        }
 
-    .card-title {
-      font-size: 1.1rem;
-      font-weight: 600;
-      margin-top: 0;
-      margin-bottom: 15px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
+        button:active { transform: scale(0.98); }
 
-    .winner-card {
-      background-color: var(--winner-bg);
-      border: 2px solid var(--winner-border);
-      text-align: center;
-    }
+        button.admin-btn { 
+            background-color: var(--success); 
+            font-size: 18px; 
+            margin-top: 15px; 
+            padding: 14px;
+        }
+        button.admin-btn:hover { background-color: var(--success-hover); }
 
-    .winner-title {
-      color: var(--accent-color);
-      font-size: 0.9rem;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 5px;
-    }
+        button.warning-btn { 
+            background-color: var(--warning); 
+            margin-top: 10px; 
+        }
+        button.warning-btn:hover { background-color: var(--warning-hover); }
 
-    .winner-name {
-      font-size: 1.8rem;
-      font-weight: bold;
-      color: #fff;
-      margin: 10px 0;
-    }
+        button.clear-btn { 
+            background-color: var(--danger); 
+            margin-top: 10px; 
+        }
+        button.clear-btn:hover { background-color: var(--danger-hover); }
 
-    .winner-ticket {
-      font-size: 0.85rem;
-      color: var(--text-sub);
-    }
+        .btn-toggle-view {
+            background-color: #334155 !important;
+            color: var(--text) !important;
+            font-size: 0.9rem !important;
+            padding: 10px 15px !important;
+            margin-top: 12px !important;
+            border-radius: 6px !important;
+            display: block !important;
+            text-align: center;
+        }
+        .btn-toggle-view:hover { background-color: #475569 !important; }
 
-    .neighbors-list {
-      margin-top: 15px;
-      padding-top: 15px;
-      border-top: 1px solid var(--border-color);
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
+        .winner-box {
+            display: none;
+            text-align: center;
+            background: linear-gradient(135deg, #1e1b4b 0%, #311042 100%);
+            border: 2px solid var(--gold);
+            padding: 30px;
+            border-radius: 12px;
+            animation: fadeIn 0.5s ease-in;
+        }
 
-    .neighbor-item {
-      background: rgba(0,0,0,0.2);
-      padding: 8px 12px;
-      border-radius: 6px;
-      font-size: 0.85rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
+        .winner-title { color: var(--gold); font-size: 1.5rem; text-transform: uppercase; letter-spacing: 2px; }
+        .winner-name { font-size: 2.5rem; font-weight: bold; margin: 15px 0; color: #fff; }
+        .winner-ticket { font-size: 1.2rem; color: var(--muted); }
 
-    .badge {
-      background: var(--border-color);
-      padding: 2px 8px;
-      border-radius: 4px;
-      font-size: 0.75rem;
-    }
+        .repeat-winner-banner {
+            background: rgba(245, 158, 11, 0.2);
+            border: 2px solid var(--gold);
+            color: #fef08a;
+            padding: 14px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-size: 1.05rem;
+            font-weight: bold;
+            line-height: 1.4;
+        }
 
-    .badge-main {
-      background: var(--accent-color);
-      color: #000;
-      font-weight: bold;
-    }
+        .arcade-box {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--accent);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            text-align: left;
+        }
 
-    ul {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-    }
+        .arcade-title {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: var(--gold);
+            margin-bottom: 10px;
+            text-align: center;
+        }
 
-    li {
-      padding: 10px 0;
-      border-bottom: 1px solid var(--border-color);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
+        .log-box {
+            background: #090d16;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            padding: 10px;
+            max-height: 150px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 0.9rem;
+            color: var(--muted);
+            margin-top: 15px;
+            text-align: left;
+        }
 
-    li:last-child {
-      border-bottom: none;
-    }
+        .custom-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
 
-    .btn-more {
-      width: 100%;
-      background: none;
-      border: 1px dashed var(--border-color);
-      color: var(--text-sub);
-      padding: 8px;
-      margin-top: 10px;
-      border-radius: 6px;
-      cursor: pointer;
-    }
+        .custom-item {
+            background: #0f172a;
+            border: 1px solid #334155;
+            padding: 10px 15px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
 
-    .btn-more:hover {
-      background: rgba(255,255,255,0.05);
-      color: var(--text-main);
-    }
+        .item-badge {
+            background: var(--accent);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
 
-    .admin-section {
-      margin-top: 20px;
-    }
+        .admin-panel {
+            border-top: 2px dashed #334155;
+            margin-top: 20px;
+            padding-top: 20px;
+        }
 
-    textarea {
-      width: 100%;
-      height: 100px;
-      background: #0f172a;
-      border: 1px solid var(--border-color);
-      color: var(--text-main);
-      border-radius: 6px;
-      padding: 8px;
-      box-sizing: border-box;
-      margin-bottom: 10px;
-      font-family: inherit;
-    }
+        .hidden { display: none !important; }
 
-    button.btn-primary {
-      width: 100%;
-      background: #ef4444;
-      color: white;
-      border: none;
-      padding: 12px;
-      border-radius: 6px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    button.btn-primary:hover {
-      background: #dc2626;
-    }
-
-    .hidden { display: none !important; }
-    
-    .alert-repeat {
-      background: #451a03;
-      border: 1px solid #b45309;
-      color: #fde68a;
-      padding: 10px;
-      border-radius: 6px;
-      margin-top: 10px;
-      font-size: 0.85rem;
-      line-height: 1.4;
-    }
-  </style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
 </head>
 <body>
 
-  <div class="container">
-    <div class="header">
-      <img src="https://raw.githubusercontent.com/kb-retro/Sorteo-HoF-Patrulla-Retro/main/logo.png" alt="Logo" onerror="this.style.display='none'">
-      <h1>🏆 Sorteo HoF Patrulla Retro</h1>
+<div class="container">
+    <img src="logo.jpg" alt="Logo Patrulla Retro" class="header-logo">
+    <h1>🏆 Sorteo HoF Patrulla Retro</h1>
+
+    <!-- PANTALLA GANADOR -->
+    <div id="winnerCard" class="winner-box">
+        <div class="winner-title">🎉 ¡Tenemos Ganador Oficial! 🎉</div>
+        <div id="winnerName" class="winner-name">Cargando...</div>
+        <div id="winnerTicket" class="winner-ticket"></div>
+
+        <!-- AVISO DE CAMISETA REPETIDA -->
+        <div id="repeatNotice" class="repeat-winner-banner hidden">
+            🕹️ <b>¡Campeón!</b> Como ya cuentas con la camiseta en tu colección, puedes elegir a uno de tus compañeros de la lista de este mes para traspasarle el premio y que reciba la camiseta.
+        </div>
+
+        <!-- LISTA PARALELA: ELIGEN EL ARCADE DEL MES -->
+        <div class="arcade-box">
+            <div class="arcade-title">🕹️ Eligen el Arcade del Mes (5 Usuarios):</div>
+            <ul id="arcadeList" class="custom-list"></ul>
+        </div>
+
+        <div class="log-box" id="publicLog"></div>
     </div>
 
-    <!-- ÚLTIMO GANADOR -->
-    <div class="card winner-card">
-      <div class="winner-title">🎉 ¡Tenemos Ganador Oficial! 🎉</div>
-      <div id="main-winner-name" class="winner-name">Cargando...</div>
-      <div id="main-winner-ticket" class="winner-ticket"></div>
-      
-      <div id="repeat-msg" class="alert-repeat hidden">
-        🕹️ ¡Campeón! Como ya cuentas con la camiseta en tu colección, puedes elegir a uno de tus compañeros de la lista de este mes para traspasarle el premio y que reciba la camiseta.
-      </div>
-
-      <div class="neighbors-list" id="neighbors-container"></div>
+    <!-- MENSAJE ESPERA -->
+    <div id="waitingCard" class="card" style="text-align: center;">
+        <h2>⏳ El sorteo aún no se ha realizado</h2>
+        <p style="color: var(--muted);">El administrador realizará la tirada en breve. Esta página se actualizará automáticamente cuando haya un ganador.</p>
     </div>
 
-    <!-- MÁS VICTORIAS -->
-    <div class="card">
-      <div class="card-title">
-        <span>🏆 Más Victorias</span>
-      </div>
-      <ul id="top-winners-list"></ul>
-      <button id="btn-more-top" class="btn-more hidden" onclick="toggleTopWinners()">Mostrar más</button>
+    <!-- LISTA DE PREMIADOS -->
+    <div id="winnersCountCard" class="card">
+        <h3>🥇 Usuarios Premiados y Recuento de Victorias</h3>
+        <ul id="winnersCountList" class="custom-list">
+            <li style="text-align: center; color: var(--muted);">Cargando usuarios...</li>
+        </ul>
+        <button id="btnToggleWinners" class="btn-toggle-view hidden" onclick="toggleWinnersView()">⬇️ Ver todos los usuarios premiados</button>
     </div>
 
-    <!-- HISTORIAL RECIENTE -->
-    <div class="card">
-      <div class="card-title">
-        <span>📜 Historial Reciente</span>
-      </div>
-      <ul id="history-list"></ul>
-      <button id="btn-more-history" class="btn-more hidden" onclick="toggleHistory()">Mostrar más</button>
+    <!-- HISTORIAL DE SORTEOS -->
+    <div id="historyCard" class="card">
+        <h3>📜 Historial de Ganadores Anteriores</h3>
+        <ul id="historyList" class="custom-list">
+            <li style="text-align: center; color: var(--muted);">Cargando historial...</li>
+        </ul>
+        <button id="btnToggleHistory" class="btn-toggle-view hidden" onclick="toggleHistoryView()">⬇️ Ver todo el historial</button>
+    </div>
+
+    <div style="text-align: center;">
+        <button onclick="toggleAdminPanel()" style="width: auto; background: transparent; color: var(--muted); font-size: 0.8rem; text-decoration: underline;">
+            ¿Eres el Administrador? Haz clic aquí
+        </button>
     </div>
 
     <!-- PANEL ADMIN -->
-    <div class="admin-section">
-      <button id="btn-show-admin" class="btn-more" onclick="unlockAdmin()">⚙️ Panel de Administración</button>
-      <div id="admin-panel" class="card hidden" style="margin-top: 10px;">
-        <div class="card-title">⚙️ Panel de Control</div>
-        <textarea id="participants-input" placeholder="Pega aquí los nombres de los participantes (uno por línea)..."></textarea>
-        <button class="btn-primary" onclick="runRaffle()">🎲 REALIZAR Y PUBLICAR SORTEO</button>
-      </div>
+    <div id="adminPanel" class="card admin-panel hidden">
+        <h2>🛠️ Panel de Control (Administrador)</h2>
+        
+        <label><b>1. Pegar Participantes:</b></label>
+        <textarea id="listInput" placeholder="138-@Themenda987&#10;PUNTO EXTRA&#10;146-@Zapador_1986"></textarea>
+
+        <br><br>
+        <label><b>2. Excluidos / Lista Negra (1 por línea):</b></label>
+        <textarea id="blacklistInput" placeholder="@usuario_excluido1&#10;@usuario_excluido2"></textarea>
+
+        <button class="admin-btn" onclick="realizarSorteoOficial()">🎲 REALIZAR Y PUBLICAR SORTEO</button>
+        <button class="warning-btn" onclick="borrarUltimoSorteo()">↩️ BORRAR ÚLTIMO SORTEO</button>
+        <button class="clear-btn" onclick="borrarTodo()">🧹 BORRAR TODO</button>
     </div>
-  </div>
+</div>
 
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-
-  <script>
+<script>
     const firebaseConfig = {
-      databaseURL: "https://patrullaretro-default-rtdb.europe-west1.firebasedatabase.app/"
+        databaseURL: "https://sorteo-hof-default-rtdb.europe-west1.firebasedatabase.app"
     };
+    
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    let fullHistory = [];
-    let fullTopWinners = [];
-    let showAllTop = false;
-    let showAllHistory = false;
+    let actualGanadorUser = "";
+    
+    // Control de vista plegada/desplegada
+    let isWinnersExpanded = false;
+    let isHistoryExpanded = false;
+    
+    let rawHistoryItems = [];
+    let rawWinnersCount = [];
 
-    db.ref('sorteos').on('value', (snapshot) => {
-      try {
+    // Verificar si el ganador actual es repetido
+    function verificarRepetidoVisual() {
+        if (!actualGanadorUser) return;
+        
+        db.ref('historial_ganadores').once('value', function(snapshot) {
+            const data = snapshot.val();
+            let totalVictorias = 0;
+            if (data) {
+                Object.values(data).forEach(function(item) {
+                    if (item.user.toLowerCase() === actualGanadorUser.toLowerCase()) {
+                        totalVictorias++;
+                    }
+                });
+            }
+
+            const noticeEl = document.getElementById('repeatNotice');
+            if (totalVictorias > 1) {
+                noticeEl.classList.remove('hidden');
+            } else {
+                noticeEl.classList.add('hidden');
+            }
+        });
+    }
+
+    // Escuchar Sorteo Actual
+    db.ref('sorteo_actual').on('value', function(snapshot) {
         const data = snapshot.val();
-        if (!data) {
-          document.getElementById('main-winner-name').innerText = "Sin sorteos en la base de datos";
-          return;
-        }
+        if (data && data.ganador) {
+            document.getElementById('waitingCard').classList.add('hidden');
+            document.getElementById('winnerCard').style.display = 'block';
+            
+            actualGanadorUser = data.ganador.user;
+            document.getElementById('winnerName').innerText = data.ganador.user;
+            document.getElementById('winnerTicket').innerText = "Boleto premiado: " + data.ganador.ticket;
 
-        if (Array.isArray(data)) {
-          fullHistory = data.filter(item => item !== null).reverse();
+            verificarRepetidoVisual();
+            
+            const logBox = document.getElementById('publicLog');
+            logBox.innerHTML = "<b>Historial de tiradas:</b><br>" + data.log.join('<br>');
+
+            const arcadeList = document.getElementById('arcadeList');
+            arcadeList.innerHTML = '';
+            if (data.arcadeGroup && data.arcadeGroup.length > 0) {
+                data.arcadeGroup.forEach(function(item) {
+                    const li = document.createElement('li');
+                    li.className = 'custom-item';
+                    const esGanador = item.user.toLowerCase() === data.ganador.user.toLowerCase();
+                    li.innerHTML = '<div><strong>' + item.user + '</strong> <span style="color: var(--muted);">(' + item.ticket + ')</span></div>' +
+                        (esGanador ? '<span class="item-badge" style="background: var(--gold); color: black;">¡Ganador Principal!</span>' : '<span class="item-badge" style="background: #334155;">Elección Arcade</span>');
+                    arcadeList.appendChild(li);
+                });
+            }
         } else {
-          fullHistory = Object.keys(data).map(k => data[k]).reverse();
+            document.getElementById('winnerCard').style.display = 'none';
+            document.getElementById('waitingCard').classList.remove('hidden');
         }
-
-        if (fullHistory.length > 0) {
-          renderLatestWinner(fullHistory[0]);
-          calculateTopWinners();
-          renderHistory();
-        }
-      } catch (err) {
-        console.error(err);
-        document.getElementById('main-winner-name').innerText = "Error leyendo datos";
-      }
     });
 
-    function renderLatestWinner(latest) {
-      if (!latest) return;
-      document.getElementById('main-winner-name').innerText = latest.winner ? `@${latest.winner}` : 'Desconocido';
-      document.getElementById('main-winner-ticket').innerText = latest.winnerTicket ? `Boleto premiado: ${latest.winnerTicket}` : '';
+    // Escuchar Historial Global (Optimizado para soportar años de datos)
+    db.ref('historial_ganadores').on('value', function(snapshot) {
+        const data = snapshot.val();
 
-      const previousWins = fullHistory.slice(1).filter(h => h && h.winner === latest.winner).length;
-      if (previousWins > 0) {
-        document.getElementById('repeat-msg').classList.remove('hidden');
-      } else {
-        document.getElementById('repeat-msg').classList.add('hidden');
-      }
+        if (data) {
+            rawHistoryItems = Object.values(data).reverse();
+            
+            let mapaConteo = {};
+            rawHistoryItems.forEach(function(item) {
+                const userKey = item.user;
+                mapaConteo[userKey] = (mapaConteo[userKey] || 0) + 1;
+            });
 
-      const container = document.getElementById('neighbors-container');
-      container.innerHTML = '<div style="font-weight:bold; margin-bottom:5px; font-size:0.8rem; color:var(--text-sub);">🕹️ Eligen el Arcade del Mes (5 Usuarios):</div>';
+            rawWinnersCount = Object.keys(mapaConteo).map(function(usr) {
+                return { user: usr, total: mapaConteo[usr] };
+            }).sort(function(a, b) { return b.total - a.total; });
 
-      if (latest.group && Array.isArray(latest.group)) {
-        latest.group.forEach(item => {
-          const isMain = item.name === latest.winner;
-          const div = document.createElement('div');
-          div.className = 'neighbor-item';
-          div.innerHTML = `
-            <span>@${item.name} <small style="color:var(--text-sub);">(${item.ticket})</small></span>
-            <span class="badge ${isMain ? 'badge-main' : ''}">${isMain ? 'Ganador Principal!' : 'Elección Arcade'}</span>
-          `;
-          container.appendChild(div);
+            renderWinnersList();
+            renderHistoryList();
+            verificarRepetidoVisual();
+
+        } else {
+            rawHistoryItems = [];
+            rawWinnersCount = [];
+            document.getElementById('historyList').innerHTML = '<li style="text-align: center; color: var(--muted);">No hay sorteos anteriores registrados.</li>';
+            document.getElementById('winnersCountList').innerHTML = '<li style="text-align: center; color: var(--muted);">No hay usuarios premiados registrados.</li>';
+            document.getElementById('btnToggleHistory').classList.add('hidden');
+            document.getElementById('btnToggleWinners').classList.add('hidden');
+        }
+    });
+
+    // Dibuja la lista de Usuarios Premiados
+    function renderWinnersList() {
+        const listEl = document.getElementById('winnersCountList');
+        const btn = document.getElementById('btnToggleWinners');
+        listEl.innerHTML = '';
+
+        if (rawWinnersCount.length === 0) return;
+
+        const visibleItems = isWinnersExpanded ? rawWinnersCount : rawWinnersCount.slice(0, 3);
+
+        visibleItems.forEach(function(item) {
+            const li = document.createElement('li');
+            li.className = 'custom-item';
+            const textoVez = item.total === 1 ? 'vez premiado' : 'veces premiado';
+            li.innerHTML = '<div><strong>' + item.user + '</strong></div><span class="item-badge">' + item.total + ' ' + textoVez + '</span>';
+            listEl.appendChild(li);
         });
-      }
-    }
 
-    function calculateTopWinners() {
-      const counts = {};
-      fullHistory.forEach(h => {
-        if (h && h.winner) {
-          counts[h.winner] = (counts[h.winner] || 0) + 1;
+        if (rawWinnersCount.length > 3) {
+            btn.classList.remove('hidden');
+            btn.innerText = isWinnersExpanded ? '⬆️ Mostrar solo los 3 principales' : '⬇️ Ver todos los usuarios premiados (' + rawWinnersCount.length + ')';
+        } else {
+            btn.classList.add('hidden');
         }
-      });
-
-      fullTopWinners = Object.keys(counts)
-        .map(name => ({ name, count: counts[name] }))
-        .sort((a, b) => b.count - a.count);
-
-      renderTopWinners();
     }
 
-    function renderTopWinners() {
-      const list = document.getElementById('top-winners-list');
-      list.innerHTML = '';
-      const limit = showAllTop ? fullTopWinners.length : 3;
-      const itemsToDisplay = fullTopWinners.slice(0, limit);
+    // Dibuja la lista del Historial
+    function renderHistoryList() {
+        const listEl = document.getElementById('historyList');
+        const btn = document.getElementById('btnToggleHistory');
+        listEl.innerHTML = '';
 
-      itemsToDisplay.forEach(item => {
-        const li = document.createElement('li');
-        li.innerHTML = `<span>@${item.name}</span> <strong>${item.count} ${item.count === 1 ? 'victoria' : 'victorias'}</strong>`;
-        list.appendChild(li);
-      });
+        if (rawHistoryItems.length === 0) return;
 
-      const btn = document.getElementById('btn-more-top');
-      if (fullTopWinners.length > 3) {
-        btn.classList.remove('hidden');
-        btn.innerText = showAllTop ? 'Mostrar menos' : `Mostrar más (${fullTopWinners.length - 3} más)`;
-      } else {
-        btn.classList.add('hidden');
-      }
-    }
+        const visibleItems = isHistoryExpanded ? rawHistoryItems : rawHistoryItems.slice(0, 3);
 
-    function toggleTopWinners() {
-      showAllTop = !showAllTop;
-      renderTopWinners();
-    }
+        visibleItems.forEach(function(item) {
+            const li = document.createElement('li');
+            li.className = 'custom-item';
+            li.innerHTML = '<div><strong>' + item.user + '</strong> <span style="color: var(--muted);">(' + item.ticket + ')</span></div><div style="font-size: 0.8rem; color: var(--muted);">' + item.fecha + '</div>';
+            listEl.appendChild(li);
+        });
 
-    function renderHistory() {
-      const list = document.getElementById('history-list');
-      list.innerHTML = '';
-      const limit = showAllHistory ? fullHistory.length : 3;
-      const itemsToDisplay = fullHistory.slice(0, limit);
-
-      itemsToDisplay.forEach(item => {
-        if (!item) return;
-        const li = document.createElement('li');
-        li.innerHTML = `<span>@${item.winner}</span> <small style="color:var(--text-sub);">${item.date || ''}</small>`;
-        list.appendChild(li);
-      });
-
-      const btn = document.getElementById('btn-more-history');
-      if (fullHistory.length > 3) {
-        btn.classList.remove('hidden');
-        btn.innerText = showAllHistory ? 'Mostrar menos' : `Mostrar más (${fullHistory.length - 3} más)`;
-      } else {
-        btn.classList.add('hidden');
-      }
-    }
-
-    function toggleHistory() {
-      showAllHistory = !showAllHistory;
-      renderHistory();
-    }
-
-    function unlockAdmin() {
-      const pass = prompt("Introduce la contraseña de administración:");
-      if (pass === "patrulla2026") {
-        document.getElementById('admin-panel').classList.remove('hidden');
-        document.getElementById('btn-show-admin').classList.add('hidden');
-      } else if (pass !== null) {
-        alert("Contraseña incorrecta");
-      }
-    }
-
-    function runRaffle() {
-      const text = document.getElementById('participants-input').value.trim();
-      if (!text) return alert("Pega al menos 5 participantes.");
-
-      const names = text.split('\n').map(n => n.trim()).filter(n => n.length > 0);
-      if (names.length < 5) return alert("Se necesitan mínimo 5 participantes para el sorteo.");
-
-      const list = names.map((name, i) => ({ ticket: `${i+1}-${name}`, name }));
-      const total = list.length;
-      
-      const winIdx = Math.floor(Math.random() * total);
-      
-      const groupIndices = [
-        (winIdx - 2 + total) % total,
-        (winIdx - 1 + total) % total,
-        winIdx,
-        (winIdx + 1) % total,
-        (winIdx + 2) % total
-      ];
-
-      const winnerObj = list[winIdx];
-      const group = groupIndices.map(idx => list[idx]);
-
-      const now = new Date();
-      const dateStr = `${now.getDate()}/${now.getMonth()+1}/${now.getFullYear()}`;
-
-      const raffleData = {
-        winner: winnerObj.name,
-        winnerTicket: winnerObj.ticket,
-        group: group,
-        date: dateStr,
-        timestamp: firebase.database.ServerValue.TIMESTAMP
-      };
-
-      db.ref('sorteos').push(raffleData, (err) => {
-        if (err) alert("Error al guardar: " + err.message);
-        else {
-          alert("¡Sorteo realizado y publicado con éxito!");
-          document.getElementById('participants-input').value = '';
+        if (rawHistoryItems.length > 3) {
+            btn.classList.remove('hidden');
+            btn.innerText = isHistoryExpanded ? '⬆️ Mostrar solo los últimos 3 sorteos' : '⬇️ Ver todo el historial (' + rawHistoryItems.length + ')';
+        } else {
+            btn.classList.add('hidden');
         }
-      });
     }
-  </script>
+
+    function toggleWinnersView() {
+        isWinnersExpanded = !isWinnersExpanded;
+        renderWinnersList();
+    }
+
+    function toggleHistoryView() {
+        isHistoryExpanded = !isHistoryExpanded;
+        renderHistoryList();
+    }
+
+    function toggleAdminPanel() {
+        const pass = prompt("Introduce la clave de administrador:");
+        if (pass === "patrulla123") {
+            document.getElementById('adminPanel').classList.remove('hidden');
+        } else if (pass !== null) {
+            alert("Contraseña incorrecta.");
+        }
+    }
+
+    function borrarUltimoSorteo() {
+        if (confirm("⚠️ ¿Deseas borrar la tirada actual y eliminar el último registro guardado?")) {
+            db.ref('sorteo_actual').remove();
+            db.ref('historial_ganadores').limitToLast(1).once('value', function(snapshot) {
+                const data = snapshot.val();
+                if (data) {
+                    const keyBorrar = Object.keys(data)[0];
+                    db.ref('historial_ganadores/' + keyBorrar).remove();
+                    alert("Último sorteo eliminado.");
+                } else {
+                    alert("Sorteo actual borrado.");
+                }
+            });
+        }
+    }
+
+    function borrarTodo() {
+        if (confirm("⚠️ ¿Estás seguro de que quieres BORRAR TODO?")) {
+            document.getElementById('listInput').value = '';
+            document.getElementById('blacklistInput').value = '';
+            db.ref('sorteo_actual').remove();
+            db.ref('historial_ganadores').remove();
+            alert("Todo borrado correctamente.");
+        }
+    }
+
+    function realizarSorteoOficial() {
+        const rawLines = document.getElementById('listInput').value.trim().split('\n');
+        const rawBlacklist = document.getElementById('blacklistInput').value.trim().split('\n');
+
+        let participantesValidos = [];
+        
+        rawLines.forEach(function(line) {
+            let lineaLimpia = line.trim();
+            if (!lineaLimpia) return;
+
+            const matchUser = lineaLimpia.match(/@[\w_]+/);
+            
+            if (matchUser) {
+                let boletoLimpio = lineaLimpia.replace(/PUNTO\s+EXTRA\s*/gi, '').trim();
+                participantesValidos.push({
+                    ticket: boletoLimpio,
+                    user: matchUser[0]
+                });
+            }
+        });
+
+        const total = participantesValidos.length;
+
+        if (total === 0) {
+            alert("No se han encontrado participantes válidos con el formato 'número-@usuario'.");
+            return;
+        }
+
+        const blacklist = rawBlacklist
+            .map(function(u) { return u.trim().toLowerCase(); })
+            .filter(function(u) { return u.length > 0; });
+
+        let log = [];
+        let ganadorEncontrado = null;
+        let indexGanador = -1;
+
+        let listaCopia = participantesValidos.slice();
+
+        while (listaCopia.length > 0) {
+            const indexAleatorio = Math.floor(Math.random() * listaCopia.length);
+            const entrada = listaCopia[indexAleatorio];
+            const usuarioMinusculas = entrada.user.toLowerCase();
+
+            if (blacklist.indexOf(usuarioMinusculas) !== -1) {
+                log.push("❌ Descartado: " + entrada.ticket + " (" + entrada.user + " está en la Lista Negra)");
+                listaCopia.splice(indexAleatorio, 1);
+            } else {
+                ganadorEncontrado = entrada;
+                indexGanador = participantesValidos.findIndex(function(p) { return p.ticket === entrada.ticket; });
+                log.push("✅ ¡TIRADA GANADORA!: " + entrada.ticket);
+                break;
+            }
+        }
+
+        if (!ganadorEncontrado) {
+            alert("No se pudo encontrar un ganador.");
+            return;
+        }
+
+        // Lógica Circular Anillo
+        let anteriores = [];
+        let posteriores = [];
+        let usuariosUsados = {};
+        usuariosUsados[ganadorEncontrado.user.toLowerCase()] = true;
+
+        // 2 Anteriores
+        let curr = indexGanador - 1;
+        let cntAnt = 0;
+        while (anteriores.length < 2 && cntAnt < total) {
+            if (curr < 0) curr = total - 1;
+            let cand = participantesValidos[curr];
+            let uLower = cand.user.toLowerCase();
+            if (!usuariosUsados[uLower]) {
+                anteriores.unshift(cand);
+                usuariosUsados[uLower] = true;
+            }
+            curr--;
+            cntAnt++;
+        }
+
+        // 2 Posteriores
+        curr = indexGanador + 1;
+        let cntPost = 0;
+        while (posteriores.length < 2 && cntPost < total) {
+            if (curr >= total) curr = 0;
+            let cand = participantesValidos[curr];
+            let uLower = cand.user.toLowerCase();
+            if (!usuariosUsados[uLower]) {
+                posteriores.push(cand);
+                usuariosUsados[uLower] = true;
+            }
+            curr++;
+            cntPost++;
+        }
+
+        const arcadeGroup = anteriores.concat([ganadorEncontrado], posteriores);
+
+        db.ref('historial_ganadores').once('value', function(snapshot) {
+            const historial = snapshot.val();
+            let yaHaGanadoAntes = false;
+
+            if (historial) {
+                const listaGanadores = Object.values(historial);
+                for (let i = 0; i < listaGanadores.length; i++) {
+                    if (listaGanadores[i].user.toLowerCase() === ganadorEncontrado.user.toLowerCase()) {
+                        yaHaGanadoAntes = true;
+                        break;
+                    }
+                }
+            }
+
+            let msg = "Ganador extraído: " + ganadorEncontrado.user + " (" + ganadorEncontrado.ticket + ").";
+            if (yaHaGanadoAntes) {
+                msg += "\n\n⚠️ ¡ATENCIÓN! Este usuario YA HA GANADO en un sorteo anterior.";
+            }
+            msg += "\n\n¿Publicar resultado?";
+
+            if (confirm(msg)) {
+                const ahora = new Date();
+                const fechaFormateada = ahora.toLocaleDateString('es-ES') + ' ' + ahora.toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'});
+
+                db.ref('historial_ganadores').push({
+                    user: ganadorEncontrado.user,
+                    ticket: ganadorEncontrado.ticket,
+                    fecha: fechaFormateada,
+                    timestamp: Date.now()
+                });
+
+                db.ref('sorteo_actual').set({
+                    ganador: ganadorEncontrado,
+                    arcadeGroup: arcadeGroup,
+                    log: log,
+                    timestamp: Date.now()
+                });
+            }
+        });
+    }
+</script>
+
 </body>
 </html>
