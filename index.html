@@ -125,11 +125,12 @@
             background: rgba(245, 158, 11, 0.2);
             border: 1px solid var(--gold);
             color: #fef08a;
-            padding: 12px;
+            padding: 14px;
             border-radius: 8px;
             margin: 15px 0;
             font-size: 1.05rem;
-            font-weight: 500;
+            font-weight: bold;
+            line-height: 1.4;
         }
 
         .arcade-box {
@@ -292,9 +293,9 @@
             document.getElementById('winnerName').innerText = data.ganador.user;
             document.getElementById('winnerTicket').innerText = "Boleto premiado: " + data.ganador.ticket;
 
-            // Mostrar u ocultar el aviso de camiseta si es ganador repetido
+            // Muestra u oculta el banner según si es repetido
             const noticeEl = document.getElementById('repeatNotice');
-            if (data.esRepetido) {
+            if (data.esRepetido === true) {
                 noticeEl.classList.remove('hidden');
             } else {
                 noticeEl.classList.add('hidden');
@@ -493,30 +494,32 @@
 
         const arcadeGroup = anteriores.concat([ganadorEncontrado], posteriores);
 
-        // Comprobar si el usuario ya ha ganado anteriormente en Firebase
+        // COMPROBAR EN HISTORIAL SI YA ERA GANADOR
         db.ref('historial_ganadores').once('value', function(snapshot) {
             const historial = snapshot.val();
             let esRepetido = false;
 
             if (historial) {
-                const victoriasPrevias = Object.values(historial).filter(function(item) {
-                    return item.user.toLowerCase() === ganadorEncontrado.user.toLowerCase();
-                });
-                if (victoriasPrevias.length > 0) {
-                    esRepetido = true;
+                const listaGanadores = Object.values(historial);
+                for (let i = 0; i < listaGanadores.length; i++) {
+                    if (listaGanadores[i].user.toLowerCase() === ganadorEncontrado.user.toLowerCase()) {
+                        esRepetido = true;
+                        break;
+                    }
                 }
             }
 
             let msg = "Ganador extraído: " + ganadorEncontrado.user + " (" + ganadorEncontrado.ticket + ").";
             if (esRepetido) {
-                msg += " ⚠️ Este usuario YA HA GANADO anteriormente.";
+                msg += "\n\n⚠️ ¡ATENCIÓN! Este usuario YA HA GANADO en un sorteo anterior.";
             }
-            msg += "\n¿Publicar resultado?";
+            msg += "\n\n¿Publicar resultado?";
 
             if (confirm(msg)) {
                 const ahora = new Date();
                 const fechaFormateada = ahora.toLocaleDateString('es-ES') + ' ' + ahora.toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'});
 
+                // 1. Guardar estado actual
                 db.ref('sorteo_actual').set({
                     ganador: ganadorEncontrado,
                     arcadeGroup: arcadeGroup,
@@ -525,6 +528,7 @@
                     timestamp: Date.now()
                 });
 
+                // 2. Guardar en el historial
                 db.ref('historial_ganadores').push({
                     user: ganadorEncontrado.user,
                     ticket: ganadorEncontrado.ticket,
