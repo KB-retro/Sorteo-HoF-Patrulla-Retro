@@ -57,7 +57,7 @@
         
         textarea {
             width: 100%;
-            height: 120px;
+            height: 140px;
             background: #0f172a;
             color: var(--text);
             border: 1px solid #334155;
@@ -150,11 +150,10 @@
 <body>
 
 <div class="container">
-    <!-- LOGO DE LA WEB -->
     <img src="logo.jpg" alt="Logo Patrulla Retro" class="header-logo">
     <h1>🏆 Sorteo HoF Patrulla Retro</h1>
 
-    <!-- PANTALLA DEL GANADOR (Lo que ven los espectadores) -->
+    <!-- PANTALLA GANADOR -->
     <div id="winnerCard" class="winner-box">
         <div class="winner-title">🎉 ¡Tenemos Ganador Oficial! 🎉</div>
         <div id="winnerName" class="winner-name">Cargando...</div>
@@ -168,7 +167,7 @@
         <p style="color: var(--muted);">El administrador realizará la tirada en breve. Esta página se actualizará automáticamente cuando haya un ganador.</p>
     </div>
 
-    <!-- SECCIÓN: GANADORES ANTERIORES -->
+    <!-- HISTORIAL -->
     <div id="historyCard" class="card">
         <h3>📜 Historial de Ganadores Anteriores</h3>
         <ul id="historyList" class="history-list">
@@ -176,40 +175,37 @@
         </ul>
     </div>
 
-    <!-- BOTÓN PARA ABRIR MODO ADMIN -->
     <div style="text-align: center;">
         <button onclick="toggleAdminPanel()" style="width: auto; background: transparent; color: var(--muted); font-size: 0.8rem; text-decoration: underline;">
             ¿Eres el Administrador? Haz clic aquí
         </button>
     </div>
 
-    <!-- PANEL DE ADMINISTRACIÓN (Protegido por contraseña) -->
+    <!-- PANEL ADMIN -->
     <div id="adminPanel" class="card admin-panel hidden">
         <h2>🛠️ Panel de Control (Administrador)</h2>
         
-        <label><b>1. Pegar Participantes (Formatos 1-@user o PUNTO EXTRA-@user):</b></label>
-        <textarea id="listInput" placeholder="1-@usuario&#10;2-@usuario&#10;PUNTO EXTRA 1-@usuario"></textarea>
+        <label><b>1. Pegar Participantes:</b></label>
+        <textarea id="listInput" placeholder="138-@Themenda987&#10;PUNTO EXTRA&#10;146-@Zapador_1986"></textarea>
 
         <br><br>
-        <label><b>2. Excluidos / Lista Negra (1 por línea, vacía por defecto):</b></label>
+        <label><b>2. Excluidos / Lista Negra (1 por línea):</b></label>
         <textarea id="blacklistInput" placeholder="@usuario_excluido1&#10;@usuario_excluido2"></textarea>
 
-        <button class="clear-btn" onclick="borrarTodo()">🧹 BORRAR TODO (Cajas de texto, sorteo actual e historial de pruebas)</button>
+        <button class="clear-btn" onclick="borrarTodo()">🧹 BORRAR TODO (Cajas de texto, sorteo actual e historial)</button>
         <button class="admin-btn" onclick="realizarSorteoOficial()">🎲 REALIZAR Y PUBLICAR SORTEO</button>
     </div>
 </div>
 
 <script>
-    // Configuración de Firebase (Realtime Database vinculada)
     const firebaseConfig = {
         databaseURL: "https://sorteo-hof-default-rtdb.europe-west1.firebasedatabase.app"
     };
     
-    // Inicializar Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // 1. Escuchar cambios en tiempo real del GANADOR ACTUAL
+    // Escuchar Sorteo Actual
     db.ref('sorteo_actual').on('value', (snapshot) => {
         const data = snapshot.val();
         if (data && data.ganador) {
@@ -227,7 +223,7 @@
         }
     });
 
-    // 2. Escuchar cambios en tiempo real del HISTORIAL DE GANADORES
+    // Escuchar Historial
     db.ref('historial_ganadores').on('value', (snapshot) => {
         const historyList = document.getElementById('historyList');
         historyList.innerHTML = '';
@@ -251,7 +247,6 @@
         }
     });
 
-    // Mostrar/Ocultar Panel Admin
     function toggleAdminPanel() {
         const pass = prompt("Introduce la clave de administrador:");
         if (pass === "patrulla123") {
@@ -261,63 +256,77 @@
         }
     }
 
-    // Función para Limpiar/Borrar Todo
     function borrarTodo() {
-        const confirmacion = confirm("⚠️ ¿Estás seguro de que quieres BORRAR TODO?\n\n- Se limpiarán los cuadros de texto.\n- Se cancelará el ganador del sorteo actual.\n- Se ELIMINARÁ el historial de ganadores de prueba guardados.");
-        
-        if (confirmacion) {
+        if (confirm("⚠️ ¿Estás seguro de que quieres BORRAR TODO?")) {
             document.getElementById('listInput').value = '';
             document.getElementById('blacklistInput').value = '';
-            
             db.ref('sorteo_actual').remove();
             db.ref('historial_ganadores').remove();
-
-            alert("Todo ha sido borrado correctamente.");
+            alert("Todo borrado correctamente.");
         }
     }
 
-    // Lógica del Sorteo
+    // Lógica depurada del Sorteo
     function realizarSorteoOficial() {
-        const rawList = document.getElementById('listInput').value.trim().split('\n').filter(l => l.trim() !== '');
-        const rawBlacklist = document.getElementById('blacklistInput').value.trim().split('\n').filter(l => l.trim() !== '');
+        const rawLines = document.getElementById('listInput').value.trim().split('\n');
+        const rawBlacklist = document.getElementById('blacklistInput').value.trim().split('\n');
 
-        if (rawList.length === 0) {
-            alert("Por favor, pega la lista de participantes antes de sortear.");
+        // Filtrar y limpiar la lista de participantes
+        let participantesValidos = [];
+        
+        rawLines.forEach(line => {
+            let lineaLimpia = line.trim();
+            if (!lineaLimpia) return;
+
+            // Extraer el usuario @usuario
+            const matchUser = lineaLimpia.match(/@[\w_]+/);
+            
+            // Si la línea contiene un usuario válido
+            if (matchUser) {
+                // Limpiar la etiqueta PUNTO EXTRA si viene pegada para dejar solo el boleto y el usuario
+                let boletoLimpio = lineaLimpia.replace(/PUNTO\s+EXTRA\s*/gi, '').trim();
+                
+                participantesValidos.push({
+                    ticket: boletoLimpio,
+                    user: matchUser[0] // ej: @Themenda987
+                });
+            }
+        });
+
+        if (participantesValidos.length === 0) {
+            alert("No se han encontrado participantes válidos con el formato 'número-@usuario'.");
             return;
         }
 
-        const blacklist = rawBlacklist.map(u => u.trim().toLowerCase());
+        const blacklist = rawBlacklist
+            .map(u => u.trim().toLowerCase())
+            .filter(u => u.length > 0);
+
         let log = [];
         let ganadorEncontrado = null;
+        let listaCopia = [...participantesValidos];
 
-        let listaCopia = [...rawList];
-        
         while (listaCopia.length > 0) {
             const indexAleatorio = Math.floor(Math.random() * listaCopia.length);
             const entrada = listaCopia[indexAleatorio];
-            
-            const matchUser = entrada.match(/@[\w_]+/);
-            const usuario = matchUser ? matchUser[0].toLowerCase() : entrada.toLowerCase();
+            const usuarioMinusculas = entrada.user.toLowerCase();
 
-            if (blacklist.includes(usuario)) {
-                log.push(`❌ Tirada descartada: ${entrada} (Usuario en Lista Negra)`);
+            if (blacklist.includes(usuarioMinusculas)) {
+                log.push(`❌ Descartado: ${entrada.ticket} (${entrada.user} está en la Lista Negra)`);
                 listaCopia.splice(indexAleatorio, 1);
             } else {
-                ganadorEncontrado = {
-                    ticket: entrada,
-                    user: matchUser ? matchUser[0] : entrada
-                };
-                log.push(`✅ ¡TIRADA GANADORA!: ${entrada}`);
+                ganadorEncontrado = entrada;
+                log.push(`✅ ¡TIRADA GANADORA!: ${entrada.ticket}`);
                 break;
             }
         }
 
         if (!ganadorEncontrado) {
-            alert("No se pudo encontrar un ganador (todos los participantes estaban excluidos).");
+            alert("No se pudo encontrar un ganador (todos los participantes pertenecían a la lista negra).");
             return;
         }
 
-        if (confirm(`El ganador es ${ganadorEncontrado.user} (${ganadorEncontrado.ticket}). ¿Publicar resultado para toda la comunidad?`)) {
+        if (confirm(`Ganador extraído: ${ganadorEncontrado.user} (${ganadorEncontrado.ticket}). ¿Publicar resultado?`)) {
             const ahora = new Date();
             const fechaFormateada = ahora.toLocaleDateString('es-ES') + ' ' + ahora.toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'});
 
