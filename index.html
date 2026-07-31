@@ -123,7 +123,7 @@
 
         .repeat-winner-banner {
             background: rgba(245, 158, 11, 0.2);
-            border: 1px solid var(--gold);
+            border: 2px solid var(--gold);
             color: #fef08a;
             padding: 14px;
             border-radius: 8px;
@@ -283,6 +283,33 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
+    let actualGanadorUser = "";
+
+    // Verificar si el ganador actual es repetido basándonos en el historial
+    function verificarRepetidoVisual() {
+        if (!actualGanadorUser) return;
+        
+        db.ref('historial_ganadores').once('value', function(snapshot) {
+            const data = snapshot.val();
+            let totalVictorias = 0;
+            if (data) {
+                Object.values(data).forEach(function(item) {
+                    if (item.user.toLowerCase() === actualGanadorUser.toLowerCase()) {
+                        totalVictorias++;
+                    }
+                });
+            }
+
+            const noticeEl = document.getElementById('repeatNotice');
+            // Si tiene más de 1 victoria acumulada en el historial, es repetido
+            if (totalVictorias > 1) {
+                noticeEl.classList.remove('hidden');
+            } else {
+                noticeEl.classList.add('hidden');
+            }
+        });
+    }
+
     // Escuchar Sorteo Actual
     db.ref('sorteo_actual').on('value', function(snapshot) {
         const data = snapshot.val();
@@ -290,16 +317,11 @@
             document.getElementById('waitingCard').classList.add('hidden');
             document.getElementById('winnerCard').style.display = 'block';
             
+            actualGanadorUser = data.ganador.user;
             document.getElementById('winnerName').innerText = data.ganador.user;
             document.getElementById('winnerTicket').innerText = "Boleto premiado: " + data.ganador.ticket;
 
-            // Muestra u oculta el banner según si es repetido
-            const noticeEl = document.getElementById('repeatNotice');
-            if (data.esRepetido === true) {
-                noticeEl.classList.remove('hidden');
-            } else {
-                noticeEl.classList.add('hidden');
-            }
+            verificarRepetidoVisual();
             
             const logBox = document.getElementById('publicLog');
             logBox.innerHTML = "<b>Historial de tiradas:</b><br>" + data.log.join('<br>');
@@ -355,6 +377,9 @@
                 liCount.innerHTML = '<div><strong>' + usuario + '</strong></div><span class="item-badge">' + total + ' ' + textoVez + '</span>';
                 winnersCountList.appendChild(liCount);
             });
+
+            // Recomprobar el banner de repetido al actualizar el historial
+            verificarRepetidoVisual();
 
         } else {
             historyList.innerHTML = '<li style="text-align: center; color: var(--muted);">No hay sorteos anteriores registrados.</li>';
@@ -494,23 +519,23 @@
 
         const arcadeGroup = anteriores.concat([ganadorEncontrado], posteriores);
 
-        // COMPROBAR EN HISTORIAL SI YA ERA GANADOR
+        // Comprobar en el historial local previo si ya ha ganado antes
         db.ref('historial_ganadores').once('value', function(snapshot) {
             const historial = snapshot.val();
-            let esRepetido = false;
+            let yaHaGanadoAntes = false;
 
             if (historial) {
                 const listaGanadores = Object.values(historial);
                 for (let i = 0; i < listaGanadores.length; i++) {
                     if (listaGanadores[i].user.toLowerCase() === ganadorEncontrado.user.toLowerCase()) {
-                        esRepetido = true;
+                        yaHaGanadoAntes = true;
                         break;
                     }
                 }
             }
 
             let msg = "Ganador extraído: " + ganadorEncontrado.user + " (" + ganadorEncontrado.ticket + ").";
-            if (esRepetido) {
+            if (yaHaGanadoAntes) {
                 msg += "\n\n⚠️ ¡ATENCIÓN! Este usuario YA HA GANADO en un sorteo anterior.";
             }
             msg += "\n\n¿Publicar resultado?";
@@ -519,20 +544,19 @@
                 const ahora = new Date();
                 const fechaFormateada = ahora.toLocaleDateString('es-ES') + ' ' + ahora.toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'});
 
-                // 1. Guardar estado actual
-                db.ref('sorteo_actual').set({
-                    ganador: ganadorEncontrado,
-                    arcadeGroup: arcadeGroup,
-                    esRepetido: esRepetido,
-                    log: log,
-                    timestamp: Date.now()
-                });
-
-                // 2. Guardar en el historial
+                // 1. Guardar primero en el historial
                 db.ref('historial_ganadores').push({
                     user: ganadorEncontrado.user,
                     ticket: ganadorEncontrado.ticket,
                     fecha: fechaFormateada,
+                    timestamp: Date.now()
+                });
+
+                // 2. Guardar el estado del sorteo actual
+                db.ref('sorteo_actual').set({
+                    ganador: ganadorEncontrado,
+                    arcadeGroup: arcadeGroup,
+                    log: log,
                     timestamp: Date.now()
                 });
             }
