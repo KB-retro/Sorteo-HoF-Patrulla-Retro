@@ -1,329 +1,4 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sorteo HoF Patrulla Retro</title>
-    <!-- Firebase JS SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-    <style>
-        :root {
-            --bg: #0f172a;
-            --card: rgba(30, 41, 59, 0.92); /* Fondo semitransparente para ver la imagen detrás */
-            --accent: #6366f1;
-            --accent-hover: #4f46e5;
-            --text: #f8fafc;
-            --muted: #94a3b8;
-            --danger: #ef4444;
-            --danger-hover: #dc2626;
-            --warning: #f59e0b;
-            --warning-hover: #d97706;
-            --success: #22c55e;
-            --success-hover: #16a34a;
-            --gold: #f59e0b;
-        }
-
-        body {
-            font-family: system-ui, -apple-system, sans-serif;
-            background-color: var(--bg);
-            /* --- CONFIGURACIÓN DE IMAGEN DE FONDO --- */
-            background-image: url('fondo.jpg'); /* Cambia 'fondo.jpg' por el nombre de tu archivo */
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed;
-            background-repeat: no-repeat;
-            /* ----------------------------------------- */
-            color: var(--text);
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-            min-height: 100vh;
-        }
-
-        .container {
-            max-width: 800px;
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .header-logo {
-            display: block;
-            margin: 0 auto 10px auto;
-            max-width: 180px;
-            height: auto;
-            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5));
-        }
-
-        .card {
-            background-color: var(--card);
-            backdrop-filter: blur(8px); /* Efecto cristal si hay fondo */
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.4);
-            border: 1px solid rgba(255,255,255,0.05);
-        }
-
-        h1, h2, h3 { margin-top: 0; text-align: center; }
-        
-        textarea {
-            width: 100%;
-            height: 140px;
-            background: rgba(15, 23, 42, 0.8);
-            color: var(--text);
-            border: 1px solid #334155;
-            border-radius: 6px;
-            padding: 10px;
-            box-sizing: border-box;
-            font-family: monospace;
-            resize: vertical;
-        }
-
-        button {
-            background-color: var(--accent);
-            color: white;
-            border: none;
-            padding: 12px 20px;
-            border-radius: 6px;
-            font-weight: bold;
-            cursor: pointer;
-            width: 100%;
-            font-size: 16px;
-            transition: background 0.2s, transform 0.1s;
-        }
-
-        button:active { transform: scale(0.98); }
-
-        button.admin-btn { 
-            background-color: var(--success); 
-            font-size: 18px; 
-            margin-top: 15px; 
-            padding: 14px;
-        }
-        button.admin-btn:hover { background-color: var(--success-hover); }
-
-        button.warning-btn { 
-            background-color: var(--warning); 
-            margin-top: 10px; 
-        }
-        button.warning-btn:hover { background-color: var(--warning-hover); }
-
-        button.clear-btn { 
-            background-color: var(--danger); 
-            margin-top: 10px; 
-        }
-        button.clear-btn:hover { background-color: var(--danger-hover); }
-
-        .winner-box {
-            display: none;
-            text-align: center;
-            background: linear-gradient(135deg, rgba(30, 27, 75, 0.95) 0%, rgba(49, 16, 66, 0.95) 100%);
-            border: 2px solid var(--gold);
-            padding: 30px;
-            border-radius: 12px;
-            animation: fadeIn 0.5s ease-in;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-        }
-
-        .winner-title { color: var(--gold); font-size: 1.5rem; text-transform: uppercase; letter-spacing: 2px; }
-        .winner-name { font-size: 2.5rem; font-weight: bold; margin: 15px 0; color: #fff; }
-        .winner-ticket { font-size: 1.2rem; color: var(--muted); }
-
-        .log-box {
-            background: rgba(9, 13, 22, 0.85);
-            border: 1px solid #334155;
-            border-radius: 6px;
-            padding: 10px;
-            max-height: 150px;
-            overflow-y: auto;
-            font-family: monospace;
-            font-size: 0.9rem;
-            color: var(--muted);
-            margin-top: 15px;
-            text-align: left;
-        }
-
-        .history-list {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-
-        .history-item {
-            background: rgba(15, 23, 42, 0.7);
-            border: 1px solid #334155;
-            padding: 10px 15px;
-            border-radius: 6px;
-            margin-bottom: 8px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .history-date { font-size: 0.8rem; color: var(--muted); }
-
-        .admin-panel {
-            border-top: 2px dashed #334155;
-            margin-top: 20px;
-            padding-top: 20px;
-        }
-
-        .hidden { display: none !important; }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-    </style>
-</head>
-<body>
-
-<div class="container">
-    <img src="logo.jpg" alt="Logo Patrulla Retro" class="header-logo">
-    <h1>🏆 Sorteo HoF Patrulla Retro</h1>
-
-    <!-- PANTALLA GANADOR -->
-    <div id="winnerCard" class="winner-box">
-        <div class="winner-title">🎉 ¡Tenemos Ganador Oficial! 🎉</div>
-        <div id="winnerName" class="winner-name">Cargando...</div>
-        <div id="winnerTicket" class="winner-ticket"></div>
-        <div class="log-box" id="publicLog"></div>
-    </div>
-
-    <!-- MENSAJE ESPERA -->
-    <div id="waitingCard" class="card" style="text-align: center;">
-        <h2>⏳ El sorteo aún no se ha realizado</h2>
-        <p style="color: var(--muted);">El administrador realizará la tirada en breve. Esta página se actualizará automáticamente cuando haya un ganador.</p>
-    </div>
-
-    <!-- HISTORIAL -->
-    <div id="historyCard" class="card">
-        <h3>📜 Historial de Ganadores Anteriores</h3>
-        <ul id="historyList" class="history-list">
-            <li style="text-align: center; color: var(--muted);">No hay sorteos anteriores registrados.</li>
-        </ul>
-    </div>
-
-    <div style="text-align: center;">
-        <button onclick="toggleAdminPanel()" style="width: auto; background: transparent; color: var(--muted); font-size: 0.8rem; text-decoration: underline;">
-            ¿Eres el Administrador? Haz clic aquí
-        </button>
-    </div>
-
-    <!-- PANEL ADMIN -->
-    <div id="adminPanel" class="card admin-panel hidden">
-        <h2>🛠️ Panel de Control (Administrador)</h2>
-        
-        <label><b>1. Pegar Participantes:</b></label>
-        <textarea id="listInput" placeholder="138-@Themenda987&#10;PUNTO EXTRA&#10;146-@Zapador_1986"></textarea>
-
-        <br><br>
-        <label><b>2. Excluidos / Lista Negra (1 por línea):</b></label>
-        <textarea id="blacklistInput" placeholder="@usuario_excluido1&#10;@usuario_excluido2"></textarea>
-
-        <!-- OPCIONES ORDENADAS: PRIMERO EL REALIZAR Y DEBAJO LOS BORRADOS -->
-        <button class="admin-btn" onclick="realizarSorteoOficial()">🎲 REALIZAR Y PUBLICAR SORTEO</button>
-        
-        <button class="warning-btn" onclick="borrarUltimoSorteo()">↩️ BORRAR ÚLTIMO SORTEO (Deshacer tirada actual e historial)</button>
-        
-        <button class="clear-btn" onclick="borrarTodo()">🧹 BORRAR TODO (Cajas de texto, sorteo e historial completo)</button>
-    </div>
-</div>
-
-<script>
-    const firebaseConfig = {
-        databaseURL: "https://sorteo-hof-default-rtdb.europe-west1.firebasedatabase.app"
-    };
-    
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-
-    // Escuchar Sorteo Actual
-    db.ref('sorteo_actual').on('value', (snapshot) => {
-        const data = snapshot.val();
-        if (data && data.ganador) {
-            document.getElementById('waitingCard').classList.add('hidden');
-            document.getElementById('winnerCard').style.display = 'block';
-            
-            document.getElementById('winnerName').innerText = data.ganador.user;
-            document.getElementById('winnerTicket').innerText = "Boleto premiado: " + data.ganador.ticket;
-            
-            const logBox = document.getElementById('publicLog');
-            logBox.innerHTML = "<b>Historial de tiradas:</b><br>" + data.log.join('<br>');
-        } else {
-            document.getElementById('winnerCard').style.display = 'none';
-            document.getElementById('waitingCard').classList.remove('hidden');
-        }
-    });
-
-    // Escuchar Historial
-    db.ref('historial_ganadores').on('value', (snapshot) => {
-        const historyList = document.getElementById('historyList');
-        historyList.innerHTML = '';
-        const data = snapshot.val();
-
-        if (data) {
-            const items = Object.values(data).reverse();
-            items.forEach(item => {
-                const li = document.createElement('li');
-                li.className = 'history-item';
-                li.innerHTML = `
-                    <div>
-                        <strong>${item.user}</strong> <span style="color: var(--muted);">(${item.ticket})</span>
-                    </div>
-                    <div class="history-date">${item.fecha}</div>
-                `;
-                historyList.appendChild(li);
-            });
-        } else {
-            historyList.innerHTML = '<li style="text-align: center; color: var(--muted);">No hay sorteos anteriores registrados.</li>';
-        }
-    });
-
-    function toggleAdminPanel() {
-        const pass = prompt("Introduce la clave de administrador:");
-        if (pass === "patrulla123") {
-            document.getElementById('adminPanel').classList.remove('hidden');
-        } else if (pass !== null) {
-            alert("Contraseña incorrecta.");
-        }
-    }
-
-    // Función para Borrar Solo el Último Sorteo
-    function borrarUltimoSorteo() {
-        if (confirm("⚠️ ¿Deseas borrar la tirada actual y eliminar el último registro guardado en el historial?")) {
-            // 1. Quitar el ganador actual de la pantalla
-            db.ref('sorteo_actual').remove();
-
-            // 2. Obtener la última entrada del historial y borrarla
-            db.ref('historial_ganadores').limitToLast(1).once('value', (snapshot) => {
-                const data = snapshot.val();
-                if (data) {
-                    const keyBorrar = Object.keys(data)[0];
-                    db.ref('historial_ganadores/' + keyBorrar).remove();
-                    alert("Último sorteo eliminado del historial.");
-                } else {
-                    alert("Sorteo actual borrado (no había registros en el historial).");
-                }
-            });
-        }
-    }
-
-    // Función para Borrar Todo
-    function borrarTodo() {
-        if (confirm("⚠️ ¿Estás seguro de que quieres BORRAR TODO (Cajas de texto, sorteo e historial completo)?")) {
-            document.getElementById('listInput').value = '';
-            document.getElementById('blacklistInput').value = '';
-            db.ref('sorteo_actual').remove();
-            db.ref('historial_ganadores').remove();
-            alert("Todo borrado correctamente.");
-        }
-    }
-
-    // Lógica del Sorteo
+// Realizar Sorteo Oficial con Lógica Circular (Anillo)
     function realizarSorteoOficial() {
         const rawLines = document.getElementById('listInput').value.trim().split('\n');
         const rawBlacklist = document.getElementById('blacklistInput').value.trim().split('\n');
@@ -346,7 +21,9 @@
             }
         });
 
-        if (participantesValidos.length === 0) {
+        const total = participantesValidos.length;
+
+        if (total === 0) {
             alert("No se han encontrado participantes válidos con el formato 'número-@usuario'.");
             return;
         }
@@ -357,6 +34,9 @@
 
         let log = [];
         let ganadorEncontrado = null;
+        let indexGanadorEnListaOriginal = -1;
+
+        // Selección aleatoria
         let listaCopia = [...participantesValidos];
 
         while (listaCopia.length > 0) {
@@ -369,15 +49,70 @@
                 listaCopia.splice(indexAleatorio, 1);
             } else {
                 ganadorEncontrado = entrada;
+                // Posición en la lista original
+                indexGanadorEnListaOriginal = participantesValidos.findIndex(p => p.ticket === entrada.ticket);
                 log.push(`✅ ¡TIRADA GANADORA!: ${entrada.ticket}`);
                 break;
             }
         }
 
         if (!ganadorEncontrado) {
-            alert("No se pudo encontrar un ganador (todos los participantes pertenecían a la lista negra).");
+            alert("No se pudo encontrar un ganador.");
             return;
         }
+
+        // --- LÓGICA CIRCULAR DE 5 USUARIOS ÚNICOS PARA EL ARCADE ---
+        let anteriores = [];
+        let posteriores = [];
+        let usuariosUsados = new Set();
+        usuariosUsados.add(ganadorEncontrado.user.toLowerCase());
+
+        // 1. Buscar 2 usuarios ÚNICOS anteriores (hacia atrás de forma circular)
+        let curr = indexGanadorEnListaOriginal - 1;
+        let intentosAnteriores = 0;
+
+        while (anteriores.length < 2 && intentosAnteriores < total) {
+            // Si baja de 0, salta al final de la lista
+            if (curr < 0) {
+                curr = total - 1;
+            }
+
+            let cand = participantesValidos[curr];
+            let uLower = cand.user.toLowerCase();
+
+            if (!usuariosUsados.has(uLower)) {
+                anteriores.unshift(cand); // Inserta al principio para mantener el orden visual
+                usuariosUsados.add(uLower);
+            }
+
+            curr--;
+            intentosAnteriores++;
+        }
+
+        // 2. Buscar 2 usuarios ÚNICOS posteriores (hacia adelante de forma circular)
+        curr = indexGanadorEnListaOriginal + 1;
+        let intentosPosteriores = 0;
+
+        while (posteriores.length < 2 && intentosPosteriores < total) {
+            // Si supera el final, salta al principio de la lista
+            if (curr >= total) {
+                curr = 0;
+            }
+
+            let cand = participantesValidos[curr];
+            let uLower = cand.user.toLowerCase();
+
+            if (!usuariosUsados.has(uLower)) {
+                posteriores.push(cand);
+                usuariosUsados.add(uLower);
+            }
+
+            curr++;
+            intentosPosteriores++;
+        }
+
+        // Grupo final ordenado: [Anterior 2, Anterior 1, Ganador, Posterior 1, Posterior 2]
+        const arcadeGroup = [...anteriores, ganadorEncontrado, ...posteriores];
 
         if (confirm(`Ganador extraído: ${ganadorEncontrado.user} (${ganadorEncontrado.ticket}). ¿Publicar resultado?`)) {
             const ahora = new Date();
@@ -385,6 +120,7 @@
 
             db.ref('sorteo_actual').set({
                 ganador: ganadorEncontrado,
+                arcadeGroup: arcadeGroup,
                 log: log,
                 timestamp: Date.now()
             });
@@ -397,7 +133,3 @@
             });
         }
     }
-</script>
-
-</body>
-</html>
