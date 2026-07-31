@@ -1,306 +1,444 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Patrulla Retro - Sorteo Mensual</title>
-    <!-- Tailwind CSS para utilidades rápidas de diseño -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sorteo HoF Patrulla Retro</title>
+  <style>
+    :root {
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --accent-color: #f59e0b;
+      --text-main: #f8fafc;
+      --text-sub: #94a3b8;
+      --border-color: #334155;
+      --winner-bg: #422006;
+      --winner-border: #78350f;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 600px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
+    .header img {
+      max-width: 120px;
+      margin-bottom: 10px;
+    }
+
+    .header h1 {
+      margin: 0;
+      font-size: 1.5rem;
+      color: var(--text-main);
+    }
+
+    .card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+    }
+
+    .card-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-top: 0;
+      margin-bottom: 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .winner-card {
+      background-color: var(--winner-bg);
+      border: 2px solid var(--winner-border);
+      text-align: center;
+    }
+
+    .winner-title {
+      color: var(--accent-color);
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 5px;
+    }
+
+    .winner-name {
+      font-size: 1.8rem;
+      font-weight: bold;
+      color: #fff;
+      margin: 10px 0;
+    }
+
+    .winner-ticket {
+      font-size: 0.85rem;
+      color: var(--text-sub);
+    }
+
+    .neighbors-list {
+      margin-top: 15px;
+      padding-top: 15px;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .neighbor-item {
+      background: rgba(0,0,0,0.2);
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .badge {
+      background: var(--border-color);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+    }
+
+    .badge-main {
+      background: var(--accent-color);
+      color: #000;
+      font-weight: bold;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    li {
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    li:last-child {
+      border-bottom: none;
+    }
+
+    .btn-more {
+      width: 100%;
+      background: none;
+      border: 1px dashed var(--border-color);
+      color: var(--text-sub);
+      padding: 8px;
+      margin-top: 10px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .btn-more:hover {
+      background: rgba(255,255,255,0.05);
+      color: var(--text-main);
+    }
+
+    .admin-section {
+      margin-top: 20px;
+    }
+
+    textarea {
+      width: 100%;
+      height: 100px;
+      background: #0f172a;
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      border-radius: 6px;
+      padding: 8px;
+      box-sizing: border-box;
+      margin-bottom: 10px;
+      font-family: inherit;
+    }
+
+    button.btn-primary {
+      width: 100%;
+      background: #ef4444;
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button.btn-primary:hover {
+      background: #dc2626;
+    }
+
+    .hidden { display: none; }
     
-    <style>
-        /* Estilos generales y fondo adaptable */
-        body {
-            background-color: #0f172a;
-            background-image: url('fondo-retro.jpg');
-            background-repeat: no-repeat;
-            background-position: center top;
-            background-size: cover;
-            background-attachment: fixed;
-            color: #f8fafc;
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            min-height: 100vh;
-            margin: 0;
-            padding: 20px 12px;
-        }
-
-        /* Contenedor central limitado a 800px para encajar en el centro limpio */
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            width: 100%;
-        }
-
-        /* Logo con soporte transparente nativo */
-        .header-logo {
-            max-width: 180px;
-            height: auto;
-            display: block;
-            margin: 0 auto 15px auto;
-            background: transparent;
-            border: none;
-        }
-
-        /* Estilo para las tarjetas con leve opacidad para integrar el fondo */
-        .card {
-            background-color: rgba(30, 41, 59, 0.92);
-            backdrop-filter: blur(4px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
-        }
-
-        .btn-primary {
-            background-color: #ef4444;
-            color: white;
-            font-weight: bold;
-            padding: 12px 24px;
-            border-radius: 8px;
-            transition: all 0.2s ease;
-            width: 100%;
-            display: block;
-            text-align: center;
-        }
-
-        .btn-primary:hover {
-            background-color: #dc2626;
-            transform: translateY(-1px);
-        }
-
-        .badge {
-            background-color: #334155;
-            color: #94a3b8;
-            font-size: 0.8rem;
-            padding: 2px 8px;
-            border-radius: 4px;
-        }
-    </style>
+    .alert-repeat {
+      background: #451a03;
+      border: 1px solid #b45309;
+      color: #fde68a;
+      padding: 10px;
+      border-radius: 6px;
+      margin-top: 10px;
+      font-size: 0.85rem;
+      line-height: 1.4;
+    }
+  </style>
 </head>
 <body>
 
-    <div class="container">
-        <!-- Logo PNG con transparencia -->
-        <header class="text-center mb-6">
-            <img src="logo.png" alt="Logo Patrulla Retro" class="header-logo">
-            <h1 class="text-2xl font-bold tracking-wide text-red-500">SORTEO PATRULLA RETRO</h1>
-        </header>
-
-        <!-- Bloque Principal: Último Ganador -->
-        <div class="card text-center" id="winner-card">
-            <h2 class="text-xl font-bold mb-2 text-slate-300">Último Ganador Oficial</h2>
-            <div id="latest-winner-display" class="py-4">
-                <p class="text-slate-400">Cargando datos del último sorteo...</p>
-            </div>
-        </div>
-
-        <!-- Bloque: Top Ganadores (Optimizado a 3 entradas) -->
-        <div class="card">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-bold text-slate-200">🏆 Más Victorias</h3>
-                <span class="badge" id="top-count-badge">Top 3</span>
-            </div>
-            <ul id="top-winners-list" class="space-y-2">
-                <!-- Se rellena dinámicamente -->
-            </ul>
-            <button id="toggle-top-btn" onclick="toggleTopWinners()" class="mt-3 text-xs text-slate-400 hover:text-white underline w-full text-center hidden">
-                Mostrar todos
-            </button>
-        </div>
-
-        <!-- Bloque: Historial de Sorteos (Optimizado a 3 entradas) -->
-        <div class="card">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-bold text-slate-200">📜 Historial Reciente</h3>
-                <span class="badge">Últimos meses</span>
-            </div>
-            <ul id="history-list" class="space-y-2">
-                <!-- Se rellena dinámicamente -->
-            </ul>
-            <button id="toggle-history-btn" onclick="toggleHistory()" class="mt-3 text-xs text-slate-400 hover:text-white underline w-full text-center hidden">
-                Ver historial completo
-            </button>
-        </div>
-
-        <!-- Panel de Administración (Desplegable / Oculto por defecto si prefieres) -->
-        <div class="card border-slate-700">
-            <h3 class="text-lg font-bold text-red-400 mb-3">🛠️ Panel de Administración</h3>
-            <textarea id="participants-input" rows="5" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-slate-200 focus:outline-none focus:border-red-500 mb-3" placeholder="Pega aquí los nombres de los participantes (uno por línea)..."></textarea>
-            
-            <button onclick="realizarSorteo()" class="btn-primary">
-                🎲 REALIZAR Y PUBLICAR SORTEO
-            </button>
-        </div>
+  <div class="container">
+    <div class="header">
+      <img src="https://raw.githubusercontent.com/kb-retro/Sorteo-HoF-Patrulla-Retro/main/logo.png" alt="Logo" onerror="this.style.display='none'">
+      <h1>🏆 Sorteo HoF Patrulla Retro</h1>
     </div>
 
-    <!-- Script de Firebase e Interacción -->
-    <script>
-        // Configuración de tu Firebase Realtime Database
-        const firebaseConfig = {
-            databaseURL: "https://TU-DATABASE-NAME.firebaseio.com" // Reemplaza por tu URL de Firebase
-        };
-        
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
+    <!-- ÚLTIMO GANADOR -->
+    <div class="card winner-card">
+      <div class="winner-title">🎉 ¡Tenemos Ganador Oficial! 🎉</div>
+      <div id="main-winner-name" class="winner-name">Cargando...</div>
+      <div id="main-winner-ticket" class="winner-ticket"></div>
+      
+      <div id="repeat-msg" class="alert-repeat hidden">
+        🕹️ ¡Campeón! Como ya cuentas con la camiseta en tu colección, puedes elegir a uno de tus compañeros de la lista de este mes para traspasarle el premio y que reciba la camiseta.
+      </div>
 
-        // Variables de estado local para toggles
-        let allTopWinners = [];
-        let showAllTop = false;
-        let allHistory = [];
-        let showAllHistory = false;
+      <div class="neighbors-list" id="neighbors-container">
+        <!-- Vecinos -->
+      </div>
+    </div>
 
-        // Cargar datos al iniciar
-        window.addEventListener('DOMContentLoaded', () => {
-            listenToData();
-        });
+    <!-- MÁS VICTORIAS -->
+    <div class="card">
+      <div class="card-title">
+        <span>🏆 Más Victorias</span>
+      </div>
+      <ul id="top-winners-list"></ul>
+      <button id="btn-more-top" class="btn-more hidden" onclick="toggleTopWinners()">Mostrar más</button>
+    </div>
 
-        function listenToData() {
-            db.ref('sorteos').on('value', (snapshot) => {
-                const data = snapshot.val();
-                if (!data) return;
+    <!-- HISTORIAL RECIENTE -->
+    <div class="card">
+      <div class="card-title">
+        <span>📜 Historial Reciente</span>
+      </div>
+      <ul id="history-list"></ul>
+      <button id="btn-more-history" class="btn-more hidden" onclick="toggleHistory()">Mostrar más</button>
+    </div>
 
-                const list = Object.values(data).reverse(); // Ordenar del más reciente al más antiguo
-                allHistory = list;
-                
-                renderLatestWinner(list[0]);
-                renderHistory();
-                renderTopWinners(list);
-            });
+    <!-- PANEL ADMIN (OCULTO POR DEFECTO) -->
+    <div class="admin-section">
+      <button id="btn-show-admin" class="btn-more" onclick="unlockAdmin()">⚙️ Panel de Administración</button>
+      <div id="admin-panel" class="card hidden" style="margin-top: 10px;">
+        <div class="card-title">⚙️ Panel de Control</div>
+        <textarea id="participants-input" placeholder="Pega aquí los nombres de los participantes (uno por línea)..."></textarea>
+        <button class="btn-primary" onclick="runRaffle()">🎲 REALIZAR Y PUBLICAR SORTEO</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FIREBASE SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      databaseURL: "https://patrullaretro-default-rtdb.europe-west1.firebasedatabase.app/"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    let fullHistory = [];
+    let fullTopWinners = [];
+    let showAllTop = false;
+    let showAllHistory = false;
+
+    // Cargar datos al iniciar
+    db.ref('sorteos').on('value', (snapshot) => {
+      const data = snapshot.val();
+      if (!data) return;
+
+      const keys = Object.keys(data);
+      fullHistory = keys.map(k => data[k]).reverse(); // Más recientes primero
+
+      if (fullHistory.length > 0) {
+        renderLatestWinner(fullHistory[0]);
+        calculateTopWinners();
+        renderHistory();
+      }
+    });
+
+    function renderLatestWinner(latest) {
+      document.getElementById('main-winner-name').innerText = `@${latest.winner}`;
+      document.getElementById('main-winner-ticket').innerText = `Boleto premiado: ${latest.winnerTicket}`;
+
+      // Comprobar si es repetido
+      const previousWins = fullHistory.slice(1).filter(h => h.winner === latest.winner).length;
+      if (previousWins > 0) {
+        document.getElementById('repeat-msg').classList.remove('hidden');
+      } else {
+        document.getElementById('repeat-msg').classList.add('hidden');
+      }
+
+      // Renderizar el grupo de 5
+      const container = document.getElementById('neighbors-container');
+      container.innerHTML = '<div style="font-weight:bold; margin-bottom:5px; font-size:0.8rem; color:var(--text-sub);">🕹️ Eligen el Arcade del Mes (5 Usuarios):</div>';
+
+      latest.group.forEach(item => {
+        const isMain = item.name === latest.winner;
+        const div = document.createElement('div');
+        div.className = 'neighbor-item';
+        div.innerHTML = `
+          <span>@${item.name} <small style="color:var(--text-sub);">(${item.ticket})</small></span>
+          <span class="badge ${isMain ? 'badge-main' : ''}">${isMain ? 'Ganador Principal!' : 'Elección Arcade'}</span>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function calculateTopWinners() {
+      const counts = {};
+      fullHistory.forEach(h => {
+        counts[h.winner] = (counts[h.winner] || 0) + 1;
+      });
+
+      fullTopWinners = Object.keys(counts)
+        .map(name => ({ name, count: counts[name] }))
+        .sort((a, b) => b.count - a.count);
+
+      renderTopWinners();
+    }
+
+    function renderTopWinners() {
+      const list = document.getElementById('top-winners-list');
+      list.innerHTML = '';
+      const limit = showAllTop ? fullTopWinners.length : 3;
+      const itemsToDisplay = fullTopWinners.slice(0, limit);
+
+      itemsToDisplay.forEach(item => {
+        const li = document.createElement('li');
+        li.innerHTML = `<span>@${item.name}</span> <strong>${item.count} ${item.count === 1 ? 'victoria' : 'victorias'}</strong>`;
+        list.appendChild(li);
+      });
+
+      const btn = document.getElementById('btn-more-top');
+      if (fullTopWinners.length > 3) {
+        btn.classList.remove('hidden');
+        btn.innerText = showAllTop ? 'Mostrar menos' : `Mostrar más (${fullTopWinners.length - 3} más)`;
+      } else {
+        btn.classList.add('hidden');
+      }
+    }
+
+    function toggleTopWinners() {
+      showAllTop = !showAllTop;
+      renderTopWinners();
+    }
+
+    function renderHistory() {
+      const list = document.getElementById('history-list');
+      list.innerHTML = '';
+      const limit = showAllHistory ? fullHistory.length : 3;
+      const itemsToDisplay = fullHistory.slice(0, limit);
+
+      itemsToDisplay.forEach(item => {
+        const li = document.createElement('li');
+        li.innerHTML = `<span>@${item.winner}</span> <small style="color:var(--text-sub);">${item.date}</small>`;
+        list.appendChild(li);
+      });
+
+      const btn = document.getElementById('btn-more-history');
+      if (fullHistory.length > 3) {
+        btn.classList.remove('hidden');
+        btn.innerText = showAllHistory ? 'Mostrar menos' : `Mostrar más (${fullHistory.length - 3} más)`;
+      } else {
+        btn.classList.add('hidden');
+      }
+    }
+
+    function toggleHistory() {
+      showAllHistory = !showAllHistory;
+      renderHistory();
+    }
+
+    function unlockAdmin() {
+      const pass = prompt("Introduce la contraseña de administración:");
+      if (pass === "patrulla2026") { // Cambia esta contraseña si lo deseas
+        document.getElementById('admin-panel').classList.remove('hidden');
+        document.getElementById('btn-show-admin').classList.add('hidden');
+      } else if (pass) {
+        alert("Contraseña incorrecta");
+      }
+    }
+
+    function runRaffle() {
+      const text = document.getElementById('participants-input').value.trim();
+      if (!text) return alert("Pega al menos 5 participantes.");
+
+      const names = text.split('\n').map(n => n.trim()).filter(n => n.length > 0);
+      if (names.length < 5) return alert("Se necesitan mínimo 5 participantes para el sorteo.");
+
+      // Generar boletos numerados
+      const list = names.map((name, i) => ({ ticket: `${i+1}-${name}`, name }));
+      const total = list.length;
+      
+      // Ganador aleatorio
+      const winIdx = Math.floor(Math.random() * total);
+      
+      // Algoritmo circular (-2, -1, 0, +1, +2)
+      const groupIndices = [
+        (winIdx - 2 + total) % total,
+        (winIdx - 1 + total) % total,
+        winIdx,
+        (winIdx + 1) % total,
+        (winIdx + 2) % total
+      ];
+
+      const winnerObj = list[winIdx];
+      const group = groupIndices.map(idx => list[idx]);
+
+      const now = new Date();
+      const dateStr = `${now.getDate()}/${now.getMonth()+1}/${now.getFullYear()}`;
+
+      const raffleData = {
+        winner: winnerObj.name,
+        winnerTicket: winnerObj.ticket,
+        group: group,
+        date: dateStr,
+        timestamp: firebase.database.ServerValue.TIMESTAMP
+      };
+
+      db.ref('sorteos').push(raffleData, (err) => {
+        if (err) alert("Error al guardar: " + err.message);
+        else {
+          alert("¡Sorteo realizado y publicado con éxito!");
+          document.getElementById('participants-input').value = '';
         }
-
-        // Renderizar tarjeta de ganador principal
-        function renderLatestWinner(latest) {
-            const container = document.getElementById('latest-winner-display');
-            if (!latest) {
-                container.innerHTML = `<p class="text-slate-500">No hay sorteos registrados.</p>`;
-                return;
-            }
-
-            container.innerHTML = `
-                <div class="text-3xl font-extrabold text-yellow-400 tracking-wide mb-1">
-                    🎉 ¡Campeón! 🎉
-                </div>
-                <div class="text-2xl font-bold text-white mb-2">
-                    ${latest.ganador}
-                </div>
-                <div class="text-xs text-slate-400">
-                    Sorteo realizado el ${latest.fecha}
-                </div>
-            `;
-        }
-
-        // Renderizar Historial de Sorteos
-        function renderHistory() {
-            const container = document.getElementById('history-list');
-            const toggleBtn = document.getElementById('toggle-history-btn');
-            container.innerHTML = '';
-
-            const itemsToDisplay = showAllHistory ? allHistory : allHistory.slice(0, 3);
-
-            itemsToDisplay.forEach(item => {
-                const li = document.createElement('li');
-                li.className = 'flex justify-between items-center bg-slate-800/60 px-3 py-2 rounded text-sm';
-                li.innerHTML = `
-                    <span class="font-medium text-slate-200">${item.ganador}</span>
-                    <span class="text-xs text-slate-400">${item.fecha}</span>
-                `;
-                container.appendChild(li);
-            });
-
-            if (allHistory.length > 3) {
-                toggleBtn.classList.remove('hidden');
-                toggleBtn.textContent = showAllHistory ? 'Ver menos' : `Ver historial completo (${allHistory.length})`;
-            } else {
-                toggleBtn.classList.add('hidden');
-            }
-        }
-
-        function toggleHistory() {
-            showAllHistory = !showAllHistory;
-            renderHistory();
-        }
-
-        // Renderizar Top Ganadores
-        function renderTopWinners(historyList) {
-            const counts = {};
-            historyList.forEach(item => {
-                counts[item.ganador] = (counts[item.ganador] || 0) + 1;
-            });
-
-            allTopWinners = Object.entries(counts)
-                .map(([name, count]) => ({ name, count }))
-                .sort((a, b) => b.count - a.count);
-
-            const container = document.getElementById('top-winners-list');
-            const toggleBtn = document.getElementById('toggle-top-btn');
-            container.innerHTML = '';
-
-            const itemsToDisplay = showAllTop ? allTopWinners : allTopWinners.slice(0, 3);
-
-            itemsToDisplay.forEach(item => {
-                const li = document.createElement('li');
-                li.className = 'flex justify-between items-center bg-slate-800/60 px-3 py-2 rounded text-sm';
-                li.innerHTML = `
-                    <span class="font-medium text-slate-200">${item.name}</span>
-                    <span class="text-xs bg-red-950 text-red-300 font-bold px-2 py-0.5 rounded border border-red-800/50">${item.count} victorias</span>
-                `;
-                container.appendChild(li);
-            });
-
-            if (allTopWinners.length > 3) {
-                toggleBtn.classList.remove('hidden');
-                toggleBtn.textContent = showAllTop ? 'Ver menos' : `Mostrar todos (${allTopWinners.length})`;
-            } else {
-                toggleBtn.classList.add('hidden');
-            }
-        }
-
-        function toggleTopWinners() {
-            showAllTop = !showAllTop;
-            renderTopWinners(allHistory);
-        }
-
-        // Función para ejecutar el sorteo
-        function realizarSorteo() {
-            const input = document.getElementById('participants-input').value.trim();
-            if (!input) {
-                alert('Por favor, introduce al menos un participante.');
-                return;
-            }
-
-            const lista = input.split('\n').map(n => n.trim()).filter(n => n.length > 0);
-            if (lista.length === 0) {
-                alert('No se encontraron nombres válidos.');
-                return;
-            }
-
-            // Elegir ganador al azar
-            const ganador = lista[Math.floor(Math.random() * lista.length)];
-            const fechaActual = new Date().toLocaleDateString('es-ES', {
-                day: '2-digit',
-                month: 'long',
-                year: 'numeric'
-            });
-
-            const nuevoSorteo = {
-                ganador: ganador,
-                fecha: fechaActual,
-                timestamp: Date.now()
-            };
-
-            // Guardar en Firebase Realtime Database
-            db.ref('sorteos').push(nuevoSorteo, (error) => {
-                if (error) {
-                    alert('Error al guardar en la base de datos: ' + error.message);
-                } else {
-                    document.getElementById('participants-input').value = '';
-                    alert(`¡Sorteo realizado con éxito!\nGanador: ${ganador}`);
-                }
-            });
-        }
-    </script>
+      });
+    }
+  </script>
 </body>
 </html>
