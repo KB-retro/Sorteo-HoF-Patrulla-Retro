@@ -432,14 +432,6 @@
     let timerInterval = null;
     let programData = null;
 
-    // Lista fija de ganadores de meses anteriores
-    const ganadoresHistoricosFijos = [
-        "@Imazor77", "@igortekno", "@MistermaestroevilJ", "@elblete",
-        "@PsYcO_PsYcO_PsYcO", "@Zapador_1986", "@tinako83", "@cerebrosolido",
-        "@OtakuFerreDavid", "@Idryl", "@RHernandezM", "@albgr1979",
-        "@Fransd88", "@davrodri", "@JorgeManiaco", "@maxmad1984"
-    ];
-
     // Fallback logo
     const logoImg = document.querySelector('.header-logo');
     if (logoImg) {
@@ -476,19 +468,13 @@
         }
     }
 
-    // Verificar si el ganador actual es repetido
+    // Verificar si el ganador actual es repetido basándose en el historial de Firebase
     function verificarRepetidoVisual() {
         if (!actualGanadorUser) return;
         
         db.ref('historial_ganadores').once('value', function(snapshot) {
             const data = snapshot.val();
             let totalVictorias = 0;
-
-            ganadoresHistoricosFijos.forEach(function(usr) {
-                if (usr.toLowerCase() === actualGanadorUser.toLowerCase()) {
-                    totalVictorias++;
-                }
-            });
 
             if (data) {
                 Object.values(data).forEach(function(item) {
@@ -585,14 +571,10 @@
         timerInterval = setInterval(actualizar, 1000);
     }
 
-    // Escuchar Historial Global
+    // Escuchar Historial Global (Lectura limpia desde Firebase)
     db.ref('historial_ganadores').on('value', function(snapshot) {
         const data = snapshot.val();
         let mapaConteo = {};
-
-        ganadoresHistoricosFijos.forEach(function(usr) {
-            mapaConteo[usr] = 1;
-        });
 
         if (data) {
             rawHistoryItems = Object.values(data).reverse();
