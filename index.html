@@ -1,263 +1,253 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sorteo Transparente con Exclusión Automática</title>
-  <style>
-    :root {
-      --bg: #0f172a;
-      --card: #1e293b;
-      --accent: #6366f1;
-      --accent-hover: #4f46e5;
-      --text: #f8fafc;
-      --muted: #94a3b8;
-      --danger: #ef4444;
-      --success: #22c55e;
-    }
-    body {
-      font-family: system-ui, -apple-system, sans-serif;
-      background-color: var(--bg);
-      color: var(--text);
-      margin: 0;
-      padding: 20px;
-    }
-    .container {
-      max-width: 1000px;
-      margin: 0 auto;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
-    }
-    @media (max-width: 768px) {
-      .container { grid-template-columns: 1fr; }
-    }
-    .card {
-      background-color: var(--card);
-      border-radius: 12px;
-      padding: 20px;
-      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3);
-    }
-    .full-width { grid-column: 1 / -1; }
-    h1, h2, h3 { margin-top: 0; color: #fff; }
-    textarea {
-      width: 100%;
-      height: 180px;
-      background: #0f172a;
-      border: 1px solid #334155;
-      color: var(--text);
-      border-radius: 8px;
-      padding: 10px;
-      box-sizing: border-box;
-      font-family: monospace;
-      font-size: 13px;
-      resize: vertical;
-    }
-    button {
-      background-color: var(--accent);
-      color: white;
-      border: none;
-      padding: 12px 24px;
-      font-size: 16px;
-      font-weight: bold;
-      border-radius: 8px;
-      cursor: pointer;
-      width: 100%;
-      transition: background 0.2s;
-    }
-    button:hover { background-color: var(--accent-hover); }
-    .winner-box {
-      text-align: center;
-      padding: 20px;
-      border: 2px dashed var(--accent);
-      border-radius: 12px;
-      margin-top: 15px;
-      min-height: 100px;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-    }
-    .number-display {
-      font-size: 48px;
-      font-weight: bold;
-      color: #f59e0b;
-    }
-    .user-display {
-      font-size: 28px;
-      font-weight: bold;
-      color: var(--success);
-    }
-    .retry-log {
-      max-height: 150px;
-      overflow-y: auto;
-      font-family: monospace;
-      font-size: 12px;
-      background: #0f172a;
-      padding: 10px;
-      border-radius: 6px;
-      margin-top: 10px;
-    }
-    .log-entry { margin-bottom: 4px; }
-    .log-rejected { color: var(--danger); }
-    .log-success { color: var(--success); }
-    .badge {
-      background: #334155;
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-size: 12px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sorteo HoF Patrulla Retro</title>
+    <!-- Firebase JS SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --accent: #6366f1;
+            --accent-hover: #4f46e5;
+            --text: #f8fafc;
+            --muted: #94a3b8;
+            --danger: #ef4444;
+            --success: #22c55e;
+            --gold: #f59e0b;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .card {
+            background-color: var(--card);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3);
+        }
+
+        h1, h2 { margin-top: 0; text-align: center; }
+        
+        textarea {
+            width: 100%;
+            height: 120px;
+            background: #0f172a;
+            color: var(--text);
+            border: 1px solid #334155;
+            border-radius: 6px;
+            padding: 10px;
+            box-sizing: border-box;
+            font-family: monospace;
+            resize: vertical;
+        }
+
+        button {
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+            transition: background 0.2s;
+        }
+
+        button:hover { background-color: var(--accent-hover); }
+        button.admin-btn { background-color: var(--success); margin-top: 10px; font-size: 18px; }
+
+        .winner-box {
+            display: none;
+            text-align: center;
+            background: linear-gradient(135deg, #1e1b4b 0%, #311042 100%);
+            border: 2px solid var(--gold);
+            padding: 30px;
+            border-radius: 12px;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        .winner-title { color: var(--gold); font-size: 1.5rem; text-transform: uppercase; letter-spacing: 2px; }
+        .winner-name { font-size: 2.5rem; font-weight: bold; margin: 15px 0; color: #fff; }
+        .winner-ticket { font-size: 1.2rem; color: var(--muted); }
+
+        .log-box {
+            background: #090d16;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            padding: 10px;
+            max-height: 150px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 0.9rem;
+            color: var(--muted);
+            margin-top: 15px;
+            text-align: left;
+        }
+
+        .admin-panel {
+            border-top: 2px dashed #334155;
+            margin-top: 20px;
+            padding-top: 20px;
+        }
+
+        .hidden { display: none !important; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
 </head>
 <body>
 
-  <h1 style="text-align:center; margin-bottom: 25px;">🎲 Sistema de Sorteos Públicos</h1>
+<div class="container">
+    <h1>🏆 Sorteo HoF Patrulla Retro</h1>
 
-  <div class="container">
-
-    <!-- Configuración de participantes -->
-    <div class="card">
-      <h2>1. Lista de Participantes</h2>
-      <p style="font-size:13px; color:var(--muted)">Pega el texto directamente. Se detectarán automáticamente los formatos <code>NÚMERO-@USUARIO</code>.</p>
-      <textarea id="rawList" placeholder="Pega tu lista aquí..."></textarea>
-      <div style="margin-top:10px; display:flex; justify-content:space-between; align-items:center;">
-        <span class="badge" id="ticketCount">0 papeletas válidas</span>
-        <span class="badge" id="userCount">0 usuarios únicos</span>
-      </div>
+    <!-- PANTALLA DEL GANADOR (Lo que ven los espectadores) -->
+    <div id="winnerCard" class="winner-box">
+        <div class="winner-title">🎉 ¡Tenemos Ganador Oficial! 🎉</div>
+        <div id="winnerName" class="winner-name">Cargando...</div>
+        <div id="winnerTicket" class="winner-ticket"></div>
+        <div class="log-box" id="publicLog"></div>
     </div>
 
-    <!-- Configuración de Excluidos -->
-    <div class="card">
-      <h2>2. Ya Premiados / Excluidos</h2>
-      <p style="font-size:13px; color:var(--muted)">Escribe un usuario por línea o separados por comas (con o sin @). Si sale su número, se volverá a sortear.</p>
-      <textarea id="excludedUsers" placeholder="@maxmad1984&#10;@AlexisToretto&#10;@Carlos_FdezMay..."></textarea>
-      <label style="font-size:13px; margin-top:10px; display:block;">
-        <input type="checkbox" id="autoExclude" checked> Añadir ganadores a esta lista automáticamente
-      </label>
+    <!-- MENSAJE ESPERA -->
+    <div id="waitingCard" class="card" style="text-align: center;">
+        <h2>⏳ El sorteo aún no se ha realizado</h2>
+        <p style="color: var(--muted);">El administrador realizará la tirada en breve. Esta página se actualizará automáticamente cuando haya un ganador.</p>
     </div>
 
-    <!-- Panel de Sorteo -->
-    <div class="card full-width">
-      <button id="drawBtn" onclick="runDraw()">¡REALIZAR SORTEO!</button>
-
-      <div class="winner-box" id="winnerBox">
-        <span style="color:var(--muted)">Pulsa el botón para iniciar el sorteo</span>
-      </div>
-
-      <h3>Historial del último intento / Reintentos en vivo:</h3>
-      <div class="retry-log" id="retryLog">Esperando sorteo...</div>
+    <!-- BOTÓN PARA ABRIR MODO ADMIN -->
+    <div style="text-align: center;">
+        <button onclick="toggleAdminPanel()" style="width: auto; background: transparent; color: var(--muted); font-size: 0.8rem; text-decoration: underline;">
+            ¿Eres el Administrador? Haz clic aquí
+        </button>
     </div>
 
-  </div>
+    <!-- PANEL DE ADMINISTRACIÓN (Protegido por contraseña) -->
+    <div id="adminPanel" class="card admin-panel hidden">
+        <h2>🛠️ Panel de Control (Administrador)</h2>
+        
+        <label><b>1. Pegar Participantes (Formatos 1-@user o PUNTO EXTRA-@user):</b></label>
+        <textarea id="listInput" placeholder="1-@usuario&#10;2-@usuario&#10;PUNTO EXTRA 1-@usuario"></textarea>
 
-  <script>
-    // Cargar ganadores iniciales por defecto
-    document.getElementById('excludedUsers').value = `@maxmad1984
-@AlexisToretto
-@Carlos_FdezMay
-@Juanmote
-@davrodri
-@MistermaestroevilJ
-@JorgeManiaco`;
+        <br><br>
+        <label><b>2. Excluidos / Lista Negra (1 por línea, vacía por defecto):</b></label>
+        <textarea id="blacklistInput" placeholder="@usuario_excluido1&#10;@usuario_excluido2"></textarea>
 
-    function parseTickets() {
-      const text = document.getElementById('rawList').value;
-      const lines = text.split('\n');
-      const tickets = [];
-      const users = new Set();
+        <br><br>
+        <button class="admin-btn" onclick="realizarSorteoOficial()">🎲 REALIZAR Y PUBLICAR SORTEO</button>
+    </div>
+</div>
 
-      const regex = /(\d+)\s*-\s*@?([a-zA-Z0-9_]+)/;
+<script>
+    // Configuración de Firebase (Realtime Database)
+    const firebaseConfig = {
+        databaseURL: "https://sorteo-patrulla-retro-default-rtdb.firebaseio.com" // Reemplazar si creas la tuya
+    };
+    
+    // Inicializar Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
-      lines.forEach(line => {
-        const match = line.match(regex);
-        if (match) {
-          const num = parseInt(match[1]);
-          const user = '@' + match[2].trim().toLowerCase();
-          tickets.push({ number: num, user: user, rawUser: '@' + match[2].trim() });
-          users.add(user);
+    // 1. Escuchar cambios en tiempo real (Para los espectadores)
+    db.ref('sorteo_actual').on('value', (snapshot) => {
+        const data = snapshot.val();
+        if (data && data.ganador) {
+            document.getElementById('waitingCard').classList.add('hidden');
+            document.getElementById('winnerCard').style.display = 'block';
+            
+            document.getElementById('winnerName').innerText = data.ganador.user;
+            document.getElementById('winnerTicket').innerText = "Boleto premiado: " + data.ganador.ticket;
+            
+            const logBox = document.getElementById('publicLog');
+            logBox.innerHTML = "<b>Historial de tiradas:</b><br>" + data.log.join('<br>');
         }
-      });
+    });
 
-      document.getElementById('ticketCount').innerText = `${tickets.length} papeletas válidas`;
-      document.getElementById('userCount').innerText = `${users.size} usuarios únicos`;
-
-      return tickets;
-    }
-
-    function getExcludedUsers() {
-      const raw = document.getElementById('excludedUsers').value;
-      return raw.split(/[\n,]/)
-        .map(u => u.trim().toLowerCase())
-        .filter(u => u.length > 0)
-        .map(u => u.startsWith('@') ? u : '@' + u);
-    }
-
-    document.getElementById('rawList').addEventListener('input', parseTickets);
-
-    async function runDraw() {
-      const tickets = parseTickets();
-      const excluded = getExcludedUsers();
-      const logBox = document.getElementById('retryLog');
-      const winnerBox = document.getElementById('winnerBox');
-      const btn = document.getElementById('drawBtn');
-
-      if (tickets.length === 0) {
-        alert('Por favor, pega una lista de números válida antes de sortear.');
-        return;
-      }
-
-      btn.disabled = true;
-      logBox.innerHTML = '';
-
-      let validWinner = null;
-      let attempts = 0;
-
-      while (!validWinner) {
-        attempts++;
-        // Selección aleatoria
-        const randomIndex = Math.floor(Math.random() * tickets.length);
-        const drawn = tickets[randomIndex];
-
-        // Animación visual rápida en pantalla
-        winnerBox.innerHTML = `
-          <div class="number-display">#${drawn.number}</div>
-          <div class="user-display">${drawn.rawUser}</div>
-          <small style="color:var(--muted)">Comprobando estado...</small>
-        `;
-
-        await new Promise(r => setTimeout(r, 400)); // pausa para efecto de giro
-
-        if (excluded.includes(drawn.user)) {
-          const entry = document.createElement('div');
-          entry.className = 'log-entry log-rejected';
-          entry.innerText = `❌ Tirada #${attempts}: Salió el N° ${drawn.number} (${drawn.rawUser}), pero YA HA GANADO PREMIO. Descartando y reintentando...`;
-          logBox.appendChild(entry);
-          logBox.scrollTop = logBox.scrollHeight;
-        } else {
-          validWinner = drawn;
-          const entry = document.createElement('div');
-          entry.className = 'log-entry log-success';
-          entry.innerText = `✅ Tirada #${attempts}: Salió el N° ${drawn.number} (${drawn.rawUser}) -> ¡GANADOR VÁLIDO!`;
-          logBox.appendChild(entry);
-          logBox.scrollTop = logBox.scrollHeight;
+    // Mostrar/Ocultar Panel Admin
+    function toggleAdminPanel() {
+        const pass = prompt("Introduce la clave de administrador:");
+        if (pass === "patrulla123") { // Puedes cambiar esta contraseña
+            document.getElementById('adminPanel').classList.remove('hidden');
+        } else if (pass !== null) {
+            alert("Contraseña incorrecta.");
         }
-      }
-
-      // Mostrar ganador final
-      winnerBox.innerHTML = `
-        <div style="color:var(--success); font-weight:bold;">🎉 ¡NÚMERO Y GANADOR VÁLIDO! 🎉</div>
-        <div class="number-display">N° ${validWinner.number}</div>
-        <div class="user-display">${validWinner.rawUser}</div>
-      `;
-
-      // Auto-excluir para el siguiente sorteo
-      if (document.getElementById('autoExclude').checked) {
-        const currentEx = document.getElementById('excludedUsers').value.trim();
-        document.getElementById('excludedUsers').value = currentEx + '\n' + validWinner.rawUser;
-      }
-
-      btn.disabled = false;
     }
-  </script>
+
+    // Lógica del Sorteo
+    function realizarSorteoOficial() {
+        const rawList = document.getElementById('listInput').value.trim().split('\n').filter(l => l.trim() !== '');
+        const rawBlacklist = document.getElementById('blacklistInput').value.trim().split('\n').filter(l => l.trim() !== '');
+
+        if (rawList.length === 0) {
+            alert("Por favor, pega la lista de participantes antes de sortear.");
+            return;
+        }
+
+        const blacklist = rawBlacklist.map(u => u.trim().toLowerCase());
+        let log = [];
+        let ganadorEncontrado = null;
+
+        // Mezclar y seleccionar
+        let listaCopia = [...rawList];
+        
+        while (listaCopia.length > 0) {
+            const indexAleatorio = Math.floor(Math.random() * listaCopia.length);
+            const entrada = listaCopia[indexAleatorio];
+            
+            // Extraer usuario (@algo)
+            const matchUser = entrada.match(/@[\w_]+/);
+            const usuario = matchUser ? matchUser[0].toLowerCase() : entrada.toLowerCase();
+
+            if (blacklist.includes(usuario)) {
+                log.push(`❌ Tirada descartada: ${entrada} (Usuario en Lista Negra)`);
+                listaCopia.splice(indexAleatorio, 1); // Quitar y reintentar
+            } else {
+                ganadorEncontrado = {
+                    ticket: entrada,
+                    user: matchUser ? matchUser[0] : entrada
+                };
+                log.push(`✅ ¡TIRADA GANADORA!: ${entrada}`);
+                break;
+            }
+        }
+
+        if (!ganadorEncontrado) {
+            alert("No se pudo encontrar un ganador (todos los participantes estaban excluidos).");
+            return;
+        }
+
+        if (confirm(`El ganador es ${ganadorEncontrado.user} (${ganadorEncontrado.ticket}). ¿Publicar resultado para toda la comunidad?`)) {
+            // Guardar en la nube (Firebase)
+            db.ref('sorteo_actual').set({
+                ganador: ganadorEncontrado,
+                log: log,
+                timestamp: Date.now()
+            });
+        }
+    }
+</script>
+
 </body>
 </html>
