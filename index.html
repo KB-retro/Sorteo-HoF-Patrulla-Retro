@@ -5,19 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sorteo HoF Patrulla Retro</title>
 
-    <!-- Meta etiquetas Open Graph para la miniatura en Telegram / Redes Sociales -->
+    <!-- Meta etiquetas Open Graph para Telegram / Redes Sociales -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Patrulla Retro" />
     <meta property="og:title" content="🏆 Sorteo HoF Patrulla Retro" />
     <meta property="og:description" content="Entra para ver la cuenta atrás en directo y el resultado del sorteo de la Patrulla Retro." />
     <meta property="og:url" content="https://kb-retro.github.io/Sorteo-HoF-Patrulla-Retro/" />
     
-    <!-- Configuración de la imagen de vista previa -->
-    <meta property="og:image" content="https://kb-retro.github.io/Sorteo-HoF-Patrulla-Retro/logo.png?v=2" />
-    <meta property="og:image:secure_url" content="https://kb-retro.github.io/Sorteo-HoF-Patrulla-Retro/logo.png?v=2" />
+    <!-- Imagen OG -->
+    <meta property="og:image" content="https://kb-retro.github.io/Sorteo-HoF-Patrulla-Retro/logo.png?v=3" />
+    <meta property="og:image:secure_url" content="https://kb-retro.github.io/Sorteo-HoF-Patrulla-Retro/logo.png?v=3" />
     <meta property="og:image:type" content="image/png" />
-    <meta property="og:image:width" content="500" />
-    <meta property="og:image:height" content="500" />
+    <meta property="og:image:width" content="600" />
+    <meta property="og:image:height" content="600" />
+
+    <!-- Twitter Cards (Fuerza la previsualización en Telegram si falla OG) -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="🏆 Sorteo HoF Patrulla Retro">
+    <meta name="twitter:description" content="Entra para ver la cuenta atrás en directo y el resultado del sorteo de la Patrulla Retro.">
+    <meta name="twitter:image" content="https://kb-retro.github.io/Sorteo-HoF-Patrulla-Retro/logo.png?v=3">
 
     <!-- Firebase JS SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -81,7 +87,7 @@
 
         h1, h2, h3 { margin-top: 0; text-align: center; }
         
-        textarea, input[type="time"] {
+        textarea, input[type="time"], input[type="date"] {
             width: 100%;
             background: #0f172a;
             color: var(--text);
@@ -96,6 +102,11 @@
             height: 120px;
             font-family: monospace;
             resize: vertical;
+        }
+
+        .datetime-group {
+            display: flex;
+            gap: 10px;
         }
 
         button {
@@ -173,7 +184,6 @@
             line-height: 1.4;
         }
 
-        /* Estilo para la cuenta atrás */
         .countdown-timer {
             font-size: 2.5rem;
             font-weight: bold;
@@ -282,7 +292,7 @@
 
     <!-- TARJETA DE CUENTA ATRÁS -->
     <div id="countdownCard" class="card hidden" style="text-align: center;">
-        <h2>⏳ ¡El Sorteo se celebrará hoy!</h2>
+        <h2>⏳ ¡El Sorteo se celebrará muy pronto!</h2>
         <p style="color: var(--muted);">Tiempo restante para la tirada oficial:</p>
         <div id="timerDisplay" class="countdown-timer">00h 00m 00s</div>
     </div>
@@ -329,8 +339,11 @@
         <textarea id="blacklistInput" placeholder="@usuario_excluido1&#10;@usuario_excluido2"></textarea>
 
         <br><br>
-        <label><b>3. Hora Exacta del Sorteo (Opcional):</b></label>
-        <input type="time" id="drawTimeInput">
+        <label><b>3. Fecha y Hora Exacta del Sorteo (Opcional):</b></label>
+        <div class="datetime-group">
+            <input type="date" id="drawDateInput">
+            <input type="time" id="drawTimeInput">
+        </div>
 
         <button class="admin-btn" onclick="programarOEjecutarSorteo()">🎲 GUARDAR Y PROGRAMAR SORTEO</button>
         <button class="warning-btn" onclick="borrarUltimoSorteo()">↩️ BORRAR ÚLTIMO SORTEO</button>
@@ -354,6 +367,32 @@
 
     let timerInterval = null;
     let programData = null;
+
+    // Lista de premiados históricos iniciales a cargar si el historial está vacío
+    const inicialesPremiados = [
+        "@Imazor77", "@igortekno", "@MistermaestroevilJ", "@elblete",
+        "@PsYcO_PsYcO_PsYcO", "@Zapador_1986", "@tinako83", "@cerebrosolido",
+        "@OtakuFerreDavid", "@Idryl", "@RHernandezM", "@albgr1979",
+        "@Fransd88", "@davrodri", "@JorgeManiaco", "@maxmad1984"
+    ];
+
+    // Cargar premiados anteriores por defecto si Firebase no tiene registros
+    function inicializarHistorialSiVacio() {
+        db.ref('historial_ganadores').once('value', function(snapshot) {
+            if (!snapshot.exists() || snapshot.val() === null) {
+                inicialesPremiados.forEach(function(user, idx) {
+                    db.ref('historial_ganadores').push({
+                        user: user,
+                        ticket: "Ganador Anterior",
+                        fecha: "Sorteo Histórico",
+                        timestamp: Date.now() - ((inicialesPremiados.length - idx) * 86400000)
+                    });
+                });
+            }
+        });
+    }
+
+    inicializarHistorialSiVacio();
 
     // Fallback logo
     const logoImg = document.querySelector('.header-logo');
@@ -395,7 +434,6 @@
         if (timerInterval) clearInterval(timerInterval);
 
         if (data && data.status === 'programado') {
-            // MOSTRAR TEMPORIZADOR
             document.getElementById('winnerCard').style.display = 'none';
             document.getElementById('waitingCard').classList.add('hidden');
             document.getElementById('countdownCard').classList.remove('hidden');
@@ -403,7 +441,6 @@
             iniciarRelojCuentaAtras(data.targetTime);
 
         } else if (data && data.ganador) {
-            // MOSTRAR GANADOR
             document.getElementById('countdownCard').classList.add('hidden');
             document.getElementById('waitingCard').classList.add('hidden');
             document.getElementById('winnerCard').style.display = 'block';
@@ -430,7 +467,6 @@
                 });
             }
         } else {
-            // ESPERA GENERAL
             document.getElementById('winnerCard').style.display = 'none';
             document.getElementById('countdownCard').classList.add('hidden');
             document.getElementById('waitingCard').classList.remove('hidden');
@@ -450,14 +486,18 @@
                 return;
             }
 
+            const dias = Math.floor(diferencia / (1000 * 60 * 60 * 24));
             const horas = Math.floor((diferencia % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
             const minutos = Math.floor((diferencia % (1000 * 60 * 60)) / (1000 * 60));
             const segundos = Math.floor((diferencia % (1000 * 60)) / 1000);
 
-            document.getElementById('timerDisplay').innerText = 
-                String(horas).padStart(2, '0') + "h " + 
-                String(minutos).padStart(2, '0') + "m " + 
-                String(segundos).padStart(2, '0') + "s";
+            let textoReloj = "";
+            if (dias > 0) textoReloj += dias + "d ";
+            textoReloj += String(horas).padStart(2, '0') + "h " + 
+                         String(minutos).padStart(2, '0') + "m " + 
+                         String(segundos).padStart(2, '0') + "s";
+
+            document.getElementById('timerDisplay').innerText = textoReloj;
         }
 
         actualizar();
@@ -567,9 +607,10 @@
     }
 
     function borrarTodo() {
-        if (confirm("⚠️ ¿Estás seguro de que quieres BORRAR TODO?")) {
+        if (confirm("⚠️ ¿Estás seguro de que quieres BORRAR TODO el historial?")) {
             document.getElementById('listInput').value = '';
             document.getElementById('blacklistInput').value = '';
+            document.getElementById('drawDateInput').value = '';
             document.getElementById('drawTimeInput').value = '';
             db.ref('sorteo_actual').remove();
             db.ref('historial_ganadores').remove();
@@ -577,8 +618,9 @@
         }
     }
 
-    // Método para guardar y programar usando la hora del día actual
+    // Guardar y programar sorteo con FECHA Y HORA
     function programarOEjecutarSorteo() {
+        const dateVal = document.getElementById('drawDateInput').value; // Formato "YYYY-MM-DD"
         const timeVal = document.getElementById('drawTimeInput').value; // Formato "HH:MM"
         const rawLines = document.getElementById('listInput').value.trim();
         const rawBlacklist = document.getElementById('blacklistInput').value.trim();
@@ -589,12 +631,18 @@
         }
 
         if (timeVal) {
-            const parts = timeVal.split(':');
-            const targetDate = new Date();
-            targetDate.setHours(parseInt(parts[0], 10), parseInt(parts[1], 10), 0, 0);
+            const timeParts = timeVal.split(':');
+            let targetDate = new Date();
 
-            // Si la hora introducida ya pasó hoy, se programa para la de mañana automáticamente
-            if (targetDate.getTime() <= Date.now()) {
+            if (dateVal) {
+                const dateParts = dateVal.split('-');
+                targetDate.setFullYear(parseInt(dateParts[0], 10), parseInt(dateParts[1], 10) - 1, parseInt(dateParts[2], 10));
+            }
+
+            targetDate.setHours(parseInt(timeParts[0], 10), parseInt(timeParts[1], 10), 0, 0);
+
+            // Si se pone hora pasada sin especificar fecha, asumir mañana
+            if (!dateVal && targetDate.getTime() <= Date.now()) {
                 targetDate.setDate(targetDate.getDate() + 1);
             }
 
@@ -606,24 +654,21 @@
                 rawLines: rawLines,
                 rawBlacklist: rawBlacklist
             }).then(function() {
-                alert("¡Sorteo programado a las " + timeVal + "! La cuenta atrás ya está activa.");
+                alert("¡Sorteo programado con éxito! La cuenta atrás ya está activa.");
             });
         } else {
-            // Si deja la hora en blanco, pide confirmación previa
-            const confirmarInmediato = confirm("El sorteo se realizara ahora si no configuras una hora");
+            const confirmarInmediato = confirm("El sorteo se realizará de inmediato si no especificas una hora. ¿Continuar?");
             if (confirmarInmediato) {
                 calcularYEjecutarTirada(rawLines, rawBlacklist);
             }
         }
     }
 
-    // Ejecuta cuando la cuenta atrás llega a 0
     function ejecutarTiradaProgramada() {
         if (!programData || programData.status !== 'programado') return;
         calcularYEjecutarTirada(programData.rawLines, programData.rawBlacklist);
     }
 
-    // Cálculo matemático del sorteo
     function calcularYEjecutarTirada(rawLinesStr, rawBlacklistStr) {
         const rawLines = rawLinesStr.split('\n');
         const rawBlacklist = rawBlacklistStr.split('\n');
@@ -667,7 +712,6 @@
 
         if (!ganadorEncontrado) return;
 
-        // Anillo Arcade
         let anteriores = [], posteriores = [], usuariosUsados = {};
         usuariosUsados[ganadorEncontrado.user.toLowerCase()] = true;
 
@@ -697,7 +741,6 @@
         const ahora = new Date();
         const fechaFormateada = ahora.toLocaleDateString('es-ES') + ' ' + ahora.toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'});
 
-        // Publicar automáticamente el resultado
         db.ref('historial_ganadores').push({
             user: ganadorEncontrado.user,
             ticket: ganadorEncontrado.ticket,
