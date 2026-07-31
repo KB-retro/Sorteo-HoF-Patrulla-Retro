@@ -10,7 +10,7 @@
     <style>
         :root {
             --bg: #0f172a;
-            --card: rgba(30, 41, 59, 0.92); /* Fondo semitransparente para ver el fondo */
+            --card: rgba(30, 41, 59, 0.92);
             --accent: #6366f1;
             --accent-hover: #4f46e5;
             --text: #f8fafc;
@@ -66,15 +66,19 @@
 
         h1, h2, h3 { margin-top: 0; text-align: center; }
         
-        textarea {
+        textarea, input[type="datetime-local"] {
             width: 100%;
-            height: 140px;
             background: #0f172a;
             color: var(--text);
             border: 1px solid #334155;
             border-radius: 6px;
             padding: 10px;
             box-sizing: border-box;
+            font-family: inherit;
+        }
+
+        textarea {
+            height: 120px;
             font-family: monospace;
             resize: vertical;
         }
@@ -152,6 +156,16 @@
             font-size: 1.05rem;
             font-weight: bold;
             line-height: 1.4;
+        }
+
+        /* Estilo para la cuenta atrás */
+        .countdown-timer {
+            font-size: 2.2rem;
+            font-weight: bold;
+            color: var(--gold);
+            letter-spacing: 2px;
+            margin: 15px 0;
+            font-family: monospace;
         }
 
         .arcade-box {
@@ -251,10 +265,17 @@
         <div class="log-box" id="publicLog"></div>
     </div>
 
-    <!-- MENSAJE ESPERA -->
+    <!-- TARJETA DE CUENTA ATRÁS -->
+    <div id="countdownCard" class="card hidden" style="text-align: center;">
+        <h2>⏳ ¡El Sorteo se celebrará muy pronto!</h2>
+        <p style="color: var(--muted);">Tiempo restante para la tirada oficial:</p>
+        <div id="timerDisplay" class="countdown-timer">00d 00h 00m 00s</div>
+    </div>
+
+    <!-- MENSAJE ESPERA (SIN PROGRAMAR) -->
     <div id="waitingCard" class="card" style="text-align: center;">
         <h2>⏳ El sorteo aún no se ha realizado</h2>
-        <p style="color: var(--muted);">El administrador realizará la tirada en breve. Esta página se actualizará automáticamente cuando haya un ganador.</p>
+        <p style="color: var(--muted);">El administrador realizará o programará la tirada en breve. Esta página se actualizará automáticamente.</p>
     </div>
 
     <!-- LISTA DE PREMIADOS -->
@@ -292,7 +313,11 @@
         <label><b>2. Excluidos / Lista Negra (1 por línea):</b></label>
         <textarea id="blacklistInput" placeholder="@usuario_excluido1&#10;@usuario_excluido2"></textarea>
 
-        <button class="admin-btn" onclick="realizarSorteoOficial()">🎲 REALIZAR Y PUBLICAR SORTEO</button>
+        <br><br>
+        <label><b>3. Fecha y Hora del Sorteo (Opcional):</b></label>
+        <input type="datetime-local" id="drawTimeInput">
+
+        <button class="admin-btn" onclick="programarOEjecutarSorteo()">🎲 GUARDAR Y PROGRAMAR SORTEO</button>
         <button class="warning-btn" onclick="borrarUltimoSorteo()">↩️ BORRAR ÚLTIMO SORTEO</button>
         <button class="clear-btn" onclick="borrarTodo()">🧹 BORRAR TODO</button>
     </div>
@@ -307,21 +332,19 @@
     const db = firebase.database();
 
     let actualGanadorUser = "";
-    
-    // Control de vista plegada/desplegada
     let isWinnersExpanded = false;
     let isHistoryExpanded = false;
-    
     let rawHistoryItems = [];
     let rawWinnersCount = [];
 
-    // Cargar logo con fallback de extensión si fuera necesario
+    let timerInterval = null;
+    let programData = null;
+
+    // Fallback logo
     const logoImg = document.querySelector('.header-logo');
     if (logoImg) {
         logoImg.onerror = function() {
-            if (this.src.endsWith('logo.png')) {
-                this.src = 'logo.jpg';
-            }
+            if (this.src.endsWith('logo.png')) this.src = 'logo.jpg';
         };
     }
 
@@ -349,10 +372,24 @@
         });
     }
 
-    // Escuchar Sorteo Actual
+    // Escuchar Sorteo Actual / Programación
     db.ref('sorteo_actual').on('value', function(snapshot) {
         const data = snapshot.val();
-        if (data && data.ganador) {
+        programData = data;
+        
+        if (timerInterval) clearInterval(timerInterval);
+
+        if (data && data.status === 'programado') {
+            // MOSTRAR TEMPORIZADOR
+            document.getElementById('winnerCard').style.display = 'none';
+            document.getElementById('waitingCard').classList.add('hidden');
+            document.getElementById('countdownCard').classList.remove('hidden');
+
+            iniciarRelojCuentaAtras(data.targetTime);
+
+        } else if (data && data.ganador) {
+            // MOSTRAR GANADOR
+            document.getElementById('countdownCard').classList.add('hidden');
             document.getElementById('waitingCard').classList.add('hidden');
             document.getElementById('winnerCard').style.display = 'block';
             
@@ -378,18 +415,46 @@
                 });
             }
         } else {
+            // ESPERA GENERAL
             document.getElementById('winnerCard').style.display = 'none';
+            document.getElementById('countdownCard').classList.add('hidden');
             document.getElementById('waitingCard').classList.remove('hidden');
         }
     });
 
-    // Escuchar Historial Global (Optimizado para soportar años de datos)
+    // Lógica del reloj en vivo
+    function iniciarRelojCuentaAtras(targetTime) {
+        function actualizar() {
+            const ahora = Date.now();
+            const diferencia = targetTime - ahora;
+
+            if (diferencia <= 0) {
+                clearInterval(timerInterval);
+                document.getElementById('timerDisplay').innerText = "¡Sorteando...";
+                ejecutarTiradaProgramada();
+                return;
+            }
+
+            const horas = Math.floor((diferencia % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutos = Math.floor((diferencia % (1000 * 60 * 60)) / (1000 * 60));
+            const segundos = Math.floor((diferencia % (1000 * 60)) / 1000);
+
+            document.getElementById('timerDisplay').innerText = 
+                String(horas).padStart(2, '0') + "h " + 
+                String(minutos).padStart(2, '0') + "m " + 
+                String(segundos).padStart(2, '0') + "s";
+        }
+
+        actualizar();
+        timerInterval = setInterval(actualizar, 1000);
+    }
+
+    // Escuchar Historial Global
     db.ref('historial_ganadores').on('value', function(snapshot) {
         const data = snapshot.val();
 
         if (data) {
             rawHistoryItems = Object.values(data).reverse();
-            
             let mapaConteo = {};
             rawHistoryItems.forEach(function(item) {
                 const userKey = item.user;
@@ -403,7 +468,6 @@
             renderWinnersList();
             renderHistoryList();
             verificarRepetidoVisual();
-
         } else {
             rawHistoryItems = [];
             rawWinnersCount = [];
@@ -414,16 +478,13 @@
         }
     });
 
-    // Dibuja la lista de Usuarios Premiados
     function renderWinnersList() {
         const listEl = document.getElementById('winnersCountList');
         const btn = document.getElementById('btnToggleWinners');
         listEl.innerHTML = '';
-
         if (rawWinnersCount.length === 0) return;
 
         const visibleItems = isWinnersExpanded ? rawWinnersCount : rawWinnersCount.slice(0, 3);
-
         visibleItems.forEach(function(item) {
             const li = document.createElement('li');
             li.className = 'custom-item';
@@ -440,16 +501,13 @@
         }
     }
 
-    // Dibuja la lista del Historial
     function renderHistoryList() {
         const listEl = document.getElementById('historyList');
         const btn = document.getElementById('btnToggleHistory');
         listEl.innerHTML = '';
-
         if (rawHistoryItems.length === 0) return;
 
         const visibleItems = isHistoryExpanded ? rawHistoryItems : rawHistoryItems.slice(0, 3);
-
         visibleItems.forEach(function(item) {
             const li = document.createElement('li');
             li.className = 'custom-item';
@@ -465,15 +523,8 @@
         }
     }
 
-    function toggleWinnersView() {
-        isWinnersExpanded = !isWinnersExpanded;
-        renderWinnersList();
-    }
-
-    function toggleHistoryView() {
-        isHistoryExpanded = !isHistoryExpanded;
-        renderHistoryList();
-    }
+    function toggleWinnersView() { isWinnersExpanded = !isWinnersExpanded; renderWinnersList(); }
+    function toggleHistoryView() { isHistoryExpanded = !isHistoryExpanded; renderHistoryList(); }
 
     function toggleAdminPanel() {
         const pass = prompt("Introduce la clave de administrador:");
@@ -485,16 +536,16 @@
     }
 
     function borrarUltimoSorteo() {
-        if (confirm("⚠️ ¿Deseas borrar la tirada actual y eliminar el último registro guardado?")) {
+        if (confirm("⚠️ ¿Deseas borrar la tirada actual o la programación activa?")) {
             db.ref('sorteo_actual').remove();
             db.ref('historial_ganadores').limitToLast(1).once('value', function(snapshot) {
                 const data = snapshot.val();
                 if (data) {
                     const keyBorrar = Object.keys(data)[0];
                     db.ref('historial_ganadores/' + keyBorrar).remove();
-                    alert("Último sorteo eliminado.");
+                    alert("Último sorteo borrado.");
                 } else {
-                    alert("Sorteo actual borrado.");
+                    alert("Estado actual borrado.");
                 }
             });
         }
@@ -504,48 +555,75 @@
         if (confirm("⚠️ ¿Estás seguro de que quieres BORRAR TODO?")) {
             document.getElementById('listInput').value = '';
             document.getElementById('blacklistInput').value = '';
+            document.getElementById('drawTimeInput').value = '';
             db.ref('sorteo_actual').remove();
             db.ref('historial_ganadores').remove();
             alert("Todo borrado correctamente.");
         }
     }
 
-    function realizarSorteoOficial() {
-        const rawLines = document.getElementById('listInput').value.trim().split('\n');
-        const rawBlacklist = document.getElementById('blacklistInput').value.trim().split('\n');
+    // Método para guardar y programar
+    function programarOEjecutarSorteo() {
+        const timeVal = document.getElementById('drawTimeInput').value;
+        const rawLines = document.getElementById('listInput').value.trim();
+        const rawBlacklist = document.getElementById('blacklistInput').value.trim();
+
+        if (!rawLines) {
+            alert("Por favor, pega la lista de participantes.");
+            return;
+        }
+
+        if (timeVal) {
+            const targetTime = new Date(timeVal).getTime();
+            if (targetTime <= Date.now()) {
+                alert("La hora elegida debe ser en el futuro.");
+                return;
+            }
+
+            db.ref('sorteo_actual').set({
+                status: 'programado',
+                targetTime: targetTime,
+                rawLines: rawLines,
+                rawBlacklist: rawBlacklist
+            }).then(function() {
+                alert("¡Sorteo programado correctamente! La cuenta atrás ya está activa en la web.");
+            });
+        } else {
+            // Si no pone hora, se ejecuta de inmediato
+            calcularYEjecutarTirada(rawLines, rawBlacklist);
+        }
+    }
+
+    // Ejecuta cuando la cuenta atrás llega a 0
+    function ejecutarTiradaProgramada() {
+        if (!programData || programData.status !== 'programado') return;
+        calcularYEjecutarTirada(programData.rawLines, programData.rawBlacklist);
+    }
+
+    // Cálculo matemático del sorteo
+    function calcularYEjecutarTirada(rawLinesStr, rawBlacklistStr) {
+        const rawLines = rawLinesStr.split('\n');
+        const rawBlacklist = rawBlacklistStr.split('\n');
 
         let participantesValidos = [];
-        
         rawLines.forEach(function(line) {
             let lineaLimpia = line.trim();
             if (!lineaLimpia) return;
-
             const matchUser = lineaLimpia.match(/@[\w_]+/);
-            
             if (matchUser) {
                 let boletoLimpio = lineaLimpia.replace(/PUNTO\s+EXTRA\s*/gi, '').trim();
-                participantesValidos.push({
-                    ticket: boletoLimpio,
-                    user: matchUser[0]
-                });
+                participantesValidos.push({ ticket: boletoLimpio, user: matchUser[0] });
             }
         });
 
         const total = participantesValidos.length;
+        if (total === 0) return;
 
-        if (total === 0) {
-            alert("No se han encontrado participantes válidos con el formato 'número-@usuario'.");
-            return;
-        }
-
-        const blacklist = rawBlacklist
-            .map(function(u) { return u.trim().toLowerCase(); })
-            .filter(function(u) { return u.length > 0; });
+        const blacklist = rawBlacklist.map(function(u) { return u.trim().toLowerCase(); }).filter(function(u) { return u.length > 0; });
 
         let log = [];
         let ganadorEncontrado = null;
         let indexGanador = -1;
-
         let listaCopia = participantesValidos.slice();
 
         while (listaCopia.length > 0) {
@@ -564,87 +642,51 @@
             }
         }
 
-        if (!ganadorEncontrado) {
-            alert("No se pudo encontrar un ganador.");
-            return;
-        }
+        if (!ganadorEncontrado) return;
 
-        // Lógica Circular Anillo
-        let anteriores = [];
-        let posteriores = [];
-        let usuariosUsados = {};
+        // Anillo Arcade
+        let anteriores = [], posteriores = [], usuariosUsados = {};
         usuariosUsados[ganadorEncontrado.user.toLowerCase()] = true;
 
-        // 2 Anteriores
-        let curr = indexGanador - 1;
-        let cntAnt = 0;
+        let curr = indexGanador - 1, cntAnt = 0;
         while (anteriores.length < 2 && cntAnt < total) {
             if (curr < 0) curr = total - 1;
             let cand = participantesValidos[curr];
-            let uLower = cand.user.toLowerCase();
-            if (!usuariosUsados[uLower]) {
+            if (!usuariosUsados[cand.user.toLowerCase()]) {
                 anteriores.unshift(cand);
-                usuariosUsados[uLower] = true;
+                usuariosUsados[cand.user.toLowerCase()] = true;
             }
-            curr--;
-            cntAnt++;
+            curr--; cntAnt++;
         }
 
-        // 2 Posteriores
-        curr = indexGanador + 1;
-        let cntPost = 0;
+        curr = indexGanador + 1; let cntPost = 0;
         while (posteriores.length < 2 && cntPost < total) {
             if (curr >= total) curr = 0;
             let cand = participantesValidos[curr];
-            let uLower = cand.user.toLowerCase();
-            if (!usuariosUsados[uLower]) {
+            if (!usuariosUsados[cand.user.toLowerCase()]) {
                 posteriores.push(cand);
-                usuariosUsados[uLower] = true;
+                usuariosUsados[cand.user.toLowerCase()] = true;
             }
-            curr++;
-            cntPost++;
+            curr++; cntPost++;
         }
 
         const arcadeGroup = anteriores.concat([ganadorEncontrado], posteriores);
+        const ahora = new Date();
+        const fechaFormateada = ahora.toLocaleDateString('es-ES') + ' ' + ahora.toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'});
 
-        db.ref('historial_ganadores').once('value', function(snapshot) {
-            const historial = snapshot.val();
-            let yaHaGanadoAntes = false;
+        // Publicar automáticamente el resultado
+        db.ref('historial_ganadores').push({
+            user: ganadorEncontrado.user,
+            ticket: ganadorEncontrado.ticket,
+            fecha: fechaFormateada,
+            timestamp: Date.now()
+        });
 
-            if (historial) {
-                const listaGanadores = Object.values(historial);
-                for (let i = 0; i < listaGanadores.length; i++) {
-                    if (listaGanadores[i].user.toLowerCase() === ganadorEncontrado.user.toLowerCase()) {
-                        yaHaGanadoAntes = true;
-                        break;
-                    }
-                }
-            }
-
-            let msg = "Ganador extraído: " + ganadorEncontrado.user + " (" + ganadorEncontrado.ticket + ").";
-            if (yaHaGanadoAntes) {
-                msg += "\n\n⚠️ ¡ATENCIÓN! Este usuario YA HA GANADO en un sorteo anterior.";
-            }
-            msg += "\n\n¿Publicar resultado?";
-
-            if (confirm(msg)) {
-                const ahora = new Date();
-                const fechaFormateada = ahora.toLocaleDateString('es-ES') + ' ' + ahora.toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'});
-
-                db.ref('historial_ganadores').push({
-                    user: ganadorEncontrado.user,
-                    ticket: ganadorEncontrado.ticket,
-                    fecha: fechaFormateada,
-                    timestamp: Date.now()
-                });
-
-                db.ref('sorteo_actual').set({
-                    ganador: ganadorEncontrado,
-                    arcadeGroup: arcadeGroup,
-                    log: log,
-                    timestamp: Date.now()
-                });
-            }
+        db.ref('sorteo_actual').set({
+            ganador: ganadorEncontrado,
+            arcadeGroup: arcadeGroup,
+            log: log,
+            timestamp: Date.now()
         });
     }
 </script>
