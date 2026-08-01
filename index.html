@@ -368,7 +368,7 @@
 
     <!-- LISTA DE PREMIADOS -->
     <div id="winnersCountCard" class="card">
-        <h3>🥇 Usuarios Premiados y Recuento de Victorias</h3>
+        <h3>🥇 Hall of Fame 🥇</h3>
         <ul id="winnersCountList" class="custom-list">
             <li style="text-align: center; color: var(--muted);">Cargando usuarios...</li>
         </ul>
@@ -557,7 +557,7 @@
         const mes = snapshot.val();
         const titleEl = document.getElementById('mainTitle');
         if (mes) {
-            titleEl.innerText = "🏆 Sorteo HoF Patrulla Retro de " + mes;
+            titleEl.innerHTML = "🏆 Sorteo HoF Patrulla Retro<br>" + mes;
             document.getElementById('monthSelect').value = mes;
         } else {
             titleEl.innerText = "🏆 Sorteo HoF Patrulla Retro";
@@ -642,7 +642,7 @@
     function verificarRepetidoVisual() {
         if (!actualGanadorUser) return;
         
-        db.ref('historial_').once('value', function(snapshot) {
+        db.ref('historial_ganadores').once('value', function(snapshot) {
             const data = snapshot.val();
             let totalVictorias = 0;
 
@@ -742,7 +742,7 @@
     }
 
     // Escuchar Historial Global (Firebase únicamente)
-    db.ref('historial_').on('value', function(snapshot) {
+    db.ref('historial_ganadores').on('value', function(snapshot) {
         const data = snapshot.val();
         let mapaConteo = {};
         rawHistoryItems = [];
@@ -837,178 +837,141 @@
     function toggleHistoryView() { isHistoryExpanded = !isHistoryExpanded; renderHistoryList(); }
 
     function toggleAdminPanel() {
-        const pass = prompt("Introduce la clave de administrador:");
-        if (pass === "patrulla123") {
-            isAdminLoggedIn = true;
-            document.getElementById('adminPanel').classList.remove('hidden');
-            renderHistoryList(); // Renderizar de nuevo para mostrar los botones de borrado
-        } else if (pass !== null) {
-            alert("Contraseña incorrecta.");
+        const panel = document.getElementById('adminPanel');
+        if (panel.classList.contains('hidden')) {
+            const pass = prompt("Introduce la clave de Administrador:");
+            if (pass === "patrulla123") {
+                isAdminLoggedIn = true;
+                panel.classList.remove('hidden');
+                renderHistoryList();
+            } else if (pass !== null) {
+                alert("Contraseña incorrecta.");
+            }
+        } else {
+            panel.classList.add('hidden');
+            isAdminLoggedIn = false;
+            renderHistoryList();
         }
     }
 
-    function borrarUltimoSorteo() {
-        if (confirm("⚠️ ¿Deseas borrar la tirada actual o la programación activa?")) {
-            db.ref('sorteo_actual').remove();
-            db.ref('historial_ganadores').limitToLast(1).once('value', function(snapshot) {
-                const data = snapshot.val();
-                if (data) {
-                    const keyBorrar = Object.keys(data)[0];
-                    db.ref('historial_ganadores/' + keyBorrar).remove();
-                    alert("Último sorteo borrado.");
-                } else {
-                    alert("Estado actual borrado.");
-                }
-            });
-        }
-    }
-
-    function borrarTodo() {
-        if (confirm("⚠️ ¿Estás seguro de que quieres BORRAR TODO el historial de la web en Firebase? Esta acción no se puede deshacer.")) {
-            document.getElementById('listInput').value = '';
-            document.getElementById('blacklistInput').value = '';
-            document.getElementById('drawDateInput').value = '';
-            document.getElementById('drawTimeInput').value = '';
-            db.ref('sorteo_actual').remove();
-            db.ref('historial_ganadores').remove();
-            alert("Todo borrado correctamente de Firebase.");
-        }
-    }
-
+    // Programar o Ejecutar Sorteo
     function programarOEjecutarSorteo() {
-        const dateVal = document.getElementById('drawDateInput').value;
-        const timeVal = document.getElementById('drawTimeInput').value;
-        const rawLines = document.getElementById('listInput').value.trim();
-        const rawBlacklist = document.getElementById('blacklistInput').value.trim();
+        const rawText = document.getElementById('listInput').value;
+        const blacklistText = document.getElementById('blacklistInput').value;
+        const drawDate = document.getElementById('drawDateInput').value;
+        const drawTime = document.getElementById('drawTimeInput').value;
 
-        if (!rawLines) {
-            alert("Por favor, pega o importa la lista de participantes.");
+        if (!rawText.trim()) {
+            alert("Por favor, introduce la lista de participantes.");
             return;
         }
 
-        if (timeVal) {
-            const timeParts = timeVal.split(':');
-            let targetDate = new Date();
+        const blacklist = blacklistText.split('\n').map(u => u.trim().toLowerCase()).filter(u => u.length > 0);
+        const lines = rawText.split('\n');
+        let parsedTickets = [];
+        let currentUser = null;
 
-            if (dateVal) {
-                const dateParts = dateVal.split('-');
-                targetDate.setFullYear(parseInt(dateParts[0], 10), parseInt(dateParts[1], 10) - 1, parseInt(dateParts[2], 10));
+        lines.forEach(line => {
+            const clean = line.trim();
+            if (!clean) return;
+
+            const match = clean.match(/^(\d+)[\s-]*(@[\w_]+)/i);
+            if (match) {
+                const ticketNum = match[1];
+                const userHandle = match[2];
+                if (!blacklist.includes(userHandle.toLowerCase())) {
+                    currentUser = userHandle;
+                    parsedTickets.push({ ticket: ticketNum, user: userHandle });
+                }
+            } else if (clean.toUpperCase().includes("PUNTO EXTRA") && currentUser) {
+                if (!blacklist.includes(currentUser.toLowerCase())) {
+                    parsedTickets.push({ ticket: "Extra", user: currentUser });
+                }
             }
+        });
 
-            targetDate.setHours(parseInt(timeParts[0], 10), parseInt(timeParts[1], 10), 0, 0);
+        if (parsedTickets.length === 0) {
+            alert("No se pudieron procesar tickets válidos. Revisa el formato o la lista negra.");
+            return;
+        }
 
-            if (!dateVal && targetDate.getTime() <= Date.now()) {
-                targetDate.setDate(targetDate.getDate() + 1);
+        if (drawDate && drawTime) {
+            const targetTime = new Date(`${drawDate}T${drawTime}`).getTime();
+            if (isNaN(targetTime) || targetTime <= Date.now()) {
+                alert("Selecciona una fecha y hora futura válida.");
+                return;
             }
-
-            const targetTime = targetDate.getTime();
 
             db.ref('sorteo_actual').set({
                 status: 'programado',
                 targetTime: targetTime,
-                rawLines: rawLines,
-                rawBlacklist: rawBlacklist
-            }).then(function() {
-                alert("¡Sorteo programado con éxito! La cuenta atrás ya está activa.");
-            });
+                tickets: parsedTickets
+            }).then(() => alert("¡Sorteo programado con éxito!"));
         } else {
-            const confirmarInmediato = confirm("El sorteo se realizará de inmediato si no especificas una hora. ¿Continuar?");
-            if (confirmarInmediato) {
-                calcularYEjecutarTirada(rawLines, rawBlacklist);
-            }
+            realizarTiradaOficial(parsedTickets);
         }
     }
 
     function ejecutarTiradaProgramada() {
-        if (!programData || programData.status !== 'programado') return;
-        calcularYEjecutarTirada(programData.rawLines, programData.rawBlacklist);
+        if (programData && programData.tickets) {
+            realizarTiradaOficial(programData.tickets);
+        }
     }
 
-    function calcularYEjecutarTirada(rawLinesStr, rawBlacklistStr) {
-        const rawLines = rawLinesStr.split('\n');
-        const rawBlacklist = rawBlacklistStr.split('\n');
+    function realizarTiradaOficial(tickets) {
+        let pool = [...tickets];
+        let logs = [];
 
-        let participantesValidos = [];
-        rawLines.forEach(function(line) {
-            let lineaLimpia = line.trim();
-            if (!lineaLimpia) return;
-            const matchUser = lineaLimpia.match(/@[\w_]+/);
-            if (matchUser) {
-                let boletoLimpio = lineaLimpia.replace(/PUNTO\s+EXTRA\s*/gi, '').trim();
-                participantesValidos.push({ ticket: boletoLimpio, user: matchUser[0] });
+        // 1. Elegir ganador principal
+        const winnerIndex = Math.floor(Math.random() * pool.length);
+        const ganador = pool[winnerIndex];
+        logs.push(`🎲 **Ganador Principal:** ${ganador.user} (${ganador.ticket})`);
+
+        // 2. Elegir grupo Arcade (5 únicos usuarios)
+        let arcadeGroup = [ganador];
+        let uniqueUsers = new Set([ganador.user.toLowerCase()]);
+
+        while (arcadeGroup.length < 5 && pool.length > 0) {
+            const idx = Math.floor(Math.random() * pool.length);
+            const picked = pool[idx];
+            if (!uniqueUsers.has(picked.user.toLowerCase())) {
+                uniqueUsers.add(picked.user.toLowerCase());
+                arcadeGroup.push(picked);
+                logs.push(`🕹️ **Selección Arcade:** ${picked.user} (${picked.ticket})`);
             }
-        });
-
-        const total = participantesValidos.length;
-        if (total === 0) return;
-
-        const blacklist = rawBlacklist.map(function(u) { return u.trim().toLowerCase(); }).filter(function(u) { return u.length > 0; });
-
-        let log = [];
-        let ganadorEncontrado = null;
-        let indexGanador = -1;
-        let listaCopia = participantesValidos.slice();
-
-        while (listaCopia.length > 0) {
-            const indexAleatorio = Math.floor(Math.random() * listaCopia.length);
-            const entrada = listaCopia[indexAleatorio];
-            const usuarioMinusculas = entrada.user.toLowerCase();
-
-            if (blacklist.indexOf(usuarioMinusculas) !== -1) {
-                log.push("❌ Descartado: " + entrada.ticket + " (" + entrada.user + " está en la Lista Negra)");
-                listaCopia.splice(indexAleatorio, 1);
-            } else {
-                ganadorEncontrado = entrada;
-                indexGanador = participantesValidos.findIndex(function(p) { return p.ticket === entrada.ticket; });
-                log.push("✅ ¡TIRADA GANADORA!: " + entrada.ticket);
-                break;
-            }
+            pool.splice(idx, 1);
         }
 
-        if (!ganadorEncontrado) return;
-
-        let anteriores = [], posteriores = [], usuariosUsados = {};
-        usuariosUsados[ganadorEncontrado.user.toLowerCase()] = true;
-
-        let curr = indexGanador - 1, cntAnt = 0;
-        while (anteriores.length < 2 && cntAnt < total) {
-            if (curr < 0) curr = total - 1;
-            let cand = participantesValidos[curr];
-            if (!usuariosUsados[cand.user.toLowerCase()]) {
-                anteriores.unshift(cand);
-                usuariosUsados[cand.user.toLowerCase()] = true;
-            }
-            curr--; cntAnt++;
-        }
-
-        curr = indexGanador + 1; let cntPost = 0;
-        while (posteriores.length < 2 && cntPost < total) {
-            if (curr >= total) curr = 0;
-            let cand = participantesValidos[curr];
-            if (!usuariosUsados[cand.user.toLowerCase()]) {
-                posteriores.push(cand);
-                usuariosUsados[cand.user.toLowerCase()] = true;
-            }
-            curr++; cntPost++;
-        }
-
-        const arcadeGroup = anteriores.concat([ganadorEncontrado], posteriores);
         const ahora = new Date();
-        const fechaFormateada = `${nombresMeses[ahora.getMonth()]} ${ahora.getFullYear()}`;
+        const fechaTexto = `${nombresMeses[ahora.getMonth()]} ${ahora.getFullYear()}`;
 
-        db.ref('historial_ganadores').push({
-            user: ganadorEncontrado.user,
-            ticket: ganadorEncontrado.ticket,
-            fecha: fechaFormateada,
-            timestamp: Date.now()
-        });
-
+        // Actualizar sorteo actual
         db.ref('sorteo_actual').set({
-            ganador: ganadorEncontrado,
+            status: 'completado',
+            ganador: ganador,
             arcadeGroup: arcadeGroup,
-            log: log,
+            log: logs
+        });
+
+        // Guardar en Historial
+        db.ref('historial_ganadores').push({
+            user: ganador.user,
+            ticket: ganador.ticket,
+            fecha: fechaTexto,
             timestamp: Date.now()
         });
+    }
+
+    function borrarUltimoSorteo() {
+        if (confirm("¿Estás seguro de resetear la pantalla del sorteo actual?")) {
+            db.ref('sorteo_actual').remove().then(() => alert("Sorteo actual borrado."));
+        }
+    }
+
+    function borrarTodo() {
+        if (confirm("⚠️ ¡CUIDADO! Esto borrará el sorteo actual y TODO el historial de Firebase. ¿Continuar?")) {
+            db.ref().remove().then(() => alert("Base de datos reseteada por completo."));
+        }
     }
 </script>
 
