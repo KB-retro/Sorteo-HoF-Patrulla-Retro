@@ -12,9 +12,9 @@
     <meta property="og:description" content="Entra para ver la cuenta atrás en directo y el resultado del sorteo de la Patrulla Retro.">
     <meta property="og:url" content="https://kb-retro.github.io/Sorteo-HoF-Patrulla-Retro/">
     
-    <!-- Imagen OG -->
-    <meta property="og:image" content="https://kb-retro.github.io/Sorteo-HoF-Patrulla-Retro/logo.png">
-    <meta property="og:image:secure_url" content="https://kb-retro.github.io/Sorteo-HoF-Patrulla-Retro/logo.png">
+    <!-- Imagen OG (con v=2 para forzar refresco de caché) -->
+    <meta property="og:image" content="https://kb-retro.github.io/Sorteo-HoF-Patrulla-Retro/logo.png?v=2">
+    <meta property="og:image:secure_url" content="https://kb-retro.github.io/Sorteo-HoF-Patrulla-Retro/logo.png?v=2">
     <meta property="og:image:type" content="image/png">
     <meta property="og:image:width" content="600">
     <meta property="og:image:height" content="600">
@@ -23,12 +23,12 @@
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="🏆 Sorteo HoF Patrulla Retro">
     <meta name="twitter:description" content="Entra para ver la cuenta atrás en directo y el resultado del sorteo de la Patrulla Retro.">
-    <meta name="twitter:image" content="https://kb-retro.github.io/Sorteo-HoF-Patrulla-Retro/logo.png">
+    <meta name="twitter:image" content="https://kb-retro.github.io/Sorteo-HoF-Patrulla-Retro/logo.png?v=2">
 
     <!-- Favicon para Marcadores del Navegador y Pantalla de Inicio -->
-    <link rel="icon" type="image/png" sizes="32x32" href="logo.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="logo.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="logo.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="logo.png?v=2">
+    <link rel="icon" type="image/png" sizes="16x16" href="logo.png?v=2">
+    <link rel="apple-touch-icon" sizes="180x180" href="logo.png?v=2">
 
     <!-- Firebase JS SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -335,7 +335,7 @@
 <body>
 
 <div class="container">
-    <img src="logo.png" alt="Logo Patrulla Retro" class="header-logo">
+    <img src="logo.png?v=2" alt="Logo Patrulla Retro" class="header-logo">
     <h1 id="mainTitle">🏆 Sorteo HoF Patrulla Retro</h1>
 
     <!-- PANTALLA GANADOR -->
@@ -352,6 +352,17 @@
         <!-- LISTA PARALELA: ELIGEN EL ARCADE DEL MES -->
         <div class="arcade-box">
             <div class="arcade-title">🕹️ Eligen el Arcade del Mes (5 Usuarios):</div>
+
+            <!-- ENLACE A GOOGLE DOCS (JUEGOS YA JUGADOS) -->
+            <div style="text-align: center; margin: 12px 0 16px 0; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 6px;">
+                <p style="margin: 0 0 8px 0; font-size: 0.9rem; color: var(--muted);">
+                    ⚠️ <b>Aviso para los elegidos:</b> No se pueden repetir juegos que ya hayan salido en el grupo.
+                </p>
+                <a href="https://docs.google.com/spreadsheets/d/1JApebwPe9J_fbS_hnQBHHElSlELlWiAjxdvDJQ8yw2E/edit?gid=0#gid=0" target="_blank" rel="noopener noreferrer" style="display: inline-block; background-color: #0284c7; color: white; text-decoration: none; padding: 8px 16px; border-radius: 6px; font-weight: bold; font-size: 0.9rem; transition: background 0.2s;">
+                    📜 Ver Lista de Juegos Ya Jugados (Google Docs) ↗️
+                </a>
+            </div>
+
             <ul id="arcadeList" class="custom-list"></ul>
         </div>
 
@@ -486,7 +497,7 @@
     const logoImg = document.querySelector('.header-logo');
     if (logoImg) {
         logoImg.onerror = function() {
-            if (this.src.endsWith('logo.png')) this.src = 'logo.jpg';
+            if (this.src.includes('logo.png')) this.src = 'logo.jpg?v=2';
         };
     }
 
