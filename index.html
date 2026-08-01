@@ -93,7 +93,7 @@
             text-align: center; 
         }
         
-        textarea, input[type="text"], input[type="time"], input[type="date"], select {
+        textarea, input[type="text"], input[type="time"], input[type="date"], input[type="month"], select {
             width: 100%;
             background: #0f172a;
             color: var(--text);
@@ -165,6 +165,21 @@
         }
         button.clear-btn:hover { 
             background-color: var(--danger-hover); 
+        }
+
+        button.delete-item-btn {
+            background-color: var(--danger);
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            width: auto;
+            margin-left: 10px;
+        }
+        button.delete-item-btn:hover {
+            background-color: var(--danger-hover);
         }
 
         .btn-toggle-view {
@@ -422,14 +437,18 @@
             <button class="admin-btn" onclick="programarOEjecutarSorteo()">🎲 GUARDAR Y PROGRAMAR SORTEO</button>
         </div>
 
-        <!-- SECCIÓN 3: AÑADIR GANADOR(ES) MANUALMENTE -->
+        <!-- SECCIÓN 3: AÑADIR GANADOR(ES) MANUALMENTE CON MES Y AÑO -->
         <div class="admin-section">
             <label><b>➕ Añadir Ganador(es) Anterior(es) al Historial:</b></label>
             <p style="font-size: 0.85rem; color: var(--muted); margin: 5px 0 10px 0;">
-                Puedes pegar uno solo (ej: <code>@Imazor77</code>) o una lista entera separada por comas, espacios o saltos de línea.
+                Introduce los usuarios y selecciona el mes y año en el que obtuvieron el premio.
             </p>
-            <textarea id="manualUserAdmin" placeholder="@usuario1&#10;@usuario2, @usuario3" style="height: 80px;"></textarea>
-            <button style="margin-top: 10px; background-color: #0284c7;" onclick="agregarGanadorManual()">➕ AÑADIR AL HISTORIAL DE FIREBASE</button>
+            <textarea id="manualUserAdmin" placeholder="@usuario1&#10;@usuario2, @usuario3" style="height: 70px;"></textarea>
+            
+            <label style="margin-top: 10px; display: block; font-size: 0.9rem;"><b>📅 Mes y Año del Premio (opcional):</b></label>
+            <input type="month" id="manualWinnerMonth" style="margin-top: 5px; margin-bottom: 10px;">
+
+            <button style="background-color: #0284c7;" onclick="agregarGanadorManual()">➕ AÑADIR AL HISTORIAL DE FIREBASE</button>
         </div>
 
         <button class="warning-btn" onclick="borrarUltimoSorteo()">↩️ BORRAR ÚLTIMO SORTEO</button>
@@ -450,9 +469,13 @@
     let isHistoryExpanded = false;
     let rawHistoryItems = [];
     let rawWinnersCount = [];
+    let isAdminLoggedIn = false;
 
     let timerInterval = null;
     let programData = null;
+
+    // Nombres de los meses para formato limpio
+    const nombresMeses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
     // Fallback logo
     const logoImg = document.querySelector('.header-logo');
@@ -470,7 +493,6 @@
         btn.disabled = true;
 
         try {
-            // Usamos un proxy CORS para leer la vista pública de Telegram
             const proxyUrl = 'https://api.allorigins.win/get?url=';
             const targetUrl = encodeURIComponent('https://t.me/s/retrojuegodelmes');
             
@@ -481,7 +503,6 @@
                 throw new Error("No se pudo obtener el contenido del canal.");
             }
 
-            // Parser HTML
             const parser = new DOMParser();
             const doc = parser.parseFromString(data.contents, 'text/html');
             const messages = doc.querySelectorAll('.tgme_widget_message_text');
@@ -492,22 +513,16 @@
             }
 
             let ultimaListaEncontrada = "";
-            const regexPatronLista = /\d+[\s-]*@[\w_]+/i; // Busca patrones como "20-@usuario" o "20 @usuario"
+            const regexPatronLista = /\d+[\s-]*@[\w_]+/i;
 
-            // Recorremos los mensajes del más reciente al más antiguo
             for (let i = messages.length - 1; i >= 0; i--) {
                 const textHtml = messages[i].innerHTML;
-                
-                // Reemplazamos saltos <br> por saltos de línea reales
                 let plainText = textHtml.replace(/<br\s*[\/]?>/gi, "\n");
-                // Eliminamos otras etiquetas HTML
                 let tempDiv = document.createElement("div");
                 tempDiv.innerHTML = plainText;
                 plainText = tempDiv.textContent || tempDiv.innerText || "";
 
-                // Verificamos si el mensaje tiene el patrón de lista de participantes
                 if (regexPatronLista.test(plainText)) {
-                    // Extraemos solo las líneas válidas que contienen participantes
                     const lineas = plainText.split('\n');
                     const lineasFiltradas = lineas.filter(l => {
                         const limpia = l.trim();
@@ -516,7 +531,7 @@
 
                     if (lineasFiltradas.length > 0) {
                         ultimaListaEncontrada = lineasFiltradas.join('\n');
-                        break; // ¡Encontramos la lista activa más reciente!
+                        break;
                     }
                 }
             }
@@ -565,12 +580,28 @@
         }
     }
 
-    // Añadir ganador(es) manual(es) directamente a Firebase
+    // Añadir ganador(es) manual(es) con formato Mes/Año
     function agregarGanadorManual() {
         const inputVal = document.getElementById('manualUserAdmin').value.trim();
+        const customMonthVal = document.getElementById('manualWinnerMonth').value; // Formato YYYY-MM
+
         if (!inputVal) {
             alert("Introduce al menos un usuario (ej: @usuario).");
             return;
+        }
+
+        let fechaTexto = "";
+        let timestampToSave = Date.now();
+
+        if (customMonthVal) {
+            const parts = customMonthVal.split('-'); // [YYYY, MM]
+            const year = parseInt(parts[0], 10);
+            const monthIdx = parseInt(parts[1], 10) - 1;
+            fechaTexto = `${nombresMeses[monthIdx]} ${year}`;
+            timestampToSave = new Date(year, monthIdx, 1).getTime();
+        } else {
+            const ahora = new Date();
+            fechaTexto = `${nombresMeses[ahora.getMonth()]} ${ahora.getFullYear()}`;
         }
 
         const usuarios = inputVal.split(/[\n,\s]+/).map(u => u.trim()).filter(u => u.length > 0);
@@ -581,14 +612,30 @@
             db.ref('historial_ganadores').push({
                 user: userFinal,
                 ticket: "Entrada Manual",
-                fecha: "Añadido por Admin",
-                timestamp: Date.now()
+                fecha: fechaTexto,
+                timestamp: timestampToSave
             });
             añadidos++;
         });
 
-        alert("¡" + añadidos + " usuario(s) añadido(s) al historial de Firebase correctamente!");
+        alert("¡" + añadidos + " usuario(s) añadido(s) al historial de Firebase con fecha " + fechaTexto + "!");
         document.getElementById('manualUserAdmin').value = '';
+        document.getElementById('manualWinnerMonth').value = '';
+    }
+
+    // Borrar un premio específico solicitando SIEMPRE confirmación explícita
+    function borrarGanadorEspecifico(key, usuario, fecha) {
+        if (!isAdminLoggedIn) return;
+        
+        const mensajeConfirmacion = `⚠️ ¿Estás seguro de que deseas ELIMINAR del historial a:\n\nUsuario: ${usuario}\nFecha: ${fecha}\n\nEsta acción borra la entrada directamente de Firebase y no se puede deshacer.`;
+        
+        if (confirm(mensajeConfirmacion)) {
+            db.ref('historial_ganadores/' + key).remove().then(function() {
+                alert("✅ Entrada eliminada correctamente del historial.");
+            }).catch(function(err) {
+                alert("❌ Error al intentar eliminar: " + err.message);
+            });
+        }
     }
 
     // Verificar si el ganador actual es repetido
@@ -698,15 +745,22 @@
     db.ref('historial_ganadores').on('value', function(snapshot) {
         const data = snapshot.val();
         let mapaConteo = {};
+        rawHistoryItems = [];
 
         if (data) {
-            rawHistoryItems = Object.values(data).reverse();
-            rawHistoryItems.forEach(function(item) {
+            Object.keys(data).forEach(function(key) {
+                const item = data[key];
+                item.key = key; // Guardamos la clave única de Firebase
+                rawHistoryItems.push(item);
+
                 const userKey = item.user;
                 mapaConteo[userKey] = (mapaConteo[userKey] || 0) + 1;
             });
-        } else {
-            rawHistoryItems = [];
+
+            // Ordenamos por timestamp (más reciente primero)
+            rawHistoryItems.sort(function(a, b) {
+                return (b.timestamp || 0) - (a.timestamp || 0);
+            });
         }
 
         rawWinnersCount = Object.keys(mapaConteo).map(function(usr) {
@@ -760,7 +814,14 @@
         visibleItems.forEach(function(item) {
             const li = document.createElement('li');
             li.className = 'custom-item';
-            li.innerHTML = '<div><strong>' + item.user + '</strong> <span style="color: var(--muted);">(' + item.ticket + ')</span></div><div style="font-size: 0.8rem; color: var(--muted);">' + item.fecha + '</div>';
+            
+            let deleteBtnHtml = '';
+            if (isAdminLoggedIn) {
+                deleteBtnHtml = `<button class="delete-item-btn" onclick="borrarGanadorEspecifico('${item.key}', '${item.user}', '${item.fecha}')">🗑️ Borrar</button>`;
+            }
+
+            li.innerHTML = '<div><strong>' + item.user + '</strong> <span style="color: var(--muted);">(' + item.ticket + ')</span></div>' +
+                           '<div style="display:flex; align-items:center;"><div style="font-size: 0.8rem; color: var(--muted);">' + item.fecha + '</div>' + deleteBtnHtml + '</div>';
             listEl.appendChild(li);
         });
 
@@ -778,7 +839,9 @@
     function toggleAdminPanel() {
         const pass = prompt("Introduce la clave de administrador:");
         if (pass === "patrulla123") {
+            isAdminLoggedIn = true;
             document.getElementById('adminPanel').classList.remove('hidden');
+            renderHistoryList(); // Renderizar de nuevo para mostrar los botones de borrado
         } else if (pass !== null) {
             alert("Contraseña incorrecta.");
         }
@@ -801,7 +864,7 @@
     }
 
     function borrarTodo() {
-        if (confirm("⚠️ ¿Estás seguro de que quieres BORRAR TODO el historial de la web en Firebase?")) {
+        if (confirm("⚠️ ¿Estás seguro de que quieres BORRAR TODO el historial de la web en Firebase? Esta acción no se puede deshacer.")) {
             document.getElementById('listInput').value = '';
             document.getElementById('blacklistInput').value = '';
             document.getElementById('drawDateInput').value = '';
@@ -931,7 +994,7 @@
 
         const arcadeGroup = anteriores.concat([ganadorEncontrado], posteriores);
         const ahora = new Date();
-        const fechaFormateada = ahora.toLocaleDateString('es-ES') + ' ' + ahora.toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'});
+        const fechaFormateada = `${nombresMeses[ahora.getMonth()]} ${ahora.getFullYear()}`;
 
         db.ref('historial_ganadores').push({
             user: ganadorEncontrado.user,
