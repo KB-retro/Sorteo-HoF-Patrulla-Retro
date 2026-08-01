@@ -66,16 +66,28 @@
         body {
             font-family: system-ui, -apple-system, sans-serif;
             background-color: #000000;
-            background-image: url('fondo.png');
-            background-size: cover;
-            background-position: center center;
-            background-repeat: no-repeat;
-            background-attachment: fixed;
             color: var(--text);
             padding: 20px 10px;
             display: flex;
             justify-content: center;
             align-items: flex-start;
+            position: relative;
+        }
+
+        /* FONDO ESTÁTICO PERFECTO SIN REBOOTS NI SALTOS DE SCROLL */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-image: url('fondo.png');
+            background-size: cover;
+            background-position: center center;
+            background-repeat: no-repeat;
+            z-index: -1;
+            transform: translateZ(0); /* Forzado por aceleración de hardware */
         }
 
         .container {
@@ -372,7 +384,7 @@
             display: none !important; 
         }
 
-        /* --- AJUSTE ESPECÍFICO PARA ORIENTACIÓN VERTICAL EN MÓVILES/TABLETS --- */
+        /* --- MANTENIENDO LA DISPOSICIÓN VERTICAL TAL Y COMO TE GUSTÓ --- */
         @media screen and (orientation: portrait) {
             body {
                 padding: 12px 8px;
