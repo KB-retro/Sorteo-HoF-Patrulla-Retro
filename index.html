@@ -485,26 +485,49 @@
         };
     }
 
-    // --- FUNCIÓN IMPORTAR DESDE TELEGRAM ---
+    // --- FUNCIÓN IMPORTAR DESDE TELEGRAM (ROBUSTA CON FALLBACK) ---
     async function importarDesdeTelegram() {
         const btn = document.querySelector('.telegram-btn');
         const originalText = btn.innerText;
         btn.innerText = "⏳ Buscando última lista en Telegram...";
         btn.disabled = true;
 
+        const targetUrl = 'https://t.me/s/retrojuegodelmes';
+        
+        // Lista de proxies a intentar en orden si uno falla
+        const proxies = [
+            `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`,
+            `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`
+        ];
+
+        let htmlContent = "";
+
+        for (let proxyUrl of proxies) {
+            try {
+                const response = await fetch(proxyUrl);
+                if (!response.ok) continue;
+
+                if (proxyUrl.includes('allorigins')) {
+                    const data = await response.json();
+                    htmlContent = data.contents || "";
+                } else {
+                    // corsproxy devuelve directamente el HTML como texto
+                    htmlContent = await response.text();
+                }
+
+                if (htmlContent) break; // Si conseguimos HTML, salimos del bucle de proxies
+            } catch (e) {
+                console.warn("Fallo un proxy, probando el siguiente...", e);
+            }
+        }
+
         try {
-            const proxyUrl = 'https://api.allorigins.win/get?url=';
-            const targetUrl = encodeURIComponent('https://t.me/s/retrojuegodelmes');
-            
-            const response = await fetch(proxyUrl + targetUrl);
-            const data = await response.json();
-            
-            if (!data.contents) {
-                throw new Error("No se pudo obtener el contenido del canal.");
+            if (!htmlContent) {
+                throw new Error("No se pudo conectar con los servidores proxy.");
             }
 
             const parser = new DOMParser();
-            const doc = parser.parseFromString(data.contents, 'text/html');
+            const doc = parser.parseFromString(htmlContent, 'text/html');
             const messages = doc.querySelectorAll('.tgme_widget_message_text');
 
             if (!messages || messages.length === 0) {
@@ -545,7 +568,7 @@
 
         } catch (error) {
             console.error("Error al importar de Telegram:", error);
-            alert("Ocurrió un error al intentar conectar con Telegram. Puedes pegar la lista manualmente.");
+            alert("⚠️ No se pudo conectar con Telegram en este momento. Los proxies públicos están caídos o saturados. Por favor, pega la lista manualmente.");
         } finally {
             btn.innerText = originalText;
             btn.disabled = false;
