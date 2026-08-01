@@ -4,288 +4,1013 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sorteo HoF Patrulla Retro</title>
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <!-- Meta etiquetas Open Graph para Telegram / Redes Sociales -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Patrulla Retro">
+    <meta property="og:title" content="🏆 Sorteo HoF Patrulla Retro">
+    <meta property="og:description" content="Entra para ver la cuenta atrás en directo y el resultado del sorteo de la Patrulla Retro.">
+    <meta property="og:url" content="https://kb-retro.github.io/Sorteo-HoF-Patrulla-Retro/">
+    
+    <!-- Imagen OG -->
+    <meta property="og:image" content="https://kb-retro.github.io/Sorteo-HoF-Patrulla-Retro/logo.png">
+    <meta property="og:image:secure_url" content="https://kb-retro.github.io/Sorteo-HoF-Patrulla-Retro/logo.png">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:width" content="600">
+    <meta property="og:image:height" content="600">
+
+    <!-- Twitter Cards -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="🏆 Sorteo HoF Patrulla Retro">
+    <meta name="twitter:description" content="Entra para ver la cuenta atrás en directo y el resultado del sorteo de la Patrulla Retro.">
+    <meta name="twitter:image" content="https://kb-retro.github.io/Sorteo-HoF-Patrulla-Retro/logo.png">
+
+    <!-- Firebase JS SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
     <style>
         :root {
-            --primary: #2c3e50;
-            --secondary: #e74c3c;
-            --accent: #f1c40f;
-            --bg: #f8f9fa;
-            --card-bg: #ffffff;
-            --text: #333333;
+            --bg: #0f172a;
+            --card: rgba(30, 41, 59, 0.92);
+            --accent: #6366f1;
+            --accent-hover: #4f46e5;
+            --text: #f8fafc;
+            --muted: #94a3b8;
+            --danger: #ef4444;
+            --danger-hover: #dc2626;
+            --warning: #f59e0b;
+            --warning-hover: #d97706;
+            --success: #22c55e;
+            --success-hover: #16a34a;
+            --gold: #f59e0b;
+            --telegram: #0088cc;
+            --telegram-hover: #0077b3;
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg);
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: #000000;
+            background-image: url('fondo.png');
+            background-size: cover;
+            background-position: center center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
             color: var(--text);
             margin: 0;
             padding: 20px;
             display: flex;
-            flex-direction: column;
-            align-items: center;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
         }
 
         .container {
-            width: 100%;
             max-width: 800px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
         }
 
-        header {
-            text-align: center;
-            margin-bottom: 25px;
-        }
-
-        h1 {
-            color: var(--primary);
-            margin-bottom: 5px;
-            font-size: 2.2rem;
-        }
-
-        .subtitulo-mes {
+        .header-logo {
             display: block;
-            font-size: 1.2rem;
-            color: #666;
-            font-weight: 600;
-            margin-top: 5px;
+            margin: 0 auto 10px auto;
+            max-width: 180px;
+            height: auto;
         }
 
         .card {
-            background: var(--card-bg);
-            border-radius: 12px;
+            background-color: var(--card);
             padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
         }
 
-        h2 {
-            color: var(--primary);
-            border-bottom: 2px solid var(--accent);
-            padding-bottom: 8px;
-            margin-top: 0;
-            font-size: 1.4rem;
+        h1, h2, h3 { 
+            margin-top: 0; 
+            text-align: center; 
+        }
+        
+        textarea, input[type="text"], input[type="time"], input[type="date"], input[type="month"], select {
+            width: 100%;
+            background: #0f172a;
+            color: var(--text);
+            border: 1px solid #334155;
+            border-radius: 6px;
+            padding: 10px;
+            box-sizing: border-box;
+            font-family: inherit;
+            font-size: 1rem;
         }
 
-        .admin-panel {
-            border: 2px solid #3498db;
-            background-color: #f4f9fc;
+        textarea {
+            height: 120px;
+            font-family: monospace;
+            resize: vertical;
         }
 
-        .input-group {
-            margin-bottom: 15px;
+        .datetime-group {
             display: flex;
             gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        input[type="text"], select {
-            flex: 1;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            min-width: 200px;
         }
 
         button {
-            background-color: #3498db;
+            background-color: var(--accent);
             color: white;
             border: none;
-            padding: 10px 18px;
+            padding: 12px 20px;
             border-radius: 6px;
-            cursor: pointer;
             font-weight: bold;
-            transition: background 0.2s;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+            transition: background 0.2s, transform 0.1s;
         }
 
-        button:hover {
-            background-color: #2980b9;
+        button:active { 
+            transform: scale(0.98); 
         }
 
-        button.btn-danger {
-            background-color: var(--secondary);
+        button.telegram-btn {
+            background-color: var(--telegram);
+            margin-bottom: 15px;
+        }
+        button.telegram-btn:hover {
+            background-color: var(--telegram-hover);
         }
 
-        button.btn-danger:hover {
-            background-color: #c0392b;
+        button.admin-btn { 
+            background-color: var(--success); 
+            font-size: 18px; 
+            margin-top: 15px; 
+            padding: 14px;
+        }
+        button.admin-btn:hover { 
+            background-color: var(--success-hover); 
         }
 
-        ul {
+        button.warning-btn { 
+            background-color: var(--warning); 
+            margin-top: 10px; 
+        }
+        button.warning-btn:hover { 
+            background-color: var(--warning-hover); 
+        }
+
+        button.clear-btn { 
+            background-color: var(--danger); 
+            margin-top: 10px; 
+        }
+        button.clear-btn:hover { 
+            background-color: var(--danger-hover); 
+        }
+
+        button.delete-item-btn {
+            background-color: var(--danger);
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            width: auto;
+            margin-left: 10px;
+        }
+        button.delete-item-btn:hover {
+            background-color: var(--danger-hover);
+        }
+
+        .btn-toggle-view {
+            background-color: #334155 !important;
+            color: var(--text) !important;
+            font-size: 0.9rem !important;
+            padding: 10px 15px !important;
+            margin-top: 12px !important;
+            border-radius: 6px !important;
+            display: block !important;
+            text-align: center;
+        }
+        .btn-toggle-view:hover { 
+            background-color: #475569 !important; 
+        }
+
+        .winner-box {
+            display: none;
+            text-align: center;
+            background: linear-gradient(135deg, rgba(30, 27, 75, 0.95) 0%, rgba(49, 16, 66, 0.95) 100%);
+            border: 2px solid var(--gold);
+            padding: 30px;
+            border-radius: 12px;
+            animation: fadeIn 0.5s ease-in;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
+        }
+
+        .winner-title { 
+            color: var(--gold); 
+            font-size: 1.5rem; 
+            text-transform: uppercase; 
+            letter-spacing: 2px; 
+        }
+        .winner-name { 
+            font-size: 2.5rem; 
+            font-weight: bold; 
+            margin: 15px 0; 
+            color: #fff; 
+        }
+        .winner-ticket { 
+            font-size: 1.2rem; 
+            color: var(--muted); 
+        }
+
+        .repeat-winner-banner {
+            background: rgba(245, 158, 11, 0.2);
+            border: 2px solid var(--gold);
+            color: #fef08a;
+            padding: 14px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-size: 1.05rem;
+            font-weight: bold;
+            line-height: 1.4;
+        }
+
+        .countdown-timer {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--gold);
+            letter-spacing: 2px;
+            margin: 15px 0;
+            font-family: monospace;
+        }
+
+        .arcade-box {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--accent);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            text-align: left;
+        }
+
+        .arcade-title {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: var(--gold);
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .log-box {
+            background: #090d16;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            padding: 10px;
+            max-height: 150px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 0.9rem;
+            color: var(--muted);
+            margin-top: 15px;
+            text-align: left;
+        }
+
+        .custom-list {
             list-style: none;
             padding: 0;
             margin: 0;
         }
 
-        li {
-            padding: 10px 12px;
-            border-bottom: 1px solid #eee;
+        .custom-item {
+            background: #0f172a;
+            border: 1px solid #334155;
+            padding: 10px 15px;
+            border-radius: 6px;
+            margin-bottom: 8px;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
 
-        li:last-child {
-            border-bottom: none;
-        }
-
-        .badge {
+        .item-badge {
             background: var(--accent);
-            color: #000;
-            padding: 3px 8px;
+            color: white;
+            padding: 2px 8px;
             border-radius: 12px;
+            font-size: 0.8rem;
             font-weight: bold;
-            font-size: 0.85rem;
         }
 
-        .winner-box {
-            text-align: center;
-            background: #e8f8f5;
-            border: 2px dashed #2ecc71;
+        .admin-section {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid #334155;
             padding: 15px;
             border-radius: 8px;
-            font-size: 1.3rem;
-            font-weight: bold;
-            color: #27ae60;
-            display: none;
+            margin-bottom: 15px;
+        }
+
+        .admin-panel {
+            border-top: 2px dashed #334155;
+            margin-top: 20px;
+            padding-top: 20px;
+        }
+
+        .hidden { 
+            display: none !important; 
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <!-- Encabezado Principal con 2 líneas -->
-        <header>
-            <h1 id="main-title">🏆 Sorteo HoF Patrulla Retro</h1>
-            <span id="subtitulo-mes" class="subtitulo-mes">Mes de Cargando...</span>
-        </header>
+<div class="container">
+    <img src="logo.png" alt="Logo Patrulla Retro" class="header-logo">
+    <h1 id="mainTitle">🏆 Sorteo HoF Patrulla Retro</h1>
 
-        <!-- Panel de Administración -->
-        <div class="card admin-panel">
-            <h2>⚙️ Panel de Administración</h2>
-            <div class="input-group">
-                <input type="text" id="mesInput" placeholder="Ej: Agosto 2026">
-                <button onclick="guardarMesManually()">Guardar Mes</button>
-            </div>
-            <div class="input-group">
-                <input type="text" id="nuevoParticipante" placeholder="Añadir usuario participante">
-                <button onclick="agregarParticipante()">Añadir</button>
-            </div>
-            <button onclick="realizarSorteo()" style="width: 100%; background-color: #2ecc71; font-size: 1.1rem;">🎲 REALIZAR SORTEO</button>
+    <!-- PANTALLA GANADOR -->
+    <div id="winnerCard" class="winner-box">
+        <div class="winner-title">🎉 ¡Tenemos Ganador Oficial! 🎉</div>
+        <div id="winnerName" class="winner-name">Cargando...</div>
+        <div id="winnerTicket" class="winner-ticket"></div>
+
+        <!-- AVISO DE CAMISETA REPETIDA -->
+        <div id="repeatNotice" class="repeat-winner-banner hidden">
+            🚨 <b>¡Campeón!</b> ¡Teniendo ya la camiseta en el armario, es hora de repartir el botín! Elige a un compañero de la lista de este mes para cederle el premio.
         </div>
 
-        <!-- Ganador de la ronda -->
-        <div id="winnerDisplay" class="winner-box"></div>
-
-        <!-- Hall of Fame -->
-        <div class="card">
-            <h2>🥇 Hall of Fame 🥇</h2>
-            <ul id="listaHallOfFame"></ul>
+        <!-- LISTA PARALELA: ELIGEN EL ARCADE DEL MES -->
+        <div class="arcade-box">
+            <div class="arcade-title">🕹️ Eligen el Arcade del Mes (5 Usuarios):</div>
+            <ul id="arcadeList" class="custom-list"></ul>
         </div>
 
-        <!-- Participantes Activos -->
-        <div class="card">
-            <h2>📋 Participantes de este Mes</h2>
-            <ul id="listaParticipantes"></ul>
-        </div>
+        <div class="log-box" id="publicLog"></div>
     </div>
 
-    <script>
-        // Configuración de Firebase (Sustituye con tus credenciales si es necesario)
-        const firebaseConfig = {
-            databaseURL: "https://TU_PROYECTO.firebaseio.com"
-        };
+    <!-- TARJETA DE CUENTA ATRÁS -->
+    <div id="countdownCard" class="card hidden" style="text-align: center;">
+        <h2>⏳ ¡El Sorteo se celebrará muy pronto!</h2>
+        <p style="color: var(--muted);">Tiempo restante para la tirada oficial:</p>
+        <div id="timerDisplay" class="countdown-timer">00h 00m 00s</div>
+    </div>
+
+    <!-- MENSAJE ESPERA (SIN PROGRAMAR) -->
+    <div id="waitingCard" class="card" style="text-align: center;">
+        <h2>⏳ El sorteo aún no se ha realizado</h2>
+        <p style="color: var(--muted);">El administrador realizará o programará la tirada en breve. Esta página se actualizará automáticamente.</p>
+    </div>
+
+    <!-- LISTA DE PREMIADOS -->
+    <div id="winnersCountCard" class="card">
+        <h3>🥇 Usuarios Premiados y Recuento de Victorias</h3>
+        <ul id="winnersCountList" class="custom-list">
+            <li style="text-align: center; color: var(--muted);">Cargando usuarios...</li>
+        </ul>
+        <button id="btnToggleWinners" class="btn-toggle-view hidden" onclick="toggleWinnersView()">⬇️ Ver todos los usuarios premiados</button>
+    </div>
+
+    <!-- HISTORIAL DE SORTEOS -->
+    <div id="historyCard" class="card">
+        <h3>📜 Historial de Ganadores Anteriores</h3>
+        <ul id="historyList" class="custom-list">
+            <li style="text-align: center; color: var(--muted);">Cargando historial...</li>
+        </ul>
+        <button id="btnToggleHistory" class="btn-toggle-view hidden" onclick="toggleHistoryView()">⬇️ Ver todo el historial</button>
+    </div>
+
+    <div style="text-align: center;">
+        <button onclick="toggleAdminPanel()" style="width: auto; background: transparent; color: var(--muted); font-size: 0.8rem; text-decoration: underline;">
+            ¿Eres el Administrador? Haz clic aquí
+        </button>
+    </div>
+
+    <!-- PANEL ADMIN -->
+    <div id="adminPanel" class="card admin-panel hidden">
+        <h2>🛠️ Panel de Control (Administrador)</h2>
         
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-        }
-        const db = firebase.database();
+        <!-- SECCIÓN 1: MES CORRESPONDIENTE AL SORTEO -->
+        <div class="admin-section">
+            <label><b>📅 Mes correspondiente al Sorteo:</b></label>
 
-        // Referencias Firebase
-        const mesRef = db.ref('config/mesActual');
-        const participantesRef = db.ref('participantes');
-        const victoriasRef = db.ref('victorias');
+            <select id="monthSelect" style="margin-top: 8px;">
+                <option value="">-- Selecciona el mes --</option>
+                <option value="Enero">Enero</option>
+                <option value="Febrero">Febrero</option>
+                <option value="Marzo">Marzo</option>
+                <option value="Abril">Abril</option>
+                <option value="Mayo">Mayo</option>
+                <option value="Junio">Junio</option>
+                <option value="Julio">Julio</option>
+                <option value="Agosto">Agosto</option>
+                <option value="Septiembre">Septiembre</option>
+                <option value="Octubre">Octubre</option>
+                <option value="Noviembre">Noviembre</option>
+                <option value="Diciembre">Diciembre</option>
+            </select>
+            <button style="margin-top: 10px; background-color: var(--accent);" onclick="guardarMesSorteo()">💾 GUARDAR MES DEL SORTEO</button>
+        </div>
 
-        // Escuchar cambios en el Mes
-        mesRef.on('value', (snapshot) => {
-            const val = snapshot.val() || 'Sin definir';
-            document.getElementById('subtitulo-mes').textContent = `Mes de ${val}`;
-        });
+        <!-- SECCIÓN 2: DATOS Y FECHA DEL SORTEO -->
+        <div class="admin-section">
+            <button class="telegram-btn" onclick="importarDesdeTelegram()">📲 CARGAR ÚLTIMA LISTA DE TELEGRAM (@retrojuegodelmes)</button>
 
-        // Guardar Mes introducido manualmente
-        function guardarMesManually() {
-            const mesText = document.getElementById('mesInput').value.trim();
-            if (mesText !== "") {
-                mesRef.set(mesText);
-                document.getElementById('mesInput').value = "";
-            }
-        }
+            <label><b>1. Participantes:</b></label>
+            <textarea id="listInput" placeholder="138-@Themenda987&#10;PUNTO EXTRA&#10;146-@Zapador_1986"></textarea>
 
-        // Cargar Hall of Fame (Victorias)
-        victoriasRef.on('value', (snapshot) => {
-            const lista = document.getElementById('listaHallOfFame');
-            lista.innerHTML = "";
-            const data = snapshot.val() || {};
+            <br><br>
+            <label><b>2. Excluidos / Lista Negra (1 por línea):</b></label>
+            <textarea id="blacklistInput" placeholder="@usuario_excluido1&#10;@usuario_excluido2"></textarea>
+
+            <br><br>
+            <label><b>3. Fecha y Hora Exacta del Sorteo (Opcional):</b></label>
+            <div class="datetime-group">
+                <input type="date" id="drawDateInput">
+                <input type="time" id="drawTimeInput">
+            </div>
+
+            <button class="admin-btn" onclick="programarOEjecutarSorteo()">🎲 GUARDAR Y PROGRAMAR SORTEO</button>
+        </div>
+
+        <!-- SECCIÓN 3: AÑADIR GANADOR(ES) MANUALMENTE CON MES Y AÑO -->
+        <div class="admin-section">
+            <label><b>➕ Añadir Ganador(es) Anterior(es) al Historial:</b></label>
+            <p style="font-size: 0.85rem; color: var(--muted); margin: 5px 0 10px 0;">
+                Introduce los usuarios y selecciona el mes y año en el que obtuvieron el premio.
+            </p>
+            <textarea id="manualUserAdmin" placeholder="@usuario1&#10;@usuario2, @usuario3" style="height: 70px;"></textarea>
             
-            for (let user in data) {
-                const li = document.createElement('li');
-                li.innerHTML = `<span><strong>${user}</strong></span> <span class="badge">${data[user]} victorias</span>`;
-                lista.appendChild(li);
-            }
-        });
+            <label style="margin-top: 10px; display: block; font-size: 0.9rem;"><b>📅 Mes y Año del Premio (opcional):</b></label>
+            <input type="month" id="manualWinnerMonth" style="margin-top: 5px; margin-bottom: 10px;">
 
-        // Cargar Participantes
-        participantesRef.on('value', (snapshot) => {
-            const lista = document.getElementById('listaParticipantes');
-            lista.innerHTML = "";
-            const data = snapshot.val() || {};
+            <button style="background-color: #0284c7;" onclick="agregarGanadorManual()">➕ AÑADIR AL HISTORIAL DE FIREBASE</button>
+        </div>
+
+        <button class="warning-btn" onclick="borrarUltimoSorteo()">↩️ BORRAR ÚLTIMO SORTEO</button>
+        <button class="clear-btn" onclick="borrarTodo()">🧹 BORRAR TODO (RESETEAR FIREBASE)</button>
+    </div>
+</div>
+
+<script>
+    const firebaseConfig = {
+        databaseURL: "https://sorteo-hof-default-rtdb.europe-west1.firebasedatabase.app"
+    };
+    
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    let actualGanadorUser = "";
+    let isWinnersExpanded = false;
+    let isHistoryExpanded = false;
+    let rawHistoryItems = [];
+    let rawWinnersCount = [];
+    let isAdminLoggedIn = false;
+
+    let timerInterval = null;
+    let programData = null;
+
+    // Nombres de los meses para formato limpio
+    const nombresMeses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+
+    // Fallback logo
+    const logoImg = document.querySelector('.header-logo');
+    if (logoImg) {
+        logoImg.onerror = function() {
+            if (this.src.endsWith('logo.png')) this.src = 'logo.jpg';
+        };
+    }
+
+    // --- FUNCIÓN IMPORTAR DESDE TELEGRAM ---
+    async function importarDesdeTelegram() {
+        const btn = document.querySelector('.telegram-btn');
+        const originalText = btn.innerText;
+        btn.innerText = "⏳ Buscando última lista en Telegram...";
+        btn.disabled = true;
+
+        try {
+            const proxyUrl = 'https://api.allorigins.win/get?url=';
+            const targetUrl = encodeURIComponent('https://t.me/s/retrojuegodelmes');
             
-            for (let key in data) {
-                const li = document.createElement('li');
-                li.innerHTML = `<span>${data[key]}</span> <button class="btn-danger" onclick="eliminarParticipante('${key}')">X</button>`;
-                lista.appendChild(li);
+            const response = await fetch(proxyUrl + targetUrl);
+            const data = await response.json();
+            
+            if (!data.contents) {
+                throw new Error("No se pudo obtener el contenido del canal.");
             }
-        });
 
-        // Agregar Participante
-        function agregarParticipante() {
-            const input = document.getElementById('nuevoParticipante');
-            const nombre = input.value.trim();
-            if (nombre !== "") {
-                participantesRef.push(nombre);
-                input.value = "";
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(data.contents, 'text/html');
+            const messages = doc.querySelectorAll('.tgme_widget_message_text');
+
+            if (!messages || messages.length === 0) {
+                alert("No se encontraron mensajes públicos en el canal.");
+                return;
             }
-        }
 
-        // Eliminar Participante
-        function eliminarParticipante(key) {
-            participantesRef.child(key).remove();
-        }
+            let ultimaListaEncontrada = "";
+            const regexPatronLista = /\d+[\s-]*@[\w_]+/i;
 
-        // Realizar Sorteo
-        function realizarSorteo() {
-            participantesRef.once('value', (snapshot) => {
-                const data = snapshot.val();
-                if (!data) {
-                    alert("No hay participantes para el sorteo.");
-                    return;
+            for (let i = messages.length - 1; i >= 0; i--) {
+                const textHtml = messages[i].innerHTML;
+                let plainText = textHtml.replace(/<br\s*[\/]?>/gi, "\n");
+                let tempDiv = document.createElement("div");
+                tempDiv.innerHTML = plainText;
+                plainText = tempDiv.textContent || tempDiv.innerText || "";
+
+                if (regexPatronLista.test(plainText)) {
+                    const lineas = plainText.split('\n');
+                    const lineasFiltradas = lineas.filter(l => {
+                        const limpia = l.trim();
+                        return regexPatronLista.test(limpia) || /PUNTO\s+EXTRA/i.test(limpia);
+                    });
+
+                    if (lineasFiltradas.length > 0) {
+                        ultimaListaEncontrada = lineasFiltradas.join('\n');
+                        break;
+                    }
                 }
-                const keys = Object.keys(data);
-                const winnerKey = keys[Math.floor(Math.random() * keys.length)];
-                const winnerName = data[winnerKey];
+            }
 
-                // Mostrar ganador
-                const display = document.getElementById('winnerDisplay');
-                display.style.display = "block";
-                display.innerHTML = `🎉 ¡El ganador es: ${winnerName}! 🎉`;
+            if (ultimaListaEncontrada) {
+                document.getElementById('listInput').value = ultimaListaEncontrada;
+                alert("¡Éxito! Se ha cargado la última lista activa encontrada en @retrojuegodelmes.");
+            } else {
+                alert("No se encontró ningún mensaje reciente que contenga una lista con el formato 'Número-@usuario'.");
+            }
 
-                // Sumar victoria en Hall of Fame
-                victoriasRef.child(winnerName).transaction((current) => {
-                    return (current || 0) + 1;
-                });
+        } catch (error) {
+            console.error("Error al importar de Telegram:", error);
+            alert("Ocurrió un error al intentar conectar con Telegram. Puedes pegar la lista manualmente.");
+        } finally {
+            btn.innerText = originalText;
+            btn.disabled = false;
+        }
+    }
+
+    // Escuchar cambios en el Mes del Sorteo en Firebase
+    db.ref('mes_sorteo').on('value', function(snapshot) {
+        const mes = snapshot.val();
+        const titleEl = document.getElementById('mainTitle');
+        if (mes) {
+            titleEl.innerText = "🏆 Sorteo HoF Patrulla Retro de " + mes;
+            document.getElementById('monthSelect').value = mes;
+        } else {
+            titleEl.innerText = "🏆 Sorteo HoF Patrulla Retro";
+        }
+    });
+
+    // Guardar el mes del sorteo
+    function guardarMesSorteo() {
+        const mes = document.getElementById('monthSelect').value;
+        if (!mes) {
+            alert("Por favor, selecciona un mes del desplegable.");
+            return;
+        }
+
+        const confirmar = confirm("¿Confirmas que deseas cambiar el título del sorteo al mes de " + mes + "?");
+        if (confirmar) {
+            db.ref('mes_sorteo').set(mes).then(function() {
+                alert("¡Mes actualizado con éxito a: " + mes + "!");
             });
         }
-    </script>
+    }
+
+    // Añadir ganador(es) manual(es) con formato Mes/Año
+    function agregarGanadorManual() {
+        const inputVal = document.getElementById('manualUserAdmin').value.trim();
+        const customMonthVal = document.getElementById('manualWinnerMonth').value; // Formato YYYY-MM
+
+        if (!inputVal) {
+            alert("Introduce al menos un usuario (ej: @usuario).");
+            return;
+        }
+
+        let fechaTexto = "";
+        let timestampToSave = Date.now();
+
+        if (customMonthVal) {
+            const parts = customMonthVal.split('-'); // [YYYY, MM]
+            const year = parseInt(parts[0], 10);
+            const monthIdx = parseInt(parts[1], 10) - 1;
+            fechaTexto = `${nombresMeses[monthIdx]} ${year}`;
+            timestampToSave = new Date(year, monthIdx, 1).getTime();
+        } else {
+            const ahora = new Date();
+            fechaTexto = `${nombresMeses[ahora.getMonth()]} ${ahora.getFullYear()}`;
+        }
+
+        const usuarios = inputVal.split(/[\n,\s]+/).map(u => u.trim()).filter(u => u.length > 0);
+        let añadidos = 0;
+
+        usuarios.forEach(function(usr) {
+            let userFinal = usr.startsWith('@') ? usr : '@' + usr;
+            db.ref('historial_ganadores').push({
+                user: userFinal,
+                ticket: "Entrada Manual",
+                fecha: fechaTexto,
+                timestamp: timestampToSave
+            });
+            añadidos++;
+        });
+
+        alert("¡" + añadidos + " usuario(s) añadido(s) al historial de Firebase con fecha " + fechaTexto + "!");
+        document.getElementById('manualUserAdmin').value = '';
+        document.getElementById('manualWinnerMonth').value = '';
+    }
+
+    // Borrar un premio específico solicitando SIEMPRE confirmación explícita
+    function borrarGanadorEspecifico(key, usuario, fecha) {
+        if (!isAdminLoggedIn) return;
+        
+        const mensajeConfirmacion = `⚠️ ¿Estás seguro de que deseas ELIMINAR del historial a:\n\nUsuario: ${usuario}\nFecha: ${fecha}\n\nEsta acción borra la entrada directamente de Firebase y no se puede deshacer.`;
+        
+        if (confirm(mensajeConfirmacion)) {
+            db.ref('historial_ganadores/' + key).remove().then(function() {
+                alert("✅ Entrada eliminada correctamente del historial.");
+            }).catch(function(err) {
+                alert("❌ Error al intentar eliminar: " + err.message);
+            });
+        }
+    }
+
+    // Verificar si el ganador actual es repetido
+    function verificarRepetidoVisual() {
+        if (!actualGanadorUser) return;
+        
+        db.ref('historial_').once('value', function(snapshot) {
+            const data = snapshot.val();
+            let totalVictorias = 0;
+
+            if (data) {
+                Object.values(data).forEach(function(item) {
+                    if (item.user.toLowerCase() === actualGanadorUser.toLowerCase()) {
+                        totalVictorias++;
+                    }
+                });
+            }
+
+            const noticeEl = document.getElementById('repeatNotice');
+            if (totalVictorias > 1) {
+                noticeEl.classList.remove('hidden');
+            } else {
+                noticeEl.classList.add('hidden');
+            }
+        });
+    }
+
+    // Escuchar Sorteo Actual en Firebase
+    db.ref('sorteo_actual').on('value', function(snapshot) {
+        const data = snapshot.val();
+        programData = data;
+        
+        if (timerInterval) clearInterval(timerInterval);
+
+        if (data && data.status === 'programado') {
+            document.getElementById('winnerCard').style.display = 'none';
+            document.getElementById('waitingCard').classList.add('hidden');
+            document.getElementById('countdownCard').classList.remove('hidden');
+
+            iniciarRelojCuentaAtras(data.targetTime);
+
+        } else if (data && data.ganador) {
+            document.getElementById('countdownCard').classList.add('hidden');
+            document.getElementById('waitingCard').classList.add('hidden');
+            document.getElementById('winnerCard').style.display = 'block';
+            
+            actualGanadorUser = data.ganador.user;
+            document.getElementById('winnerName').innerText = data.ganador.user;
+            document.getElementById('winnerTicket').innerText = "Boleto premiado: " + data.ganador.ticket;
+
+            verificarRepetidoVisual();
+            
+            const logBox = document.getElementById('publicLog');
+            logBox.innerHTML = "<b>Historial de tiradas:</b><br>" + data.log.join('<br>');
+
+            const arcadeList = document.getElementById('arcadeList');
+            arcadeList.innerHTML = '';
+            if (data.arcadeGroup && data.arcadeGroup.length > 0) {
+                data.arcadeGroup.forEach(function(item) {
+                    const li = document.createElement('li');
+                    li.className = 'custom-item';
+                    const esGanador = item.user.toLowerCase() === data.ganador.user.toLowerCase();
+                    li.innerHTML = '<div><strong>' + item.user + '</strong> <span style="color: var(--muted);">(' + item.ticket + ')</span></div>' +
+                        (esGanador ? '<span class="item-badge" style="background: var(--gold); color: black;">¡Ganador Principal!</span>' : '<span class="item-badge" style="background: #334155;">Elección Arcade</span>');
+                    arcadeList.appendChild(li);
+                });
+            }
+        } else {
+            document.getElementById('winnerCard').style.display = 'none';
+            document.getElementById('countdownCard').classList.add('hidden');
+            document.getElementById('waitingCard').classList.remove('hidden');
+        }
+    });
+
+    // Reloj cuenta atrás
+    function iniciarRelojCuentaAtras(targetTime) {
+        function actualizar() {
+            const ahora = Date.now();
+            const diferencia = targetTime - ahora;
+
+            if (diferencia <= 0) {
+                clearInterval(timerInterval);
+                document.getElementById('timerDisplay').innerText = "¡Sorteando...";
+                ejecutarTiradaProgramada();
+                return;
+            }
+
+            const dias = Math.floor(diferencia / (1000 * 60 * 60 * 24));
+            const horas = Math.floor((diferencia % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutos = Math.floor((diferencia % (1000 * 60 * 60)) / (1000 * 60));
+            const segundos = Math.floor((diferencia % (1000 * 60)) / 1000);
+
+            let textoReloj = "";
+            if (dias > 0) textoReloj += dias + "d ";
+            textoReloj += String(horas).padStart(2, '0') + "h " + 
+                         String(minutos).padStart(2, '0') + "m " + 
+                         String(segundos).padStart(2, '0') + "s";
+
+            document.getElementById('timerDisplay').innerText = textoReloj;
+        }
+
+        actualizar();
+        timerInterval = setInterval(actualizar, 1000);
+    }
+
+    // Escuchar Historial Global (Firebase únicamente)
+    db.ref('historial_').on('value', function(snapshot) {
+        const data = snapshot.val();
+        let mapaConteo = {};
+        rawHistoryItems = [];
+
+        if (data) {
+            Object.keys(data).forEach(function(key) {
+                const item = data[key];
+                item.key = key; // Guardamos la clave única de Firebase
+                rawHistoryItems.push(item);
+
+                const userKey = item.user;
+                mapaConteo[userKey] = (mapaConteo[userKey] || 0) + 1;
+            });
+
+            // Ordenamos por timestamp (más reciente primero)
+            rawHistoryItems.sort(function(a, b) {
+                return (b.timestamp || 0) - (a.timestamp || 0);
+            });
+        }
+
+        rawWinnersCount = Object.keys(mapaConteo).map(function(usr) {
+            return { user: usr, total: mapaConteo[usr] };
+        }).sort(function(a, b) { return b.total - a.total; });
+
+        renderWinnersList();
+        renderHistoryList();
+        verificarRepetidoVisual();
+    });
+
+    function renderWinnersList() {
+        const listEl = document.getElementById('winnersCountList');
+        const btn = document.getElementById('btnToggleWinners');
+        listEl.innerHTML = '';
+        if (rawWinnersCount.length === 0) {
+            listEl.innerHTML = '<li style="text-align: center; color: var(--muted);">Sin historial de ganadores guardado.</li>';
+            btn.classList.add('hidden');
+            return;
+        }
+
+        const visibleItems = isWinnersExpanded ? rawWinnersCount : rawWinnersCount.slice(0, 3);
+        visibleItems.forEach(function(item) {
+            const li = document.createElement('li');
+            li.className = 'custom-item';
+            const textoVez = item.total === 1 ? 'vez premiado' : 'veces premiado';
+            li.innerHTML = '<div><strong>' + item.user + '</strong></div><span class="item-badge">' + item.total + ' ' + textoVez + '</span>';
+            listEl.appendChild(li);
+        });
+
+        if (rawWinnersCount.length > 3) {
+            btn.classList.remove('hidden');
+            btn.innerText = isWinnersExpanded ? '⬆️ Mostrar solo los 3 principales' : '⬇️ Ver todos los usuarios premiados (' + rawWinnersCount.length + ')';
+        } else {
+            btn.classList.add('hidden');
+        }
+    }
+
+    function renderHistoryList() {
+        const listEl = document.getElementById('historyList');
+        const btn = document.getElementById('btnToggleHistory');
+        listEl.innerHTML = '';
+        
+        if (rawHistoryItems.length === 0) {
+            listEl.innerHTML = '<li style="text-align: center; color: var(--muted);">Sin sorteos o entradas registradas.</li>';
+            btn.classList.add('hidden');
+            return;
+        }
+
+        const visibleItems = isHistoryExpanded ? rawHistoryItems : rawHistoryItems.slice(0, 3);
+        visibleItems.forEach(function(item) {
+            const li = document.createElement('li');
+            li.className = 'custom-item';
+            
+            let deleteBtnHtml = '';
+            if (isAdminLoggedIn) {
+                deleteBtnHtml = `<button class="delete-item-btn" onclick="borrarGanadorEspecifico('${item.key}', '${item.user}', '${item.fecha}')">🗑️ Borrar</button>`;
+            }
+
+            li.innerHTML = '<div><strong>' + item.user + '</strong> <span style="color: var(--muted);">(' + item.ticket + ')</span></div>' +
+                           '<div style="display:flex; align-items:center;"><div style="font-size: 0.8rem; color: var(--muted);">' + item.fecha + '</div>' + deleteBtnHtml + '</div>';
+            listEl.appendChild(li);
+        });
+
+        if (rawHistoryItems.length > 3) {
+            btn.classList.remove('hidden');
+            btn.innerText = isHistoryExpanded ? '⬆️ Mostrar solo los últimos 3 sorteos' : '⬇️ Ver todo el historial (' + rawHistoryItems.length + ')';
+        } else {
+            btn.classList.add('hidden');
+        }
+    }
+
+    function toggleWinnersView() { isWinnersExpanded = !isWinnersExpanded; renderWinnersList(); }
+    function toggleHistoryView() { isHistoryExpanded = !isHistoryExpanded; renderHistoryList(); }
+
+    function toggleAdminPanel() {
+        const pass = prompt("Introduce la clave de administrador:");
+        if (pass === "patrulla123") {
+            isAdminLoggedIn = true;
+            document.getElementById('adminPanel').classList.remove('hidden');
+            renderHistoryList(); // Renderizar de nuevo para mostrar los botones de borrado
+        } else if (pass !== null) {
+            alert("Contraseña incorrecta.");
+        }
+    }
+
+    function borrarUltimoSorteo() {
+        if (confirm("⚠️ ¿Deseas borrar la tirada actual o la programación activa?")) {
+            db.ref('sorteo_actual').remove();
+            db.ref('historial_ganadores').limitToLast(1).once('value', function(snapshot) {
+                const data = snapshot.val();
+                if (data) {
+                    const keyBorrar = Object.keys(data)[0];
+                    db.ref('historial_ganadores/' + keyBorrar).remove();
+                    alert("Último sorteo borrado.");
+                } else {
+                    alert("Estado actual borrado.");
+                }
+            });
+        }
+    }
+
+    function borrarTodo() {
+        if (confirm("⚠️ ¿Estás seguro de que quieres BORRAR TODO el historial de la web en Firebase? Esta acción no se puede deshacer.")) {
+            document.getElementById('listInput').value = '';
+            document.getElementById('blacklistInput').value = '';
+            document.getElementById('drawDateInput').value = '';
+            document.getElementById('drawTimeInput').value = '';
+            db.ref('sorteo_actual').remove();
+            db.ref('historial_ganadores').remove();
+            alert("Todo borrado correctamente de Firebase.");
+        }
+    }
+
+    function programarOEjecutarSorteo() {
+        const dateVal = document.getElementById('drawDateInput').value;
+        const timeVal = document.getElementById('drawTimeInput').value;
+        const rawLines = document.getElementById('listInput').value.trim();
+        const rawBlacklist = document.getElementById('blacklistInput').value.trim();
+
+        if (!rawLines) {
+            alert("Por favor, pega o importa la lista de participantes.");
+            return;
+        }
+
+        if (timeVal) {
+            const timeParts = timeVal.split(':');
+            let targetDate = new Date();
+
+            if (dateVal) {
+                const dateParts = dateVal.split('-');
+                targetDate.setFullYear(parseInt(dateParts[0], 10), parseInt(dateParts[1], 10) - 1, parseInt(dateParts[2], 10));
+            }
+
+            targetDate.setHours(parseInt(timeParts[0], 10), parseInt(timeParts[1], 10), 0, 0);
+
+            if (!dateVal && targetDate.getTime() <= Date.now()) {
+                targetDate.setDate(targetDate.getDate() + 1);
+            }
+
+            const targetTime = targetDate.getTime();
+
+            db.ref('sorteo_actual').set({
+                status: 'programado',
+                targetTime: targetTime,
+                rawLines: rawLines,
+                rawBlacklist: rawBlacklist
+            }).then(function() {
+                alert("¡Sorteo programado con éxito! La cuenta atrás ya está activa.");
+            });
+        } else {
+            const confirmarInmediato = confirm("El sorteo se realizará de inmediato si no especificas una hora. ¿Continuar?");
+            if (confirmarInmediato) {
+                calcularYEjecutarTirada(rawLines, rawBlacklist);
+            }
+        }
+    }
+
+    function ejecutarTiradaProgramada() {
+        if (!programData || programData.status !== 'programado') return;
+        calcularYEjecutarTirada(programData.rawLines, programData.rawBlacklist);
+    }
+
+    function calcularYEjecutarTirada(rawLinesStr, rawBlacklistStr) {
+        const rawLines = rawLinesStr.split('\n');
+        const rawBlacklist = rawBlacklistStr.split('\n');
+
+        let participantesValidos = [];
+        rawLines.forEach(function(line) {
+            let lineaLimpia = line.trim();
+            if (!lineaLimpia) return;
+            const matchUser = lineaLimpia.match(/@[\w_]+/);
+            if (matchUser) {
+                let boletoLimpio = lineaLimpia.replace(/PUNTO\s+EXTRA\s*/gi, '').trim();
+                participantesValidos.push({ ticket: boletoLimpio, user: matchUser[0] });
+            }
+        });
+
+        const total = participantesValidos.length;
+        if (total === 0) return;
+
+        const blacklist = rawBlacklist.map(function(u) { return u.trim().toLowerCase(); }).filter(function(u) { return u.length > 0; });
+
+        let log = [];
+        let ganadorEncontrado = null;
+        let indexGanador = -1;
+        let listaCopia = participantesValidos.slice();
+
+        while (listaCopia.length > 0) {
+            const indexAleatorio = Math.floor(Math.random() * listaCopia.length);
+            const entrada = listaCopia[indexAleatorio];
+            const usuarioMinusculas = entrada.user.toLowerCase();
+
+            if (blacklist.indexOf(usuarioMinusculas) !== -1) {
+                log.push("❌ Descartado: " + entrada.ticket + " (" + entrada.user + " está en la Lista Negra)");
+                listaCopia.splice(indexAleatorio, 1);
+            } else {
+                ganadorEncontrado = entrada;
+                indexGanador = participantesValidos.findIndex(function(p) { return p.ticket === entrada.ticket; });
+                log.push("✅ ¡TIRADA GANADORA!: " + entrada.ticket);
+                break;
+            }
+        }
+
+        if (!ganadorEncontrado) return;
+
+        let anteriores = [], posteriores = [], usuariosUsados = {};
+        usuariosUsados[ganadorEncontrado.user.toLowerCase()] = true;
+
+        let curr = indexGanador - 1, cntAnt = 0;
+        while (anteriores.length < 2 && cntAnt < total) {
+            if (curr < 0) curr = total - 1;
+            let cand = participantesValidos[curr];
+            if (!usuariosUsados[cand.user.toLowerCase()]) {
+                anteriores.unshift(cand);
+                usuariosUsados[cand.user.toLowerCase()] = true;
+            }
+            curr--; cntAnt++;
+        }
+
+        curr = indexGanador + 1; let cntPost = 0;
+        while (posteriores.length < 2 && cntPost < total) {
+            if (curr >= total) curr = 0;
+            let cand = participantesValidos[curr];
+            if (!usuariosUsados[cand.user.toLowerCase()]) {
+                posteriores.push(cand);
+                usuariosUsados[cand.user.toLowerCase()] = true;
+            }
+            curr++; cntPost++;
+        }
+
+        const arcadeGroup = anteriores.concat([ganadorEncontrado], posteriores);
+        const ahora = new Date();
+        const fechaFormateada = `${nombresMeses[ahora.getMonth()]} ${ahora.getFullYear()}`;
+
+        db.ref('historial_ganadores').push({
+            user: ganadorEncontrado.user,
+            ticket: ganadorEncontrado.ticket,
+            fecha: fechaFormateada,
+            timestamp: Date.now()
+        });
+
+        db.ref('sorteo_actual').set({
+            ganador: ganadorEncontrado,
+            arcadeGroup: arcadeGroup,
+            log: log,
+            timestamp: Date.now()
+        });
+    }
+</script>
+
 </body>
 </html>
