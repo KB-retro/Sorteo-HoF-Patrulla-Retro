@@ -1,135 +1,291 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sorteo HoF Patrulla Retro</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      max-width: 800px;
-      margin: 20px auto;
-      padding: 0 20px;
-      background-color: #f4f4f9;
-      color: #333;
-    }
-    header {
-      text-align: center;
-      margin-bottom: 30px;
-    }
-    h1 {
-      margin-bottom: 5px;
-    }
-    .subtitulo-mes {
-      display: block;
-      font-size: 0.75em;
-      font-weight: normal;
-      color: #555;
-      margin-top: 5px;
-    }
-    section {
-      background: #fff;
-      padding: 20px;
-      margin-bottom: 20px;
-      border-radius: 8px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
-    .admin-panel {
-      border: 2px dashed #007bff;
-      background-color: #eef6ff;
-    }
-    label {
-      font-weight: bold;
-    }
-    select, input, button {
-      padding: 8px;
-      margin: 5px 0;
-      border-radius: 4px;
-      border: 1px solid #ccc;
-    }
-    button {
-      background-color: #007bff;
-      color: white;
-      cursor: pointer;
-      border: none;
-    }
-    button:hover {
-      background-color: #0056b3;
-    }
-    ul {
-      list-style-type: none;
-      padding: 0;
-    }
-    li {
-      padding: 8px 0;
-      border-bottom: 1px solid #eee;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sorteo HoF Patrulla Retro</title>
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #e74c3c;
+            --accent: #f1c40f;
+            --bg: #f8f9fa;
+            --card-bg: #ffffff;
+            --text: #333333;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        h1 {
+            color: var(--primary);
+            margin-bottom: 5px;
+            font-size: 2.2rem;
+        }
+
+        .subtitulo-mes {
+            display: block;
+            font-size: 1.2rem;
+            color: #666;
+            font-weight: 600;
+            margin-top: 5px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border: 1px solid #e0e0e0;
+        }
+
+        h2 {
+            color: var(--primary);
+            border-bottom: 2px solid var(--accent);
+            padding-bottom: 8px;
+            margin-top: 0;
+            font-size: 1.4rem;
+        }
+
+        .admin-panel {
+            border: 2px solid #3498db;
+            background-color: #f4f9fc;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        input[type="text"], select {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            min-width: 200px;
+        }
+
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        button.btn-danger {
+            background-color: var(--secondary);
+        }
+
+        button.btn-danger:hover {
+            background-color: #c0392b;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        li {
+            padding: 10px 12px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        li:last-child {
+            border-bottom: none;
+        }
+
+        .badge {
+            background: var(--accent);
+            color: #000;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 0.85rem;
+        }
+
+        .winner-box {
+            text-align: center;
+            background: #e8f8f5;
+            border: 2px dashed #2ecc71;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #27ae60;
+            display: none;
+        }
+    </style>
 </head>
 <body>
 
-  <!-- Encabezado Principal -->
-  <header>
-    <h1>
-      🏆 Sorteo HoF Patrulla Retro<br>
-      <span id="subtitulo-mes" class="subtitulo-mes">Mes de Enero</span>
-    </h1>
-  </header>
+    <div class="container">
+        <!-- Encabezado Principal con 2 líneas -->
+        <header>
+            <h1 id="main-title">🏆 Sorteo HoF Patrulla Retro</h1>
+            <span id="subtitulo-mes" class="subtitulo-mes">Mes de Cargando...</span>
+        </header>
 
-  <!-- Panel de Administración -->
-  <section class="admin-panel">
-    <h3>⚙️ Panel de Administración</h3>
-    <div>
-      <label for="select-mes">Cambiar Mes del Sorteo:</label><br>
-      <select id="select-mes">
-        <option value="Enero">Enero</option>
-        <option value="Febrero">Febrero</option>
-        <option value="Marzo">Marzo</option>
-        <option value="Abril">Abril</option>
-        <option value="Mayo">Mayo</option>
-        <option value="Junio">Junio</option>
-        <option value="Julio">Julio</option>
-        <option value="Agosto">Agosto</option>
-        <option value="Septiembre">Septiembre</option>
-        <option value="Octubre">Octubre</option>
-        <option value="Noviembre">Noviembre</option>
-        <option value="Diciembre">Diciembre</option>
-      </select>
-      <button onclick="guardarMes()">Actualizar Mes</button>
+        <!-- Panel de Administración -->
+        <div class="card admin-panel">
+            <h2>⚙️ Panel de Administración</h2>
+            <div class="input-group">
+                <input type="text" id="mesInput" placeholder="Ej: Agosto 2026">
+                <button onclick="guardarMesManually()">Guardar Mes</button>
+            </div>
+            <div class="input-group">
+                <input type="text" id="nuevoParticipante" placeholder="Añadir usuario participante">
+                <button onclick="agregarParticipante()">Añadir</button>
+            </div>
+            <button onclick="realizarSorteo()" style="width: 100%; background-color: #2ecc71; font-size: 1.1rem;">🎲 REALIZAR SORTEO</button>
+        </div>
+
+        <!-- Ganador de la ronda -->
+        <div id="winnerDisplay" class="winner-box"></div>
+
+        <!-- Hall of Fame -->
+        <div class="card">
+            <h2>🥇 Hall of Fame 🥇</h2>
+            <ul id="listaHallOfFame"></ul>
+        </div>
+
+        <!-- Participantes Activos -->
+        <div class="card">
+            <h2>📋 Participantes de este Mes</h2>
+            <ul id="listaParticipantes"></ul>
+        </div>
     </div>
-  </section>
 
-  <!-- Sección Hall of Fame -->
-  <section>
-    <h2>🥇 Hall of Fame 🥇</h2>
-    <ul id="lista-hall-of-fame">
-      <!-- Ejemplo de lista de ganadores/victorias -->
-      <li><strong>@Usuario1</strong> — 3 victorias</li>
-      <li><strong>@Usuario2</strong> — 1 victoria</li>
-    </ul>
-  </section>
+    <script>
+        // Configuración de Firebase (Sustituye con tus credenciales si es necesario)
+        const firebaseConfig = {
+            databaseURL: "https://TU_PROYECTO.firebaseio.com"
+        };
+        
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const db = firebase.database();
 
-  <script>
-    // Función para actualizar el subtítulo del mes en la pantalla
-    function actualizarSubtituloMes(mes) {
-      const subtituloElem = document.getElementById('subtitulo-mes');
-      if (subtituloElem) {
-        subtituloElem.textContent = `Mes de ${mes}`;
-      }
-    }
+        // Referencias Firebase
+        const mesRef = db.ref('config/mesActual');
+        const participantesRef = db.ref('participantes');
+        const victoriasRef = db.ref('victorias');
 
-    // Evento del botón del Panel de Administración
-    function guardarMes() {
-      const selector = document.getElementById('select-mes');
-      const mesSeleccionado = selector.value;
-      
-      // Actualizar vista
-      actualizarSubtituloMes(mesSeleccionado);
-      
-      // Si usas Firebase u otra base de datos, aquí ejecutas la actualización:
-      // firebase.database().ref('config/mesActual').set(mesSeleccionado);
-    }
-  </script>
+        // Escuchar cambios en el Mes
+        mesRef.on('value', (snapshot) => {
+            const val = snapshot.val() || 'Sin definir';
+            document.getElementById('subtitulo-mes').textContent = `Mes de ${val}`;
+        });
 
+        // Guardar Mes introducido manualmente
+        function guardarMesManually() {
+            const mesText = document.getElementById('mesInput').value.trim();
+            if (mesText !== "") {
+                mesRef.set(mesText);
+                document.getElementById('mesInput').value = "";
+            }
+        }
+
+        // Cargar Hall of Fame (Victorias)
+        victoriasRef.on('value', (snapshot) => {
+            const lista = document.getElementById('listaHallOfFame');
+            lista.innerHTML = "";
+            const data = snapshot.val() || {};
+            
+            for (let user in data) {
+                const li = document.createElement('li');
+                li.innerHTML = `<span><strong>${user}</strong></span> <span class="badge">${data[user]} victorias</span>`;
+                lista.appendChild(li);
+            }
+        });
+
+        // Cargar Participantes
+        participantesRef.on('value', (snapshot) => {
+            const lista = document.getElementById('listaParticipantes');
+            lista.innerHTML = "";
+            const data = snapshot.val() || {};
+            
+            for (let key in data) {
+                const li = document.createElement('li');
+                li.innerHTML = `<span>${data[key]}</span> <button class="btn-danger" onclick="eliminarParticipante('${key}')">X</button>`;
+                lista.appendChild(li);
+            }
+        });
+
+        // Agregar Participante
+        function agregarParticipante() {
+            const input = document.getElementById('nuevoParticipante');
+            const nombre = input.value.trim();
+            if (nombre !== "") {
+                participantesRef.push(nombre);
+                input.value = "";
+            }
+        }
+
+        // Eliminar Participante
+        function eliminarParticipante(key) {
+            participantesRef.child(key).remove();
+        }
+
+        // Realizar Sorteo
+        function realizarSorteo() {
+            participantesRef.once('value', (snapshot) => {
+                const data = snapshot.val();
+                if (!data) {
+                    alert("No hay participantes para el sorteo.");
+                    return;
+                }
+                const keys = Object.keys(data);
+                const winnerKey = keys[Math.floor(Math.random() * keys.length)];
+                const winnerName = data[winnerKey];
+
+                // Mostrar ganador
+                const display = document.getElementById('winnerDisplay');
+                display.style.display = "block";
+                display.innerHTML = `🎉 ¡El ganador es: ${winnerName}! 🎉`;
+
+                // Sumar victoria en Hall of Fame
+                victoriasRef.child(winnerName).transaction((current) => {
+                    return (current || 0) + 1;
+                });
+            });
+        }
+    </script>
 </body>
 </html>
