@@ -434,27 +434,23 @@
         <div id="timerDisplay" class="countdown-timer">00h 00m 00s</div>
     </div>
 
-    <!-- MENSAJE ESPERA (SIN PROGRAMAR) -->
-    <div id="waitingCard" class="card" style="text-align: center;">
+    <!-- MENSAJE ESPERA (OCULTO DE INICIO PARA EVITAR PESTAÑEO) -->
+    <div id="waitingCard" class="card hidden" style="text-align: center;">
         <h2>⏳ El sorteo aún no se ha realizado</h2>
         <p style="color: var(--muted); font-size: 0.85rem;">El administrador realizará o programará la tirada en breve. Esta página se actualizará automáticamente.</p>
     </div>
 
-    <!-- LISTA DE PREMIADOS -->
-    <div id="winnersCountCard" class="card">
+    <!-- LISTA DE PREMIADOS (OCULTO DE INICIO HASTA RECIBIR DATOS DE FIREBASE) -->
+    <div id="winnersCountCard" class="card hidden">
         <h3>🥇 Usuarios Premiados y Recuento de Victorias</h3>
-        <ul id="winnersCountList" class="custom-list">
-            <li style="text-align: center; color: var(--muted);">Cargando usuarios...</li>
-        </ul>
+        <ul id="winnersCountList" class="custom-list"></ul>
         <button id="btnToggleWinners" class="btn-toggle-view hidden" onclick="toggleWinnersView()">⬇️ Ver todos los usuarios premiados</button>
     </div>
 
-    <!-- HISTORIAL DE SORTEOS -->
-    <div id="historyCard" class="card">
+    <!-- HISTORIAL DE SORTEOS (OCULTO DE INICIO HASTA RECIBIR DATOS DE FIREBASE) -->
+    <div id="historyCard" class="card hidden">
         <h3>📜 Historial de Ganadores Anteriores</h3>
-        <ul id="historyList" class="custom-list">
-            <li style="text-align: center; color: var(--muted);">Cargando historial...</li>
-        </ul>
+        <ul id="historyList" class="custom-list"></ul>
         <button id="btnToggleHistory" class="btn-toggle-view hidden" onclick="toggleHistoryView()">⬇️ Ver todo el historial</button>
     </div>
 
@@ -866,6 +862,10 @@
         renderWinnersList();
         renderHistoryList();
         verificarRepetidoVisual();
+
+        // Mostrar las tarjetas únicamente cuando ya tenemos los datos renderizados
+        document.getElementById('winnersCountCard').classList.remove('hidden');
+        document.getElementById('historyCard').classList.remove('hidden');
     });
 
     function renderWinnersList() {
