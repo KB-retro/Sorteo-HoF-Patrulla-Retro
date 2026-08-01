@@ -369,29 +369,6 @@
     <div id="adminPanel" class="card admin-panel hidden">
         <h2>🛠️ Panel de Control (Administrador)</h2>
 
-        <!-- NUEVA SECCIÓN: COPIAS DE SEGURIDAD Y RESTAURACIÓN -->
-        <div class="admin-section" style="border: 1px solid var(--accent); background: rgba(99, 102, 241, 0.08);">
-            <label><b>💾 Copias de Seguridad y Restauración:</b></label>
-            <p style="font-size: 0.8rem; color: var(--muted); margin: 4px 0 10px 0;">
-                El sistema realiza una copia automática en Firebase cada mes al entrar al panel. También puedes restaurar estados anteriores aquí.
-            </p>
-
-            <button style="background-color: #0284c7; margin-bottom: 10px;" onclick="crearBackupManual()">📸 CREAR COPIA DE SEGURIDAD AHORA</button>
-
-            <label style="font-size: 0.85rem; margin-top: 8px; display: block;"><b>📅 Seleccionar Copia para Restaurar:</b></label>
-            <select id="backupSelect" style="margin-top: 4px; margin-bottom: 8px;">
-                <option value="">-- Cargando copias disponibles... --</option>
-            </select>
-
-            <button style="background-color: var(--warning); color: black;" onclick="restaurarBackupSeleccionado()">🔄 RESTAURAR COPIA SELECCIONADA</button>
-
-            <div style="border-top: 1px dashed #334155; margin-top: 12px; padding-top: 10px; display: flex; gap: 8px; flex-wrap: wrap;">
-                <button style="flex: 1; background: #334155; font-size: 0.8rem; padding: 8px;" onclick="descargarBackupJSON()">📥 Descargar JSON PC</button>
-                <button style="flex: 1; background: #334155; font-size: 0.8rem; padding: 8px;" onclick="document.getElementById('jsonFileInput').click()">📤 Cargar JSON PC</button>
-                <input type="file" id="jsonFileInput" accept=".json" class="hidden" onchange="restaurarDesdeJSON(event)">
-            </div>
-        </div>
-
         <!-- SECCIÓN 1: MES CORRESPONDIENTE AL SORTEO -->
         <div class="admin-section">
             <label><b>📅 Mes correspondiente al Sorteo:</b></label>
@@ -446,6 +423,29 @@
             <input type="month" id="manualWinnerMonth" style="margin-top: 4px; margin-bottom: 8px;">
 
             <button style="background-color: #0284c7;" onclick="agregarGanadorManual()">➕ AÑADIR AL HISTORIAL DE FIREBASE</button>
+        </div>
+
+        <!-- SECCIÓN 4: COPIAS DE SEGURIDAD Y RESTAURACIÓN (UBICADA AQUÍ) -->
+        <div class="admin-section" style="border: 1px solid var(--accent); background: rgba(99, 102, 241, 0.08);">
+            <label><b>💾 Copias de Seguridad y Restauración:</b></label>
+            <p style="font-size: 0.8rem; color: var(--muted); margin: 4px 0 10px 0;">
+                El sistema realiza una copia automática en Firebase cada mes al entrar al panel. También puedes restaurar estados anteriores aquí.
+            </p>
+
+            <button style="background-color: #0284c7; margin-bottom: 10px;" onclick="crearBackupManual()">📸 CREAR COPIA DE SEGURIDAD AHORA</button>
+
+            <label style="font-size: 0.85rem; margin-top: 8px; display: block;"><b>📅 Seleccionar Copia para Restaurar:</b></label>
+            <select id="backupSelect" style="margin-top: 4px; margin-bottom: 8px;">
+                <option value="">-- Cargando copias disponibles... --</option>
+            </select>
+
+            <button style="background-color: var(--warning); color: black;" onclick="restaurarBackupSeleccionado()">🔄 RESTAURAR COPIA SELECCIONADA</button>
+
+            <div style="border-top: 1px dashed #334155; margin-top: 12px; padding-top: 10px; display: flex; gap: 8px; flex-wrap: wrap;">
+                <button style="flex: 1; background: #334155; font-size: 0.8rem; padding: 8px;" onclick="descargarBackupJSON()">📥 Descargar JSON PC</button>
+                <button style="flex: 1; background: #334155; font-size: 0.8rem; padding: 8px;" onclick="document.getElementById('jsonFileInput').click()">📤 Cargar JSON PC</button>
+                <input type="file" id="jsonFileInput" accept=".json" class="hidden" onchange="restaurarDesdeJSON(event)">
+            </div>
         </div>
 
         <button class="warning-btn" onclick="borrarUltimoSorteo()">↩️ BORRAR ÚLTIMO SORTEO</button>
