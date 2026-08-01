@@ -485,18 +485,20 @@
         };
     }
 
-    // --- FUNCIÓN IMPORTAR DESDE TELEGRAM (ROBUSTA CON FALLBACK) ---
+    // --- FUNCIÓN IMPORTAR DESDE TELEGRAM (ROBUSTA, SIN CACHÉ Y CON MENSAJES RECIENTES) ---
     async function importarDesdeTelegram() {
         const btn = document.querySelector('.telegram-btn');
         const originalText = btn.innerText;
-        btn.innerText = "⏳ Buscando última lista en Telegram...";
+        btn.innerText = "⏳ Cargando lista en vivo desde Telegram...";
         btn.disabled = true;
 
-        const targetUrl = 'https://t.me/s/retrojuegodelmes';
+        // Añadimos un parámetro de tiempo para romper la caché del proxy y obtener datos en tiempo real
+        const timestamp = Date.now();
+        const targetUrl = `https://t.me/s/retrojuegodelmes?before=${timestamp}`;
         
-        // Lista de proxies a intentar en orden si uno falla
+        // Lista de proxies a intentar en orden con parámetro anti-caché
         const proxies = [
-            `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`,
+            `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}&nocache=${timestamp}`,
             `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`
         ];
 
@@ -504,18 +506,17 @@
 
         for (let proxyUrl of proxies) {
             try {
-                const response = await fetch(proxyUrl);
+                const response = await fetch(proxyUrl, { cache: "no-store" });
                 if (!response.ok) continue;
 
                 if (proxyUrl.includes('allorigins')) {
                     const data = await response.json();
                     htmlContent = data.contents || "";
                 } else {
-                    // corsproxy devuelve directamente el HTML como texto
                     htmlContent = await response.text();
                 }
 
-                if (htmlContent) break; // Si conseguimos HTML, salimos del bucle de proxies
+                if (htmlContent) break;
             } catch (e) {
                 console.warn("Fallo un proxy, probando el siguiente...", e);
             }
@@ -528,6 +529,8 @@
 
             const parser = new DOMParser();
             const doc = parser.parseFromString(htmlContent, 'text/html');
+            
+            // Buscamos todos los contenedores de mensajes de Telegram
             const messages = doc.querySelectorAll('.tgme_widget_message_text');
 
             if (!messages || messages.length === 0) {
@@ -538,30 +541,34 @@
             let ultimaListaEncontrada = "";
             const regexPatronLista = /\d+[\s-]*@[\w_]+/i;
 
+            // Recorremos desde el mensaje MÁS RECIENTE (último del DOM) hacia atrás
             for (let i = messages.length - 1; i >= 0; i--) {
-                const textHtml = messages[i].innerHTML;
-                let plainText = textHtml.replace(/<br\s*[\/]?>/gi, "\n");
+                // Convertimos <br> a saltos de línea para preservar el formato exacto
+                let htmlTemp = messages[i].innerHTML.replace(/<br\s*[\/]?>/gi, "\n");
+                
                 let tempDiv = document.createElement("div");
-                tempDiv.innerHTML = plainText;
-                plainText = tempDiv.textContent || tempDiv.innerText || "";
+                tempDiv.innerHTML = htmlTemp;
+                let plainText = tempDiv.textContent || tempDiv.innerText || "";
 
+                // Si el mensaje contiene al menos una línea con formato de participante
                 if (regexPatronLista.test(plainText)) {
                     const lineas = plainText.split('\n');
-                    const lineasFiltradas = lineas.filter(l => {
-                        const limpia = l.trim();
-                        return regexPatronLista.test(limpia) || /PUNTO\s+EXTRA/i.test(limpia);
+                    const lineasFiltradas = lineas.map(l => l.trim()).filter(l => {
+                        return regexPatronLista.test(l) || /PUNTO\s+EXTRA/i.test(l);
                     });
 
+                    // Garantizamos que haya participantes válidos extraídos
                     if (lineasFiltradas.length > 0) {
                         ultimaListaEncontrada = lineasFiltradas.join('\n');
-                        break;
+                        break; // Encontramos el mensaje más reciente con la lista completa
                     }
                 }
             }
 
             if (ultimaListaEncontrada) {
                 document.getElementById('listInput').value = ultimaListaEncontrada;
-                alert("¡Éxito! Se ha cargado la última lista activa encontrada en @retrojuegodelmes.");
+                const totalCargados = ultimaListaEncontrada.split('\n').filter(l => regexPatronLista.test(l)).length;
+                alert(`¡Éxito! Se ha cargado la última lista en vivo con ${totalCargados} participantes detectados.`);
             } else {
                 alert("No se encontró ningún mensaje reciente que contenga una lista con el formato 'Número-@usuario'.");
             }
