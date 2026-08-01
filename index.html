@@ -12,7 +12,6 @@
     <meta property="og:description" content="Entra para ver la cuenta atrás en directo y el resultado del sorteo de la Patrulla Retro.">
     <meta property="og:url" content="https://kb-retro.github.io/Sorteo-HoF-Patrulla-Retro/">
     
-    <!-- Imagen OG (con v=2 para forzar refresco de caché) -->
     <meta property="og:image" content="https://kb-retro.github.io/Sorteo-HoF-Patrulla-Retro/logo.png?v=2">
     <meta property="og:image:secure_url" content="https://kb-retro.github.io/Sorteo-HoF-Patrulla-Retro/logo.png?v=2">
     <meta property="og:image:type" content="image/png">
@@ -25,7 +24,7 @@
     <meta name="twitter:description" content="Entra para ver la cuenta atrás en directo y el resultado del sorteo de la Patrulla Retro.">
     <meta name="twitter:image" content="https://kb-retro.github.io/Sorteo-HoF-Patrulla-Retro/logo.png?v=2">
 
-    <!-- Favicon para Marcadores del Navegador y Pantalla de Inicio -->
+    <!-- Favicon -->
     <link rel="icon" type="image/png" sizes="32x32" href="logo.png?v=2">
     <link rel="icon" type="image/png" sizes="16x16" href="logo.png?v=2">
     <link rel="apple-touch-icon" sizes="180x180" href="logo.png?v=2">
@@ -53,9 +52,7 @@
             --telegram-hover: #0077b3;
         }
 
-        * {
-            box-sizing: border-box;
-        }
+        * { box-sizing: border-box; }
 
         html, body {
             min-height: 100vh;
@@ -74,7 +71,6 @@
             position: relative;
         }
 
-        /* FONDO ESTÁTICO PERFECTO SIN REBOOTS NI SALTOS DE SCROLL */
         body::before {
             content: "";
             position: fixed;
@@ -87,7 +83,7 @@
             background-position: center center;
             background-repeat: no-repeat;
             z-index: -1;
-            transform: translateZ(0); /* Forzado por aceleración de hardware */
+            transform: translateZ(0);
         }
 
         .container {
@@ -117,25 +113,9 @@
             overflow: hidden;
         }
 
-        h1 {
-            font-size: 1.5rem;
-            margin-top: 0;
-            margin-bottom: 10px;
-            text-align: center;
-            line-height: 1.2;
-        }
-
-        h2 {
-            font-size: 1.2rem;
-            margin-top: 0;
-            text-align: center;
-        }
-
-        h3 {
-            font-size: 1.05rem;
-            margin-top: 0;
-            text-align: center;
-        }
+        h1 { font-size: 1.5rem; margin-top: 0; margin-bottom: 10px; text-align: center; line-height: 1.2; }
+        h2 { font-size: 1.2rem; margin-top: 0; text-align: center; }
+        h3 { font-size: 1.05rem; margin-top: 0; text-align: center; }
         
         textarea, input[type="text"], input[type="time"], input[type="date"], input[type="month"], select {
             width: 100%;
@@ -148,21 +128,10 @@
             font-size: 0.95rem;
         }
 
-        textarea {
-            height: 110px;
-            font-family: monospace;
-            resize: vertical;
-        }
+        textarea { height: 110px; font-family: monospace; resize: vertical; }
 
-        .datetime-group {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .datetime-group input {
-            flex: 1 1 130px;
-        }
+        .datetime-group { display: flex; gap: 10px; flex-wrap: wrap; }
+        .datetime-group input { flex: 1 1 130px; }
 
         button {
             background-color: var(--accent);
@@ -177,44 +146,19 @@
             transition: background 0.2s, transform 0.1s;
         }
 
-        button:active { 
-            transform: scale(0.98); 
-        }
+        button:active { transform: scale(0.98); }
 
-        button.telegram-btn {
-            background-color: var(--telegram);
-            margin-bottom: 15px;
-            line-height: 1.3;
-        }
-        button.telegram-btn:hover {
-            background-color: var(--telegram-hover);
-        }
+        button.telegram-btn { background-color: var(--telegram); margin-bottom: 15px; line-height: 1.3; }
+        button.telegram-btn:hover { background-color: var(--telegram-hover); }
 
-        button.admin-btn { 
-            background-color: var(--success); 
-            font-size: 1.05rem; 
-            margin-top: 15px; 
-            padding: 12px;
-        }
-        button.admin-btn:hover { 
-            background-color: var(--success-hover); 
-        }
+        button.admin-btn { background-color: var(--success); font-size: 1.05rem; margin-top: 15px; padding: 12px; }
+        button.admin-btn:hover { background-color: var(--success-hover); }
 
-        button.warning-btn { 
-            background-color: var(--warning); 
-            margin-top: 10px; 
-        }
-        button.warning-btn:hover { 
-            background-color: var(--warning-hover); 
-        }
+        button.warning-btn { background-color: var(--warning); margin-top: 10px; }
+        button.warning-btn:hover { background-color: var(--warning-hover); }
 
-        button.clear-btn { 
-            background-color: var(--danger); 
-            margin-top: 10px; 
-        }
-        button.clear-btn:hover { 
-            background-color: var(--danger-hover); 
-        }
+        button.clear-btn { background-color: var(--danger); margin-top: 10px; }
+        button.clear-btn:hover { background-color: var(--danger-hover); }
 
         button.delete-item-btn {
             background-color: var(--danger);
@@ -227,9 +171,7 @@
             width: auto;
             white-space: nowrap;
         }
-        button.delete-item-btn:hover {
-            background-color: var(--danger-hover);
-        }
+        button.delete-item-btn:hover { background-color: var(--danger-hover); }
 
         .btn-toggle-view {
             background-color: #334155 !important;
@@ -241,9 +183,7 @@
             display: block !important;
             text-align: center;
         }
-        .btn-toggle-view:hover { 
-            background-color: #475569 !important; 
-        }
+        .btn-toggle-view:hover { background-color: #475569 !important; }
 
         .winner-box {
             display: none;
@@ -258,24 +198,9 @@
             word-wrap: break-word;
         }
 
-        .winner-title { 
-            color: var(--gold); 
-            font-size: 1.1rem; 
-            text-transform: uppercase; 
-            letter-spacing: 1px; 
-        }
-        .winner-name { 
-            font-size: 2rem; 
-            font-weight: bold; 
-            margin: 10px 0; 
-            color: #fff; 
-            word-break: break-word;
-        }
-        .winner-ticket { 
-            font-size: 0.95rem; 
-            color: var(--muted); 
-            word-break: break-word;
-        }
+        .winner-title { color: var(--gold); font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px; }
+        .winner-name { font-size: 2rem; font-weight: bold; margin: 10px 0; color: #fff; word-break: break-word; }
+        .winner-ticket { font-size: 0.95rem; color: var(--muted); word-break: break-word; }
 
         .repeat-winner-banner {
             background: rgba(245, 158, 11, 0.2);
@@ -308,13 +233,7 @@
             text-align: left;
         }
 
-        .arcade-title {
-            font-size: 0.95rem;
-            font-weight: bold;
-            color: var(--gold);
-            margin-bottom: 8px;
-            text-align: center;
-        }
+        .arcade-title { font-size: 0.95rem; font-weight: bold; color: var(--gold); margin-bottom: 8px; text-align: center; }
 
         .log-box {
             background: #090d16;
@@ -331,11 +250,7 @@
             word-break: break-all;
         }
 
-        .custom-list {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
+        .custom-list { list-style: none; padding: 0; margin: 0; }
 
         .custom-item {
             background: #0f172a;
@@ -349,12 +264,7 @@
             gap: 8px;
         }
 
-        .custom-item-text {
-            flex: 1 1 auto;
-            min-width: 0;
-            word-break: break-word;
-            font-size: 0.9rem;
-        }
+        .custom-item-text { flex: 1 1 auto; min-width: 0; word-break: break-word; font-size: 0.9rem; }
 
         .item-badge {
             background: var(--accent);
@@ -380,9 +290,7 @@
             padding-top: 15px;
         }
 
-        .hidden { 
-            display: none !important; 
-        }
+        .hidden { display: none !important; }
 
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(-10px); }
@@ -402,21 +310,18 @@
         <div id="winnerName" class="winner-name">Cargando...</div>
         <div id="winnerTicket" class="winner-ticket"></div>
 
-        <!-- AVISO DE CAMISETA REPETIDA -->
         <div id="repeatNotice" class="repeat-winner-banner hidden">
             🚨 <b>¡Campeón!</b> ¡Teniendo ya la camiseta en el armario, es hora de repartir el botín! Elige a un compañero de la lista de este mes para cederle el premio.
         </div>
 
-        <!-- LISTA PARALELA: ELIGEN EL ARCADE DEL MES -->
         <div class="arcade-box">
             <div class="arcade-title">🕹️ Eligen el Arcade del Mes (5 Usuarios):</div>
 
-            <!-- ENLACE A GOOGLE DOCS (JUEGOS YA JUGADOS) -->
             <div style="text-align: center; margin: 10px 0 14px 0; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 6px;">
                 <p style="margin: 0 0 6px 0; font-size: 0.8rem; color: var(--muted);">
                     ⚠️ <b>Aviso para los elegidos:</b> No se pueden repetir juegos que ya hayan salido en el grupo.
                 </p>
-                <a href="https://docs.google.com/spreadsheets/d/1JApebwPe9J_fbS_hnQBHHElSlELlWiAjxdvDJQ8yw2E/edit?gid=0#gid=0" target="_blank" rel="noopener noreferrer" class="arcade-link-btn" style="display: inline-block; background-color: #0284c7; color: white; text-decoration: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; font-size: 0.85rem; transition: background 0.2s;">
+                <a href="https://docs.google.com/spreadsheets/d/1JApebwPe9J_fbS_hnQBHHElSlELlWiAjxdvDJQ8yw2E/edit?gid=0#gid=0" target="_blank" rel="noopener noreferrer" style="display: inline-block; background-color: #0284c7; color: white; text-decoration: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; font-size: 0.85rem; transition: background 0.2s;">
                     📜 Ver lista de juegos ya jugados ↗️
                 </a>
             </div>
@@ -434,20 +339,20 @@
         <div id="timerDisplay" class="countdown-timer">00h 00m 00s</div>
     </div>
 
-    <!-- MENSAJE ESPERA (OCULTO DE INICIO PARA EVITAR PESTAÑEO) -->
+    <!-- MENSAJE ESPERA -->
     <div id="waitingCard" class="card hidden" style="text-align: center;">
         <h2>⏳ El sorteo aún no se ha realizado</h2>
         <p style="color: var(--muted); font-size: 0.85rem;">El administrador realizará o programará la tirada en breve. Esta página se actualizará automáticamente.</p>
     </div>
 
-    <!-- LISTA DE PREMIADOS (OCULTO DE INICIO HASTA RECIBIR DATOS DE FIREBASE) -->
+    <!-- LISTA DE PREMIADOS -->
     <div id="winnersCountCard" class="card hidden">
         <h3>🥇 Usuarios Premiados y Recuento de Victorias</h3>
         <ul id="winnersCountList" class="custom-list"></ul>
         <button id="btnToggleWinners" class="btn-toggle-view hidden" onclick="toggleWinnersView()">⬇️ Ver todos los usuarios premiados</button>
     </div>
 
-    <!-- HISTORIAL DE SORTEOS (OCULTO DE INICIO HASTA RECIBIR DATOS DE FIREBASE) -->
+    <!-- HISTORIAL DE SORTEOS -->
     <div id="historyCard" class="card hidden">
         <h3>📜 Historial de Ganadores Anteriores</h3>
         <ul id="historyList" class="custom-list"></ul>
@@ -463,11 +368,33 @@
     <!-- PANEL ADMIN -->
     <div id="adminPanel" class="card admin-panel hidden">
         <h2>🛠️ Panel de Control (Administrador)</h2>
-        
+
+        <!-- NUEVA SECCIÓN: COPIAS DE SEGURIDAD Y RESTAURACIÓN -->
+        <div class="admin-section" style="border: 1px solid var(--accent); background: rgba(99, 102, 241, 0.08);">
+            <label><b>💾 Copias de Seguridad y Restauración:</b></label>
+            <p style="font-size: 0.8rem; color: var(--muted); margin: 4px 0 10px 0;">
+                El sistema realiza una copia automática en Firebase cada mes al entrar al panel. También puedes restaurar estados anteriores aquí.
+            </p>
+
+            <button style="background-color: #0284c7; margin-bottom: 10px;" onclick="crearBackupManual()">📸 CREAR COPIA DE SEGURIDAD AHORA</button>
+
+            <label style="font-size: 0.85rem; margin-top: 8px; display: block;"><b>📅 Seleccionar Copia para Restaurar:</b></label>
+            <select id="backupSelect" style="margin-top: 4px; margin-bottom: 8px;">
+                <option value="">-- Cargando copias disponibles... --</option>
+            </select>
+
+            <button style="background-color: var(--warning); color: black;" onclick="restaurarBackupSeleccionado()">🔄 RESTAURAR COPIA SELECCIONADA</button>
+
+            <div style="border-top: 1px dashed #334155; margin-top: 12px; padding-top: 10px; display: flex; gap: 8px; flex-wrap: wrap;">
+                <button style="flex: 1; background: #334155; font-size: 0.8rem; padding: 8px;" onclick="descargarBackupJSON()">📥 Descargar JSON PC</button>
+                <button style="flex: 1; background: #334155; font-size: 0.8rem; padding: 8px;" onclick="document.getElementById('jsonFileInput').click()">📤 Cargar JSON PC</button>
+                <input type="file" id="jsonFileInput" accept=".json" class="hidden" onchange="restaurarDesdeJSON(event)">
+            </div>
+        </div>
+
         <!-- SECCIÓN 1: MES CORRESPONDIENTE AL SORTEO -->
         <div class="admin-section">
             <label><b>📅 Mes correspondiente al Sorteo:</b></label>
-
             <select id="monthSelect" style="margin-top: 8px;">
                 <option value="">-- Selecciona el mes --</option>
                 <option value="Enero">Enero</option>
@@ -544,8 +471,141 @@
     let timerInterval = null;
     let programData = null;
 
-    // Nombres de los meses para formato limpio
     const nombresMeses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+
+    // --- SISTEMA DE COPIAS DE SEGURIDAD Y RESTAURACIÓN ---
+    
+    // Auto-backup mensual cuando entra el administrador
+    function comprobarAutoBackupMensual() {
+        const ahora = new Date();
+        const claveMes = `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, '0')}`;
+
+        db.ref('backups/' + claveMes).once('value', function(snapshot) {
+            if (!snapshot.exists()) {
+                realizarCopiaEnFirebase(claveMes, "Auto-Backup Inicio de Mes");
+            }
+        });
+    }
+
+    // Crear copia manual
+    function crearBackupManual() {
+        const ahora = new Date();
+        const horaTag = `${String(ahora.getHours()).padStart(2,'0')}${String(ahora.getMinutes()).padStart(2,'0')}`;
+        const clave = `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, '0')}-${String(ahora.getDate()).padStart(2, '0')}_${horaTag}`;
+        
+        realizarCopiaEnFirebase(clave, "Copia Manual", true);
+    }
+
+    // Guardar los datos actuales en /backups/CLAVE
+    function realizarCopiaEnFirebase(clave, etiqueta, notificar = false) {
+        Promise.all([
+            db.ref('historial_ganadores').once('value'),
+            db.ref('sorteo_actual').once('value'),
+            db.ref('mes_sorteo').once('value')
+        ]).then(function(results) {
+            const backupPayload = {
+                fechaCopia: new Date().toLocaleString('es-ES'),
+                etiqueta: etiqueta,
+                historial_ganadores: results[0].val() || null,
+                sorteo_actual: results[1].val() || null,
+                mes_sorteo: results[2].val() || null
+            };
+
+            db.ref('backups/' + clave).set(backupPayload).then(function() {
+                if (notificar) alert("✅ Copia de seguridad guardada con éxito bajo la clave: " + clave);
+            });
+        });
+    }
+
+    // Escuchar las copias disponibles y llenar el <select>
+    function cargarListaBackups() {
+        db.ref('backups').on('value', function(snapshot) {
+            const select = document.getElementById('backupSelect');
+            select.innerHTML = '<option value="">-- Selecciona una copia para restaurar --</option>';
+
+            const backups = snapshot.val();
+            if (!backups) return;
+
+            Object.keys(backups).reverse().forEach(function(key) {
+                const item = backups[key];
+                const option = document.createElement('option');
+                option.value = key;
+                option.innerText = `${key} | ${item.etiqueta || 'Sin nombre'} (${item.fechaCopia || 'Fecha desc.'})`;
+                select.appendChild(option);
+            });
+        });
+    }
+
+    // Restaurar copia seleccionada del desplegable
+    function restaurarBackupSeleccionado() {
+        const clave = document.getElementById('backupSelect').value;
+        if (!clave) {
+            alert("Por favor, selecciona una copia de seguridad del desplegable.");
+            return;
+        }
+
+        if (confirm(`⚠️ ¿Estás seguro de RESTAURAR la copia "${clave}"?\n\nEsto sobrescribirá el historial y el sorteo actual con los datos guardados en ese momento.`)) {
+            db.ref('backups/' + clave).once('value', function(snapshot) {
+                const data = snapshot.val();
+                if (!data) {
+                    alert("Error al leer la copia de seguridad.");
+                    return;
+                }
+
+                db.ref('historial_ganadores').set(data.historial_ganadores || null);
+                db.ref('sorteo_actual').set(data.sorteo_actual || null);
+                db.ref('mes_sorteo').set(data.mes_sorteo || null).then(function() {
+                    alert("🎉 ¡Datos restaurados correctamente desde la copia " + clave + "!");
+                });
+            });
+        }
+    }
+
+    // Descargar respaldo completo en archivo .json
+    function descargarBackupJSON() {
+        Promise.all([
+            db.ref('historial_ganadores').once('value'),
+            db.ref('sorteo_actual').once('value'),
+            db.ref('mes_sorteo').once('value')
+        ]).then(function(results) {
+            const backupData = {
+                historial_ganadores: results[0].val() || null,
+                sorteo_actual: results[1].val() || null,
+                mes_sorteo: results[2].val() || null,
+                exportadoEl: new Date().toLocaleString('es-ES')
+            };
+
+            const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `backup_sorteo_patrulla_${Date.now()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+    }
+
+    // Restaurar desde archivo .json local
+    function restaurarDesdeJSON(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = JSON.parse(e.target.result);
+                if (confirm("⚠️ ¿Deseas restaurar la base de datos desde este archivo JSON local?")) {
+                    if ('historial_ganadores' in data) db.ref('historial_ganadores').set(data.historial_ganadores);
+                    if ('sorteo_actual' in data) db.ref('sorteo_actual').set(data.sorteo_actual);
+                    if ('mes_sorteo' in data) db.ref('mes_sorteo').set(data.mes_sorteo);
+                    alert("✅ ¡Copia de seguridad local restaurada en Firebase con éxito!");
+                }
+            } catch (err) {
+                alert("❌ El archivo no tiene un formato JSON válido.");
+            }
+        };
+        reader.readAsText(file);
+    }
 
     // Fallback logo
     const logoImg = document.querySelector('.header-logo');
@@ -555,7 +615,7 @@
         };
     }
 
-    // --- FUNCIÓN IMPORTAR DESDE TELEGRAM (ROBUSTA, SIN CACHÉ Y CON MENSAJES RECIENTES) ---
+    // Importar desde Telegram
     async function importarDesdeTelegram() {
         const btn = document.querySelector('.telegram-btn');
         const originalText = btn.innerText;
@@ -591,13 +651,10 @@
         }
 
         try {
-            if (!htmlContent) {
-                throw new Error("No se pudo conectar con los servidores proxy.");
-            }
+            if (!htmlContent) throw new Error("No se pudo conectar con los servidores proxy.");
 
             const parser = new DOMParser();
             const doc = parser.parseFromString(htmlContent, 'text/html');
-            
             const messages = doc.querySelectorAll('.tgme_widget_message_text');
 
             if (!messages || messages.length === 0) {
@@ -610,7 +667,6 @@
 
             for (let i = messages.length - 1; i >= 0; i--) {
                 let htmlTemp = messages[i].innerHTML.replace(/<br\s*[\/]?>/gi, "\n");
-                
                 let tempDiv = document.createElement("div");
                 tempDiv.innerHTML = htmlTemp;
                 let plainText = tempDiv.textContent || tempDiv.innerText || "";
@@ -638,14 +694,14 @@
 
         } catch (error) {
             console.error("Error al importar de Telegram:", error);
-            alert("⚠️ No se pudo conectar con Telegram en este momento. Los proxies públicos están caídos o saturados. Por favor, pega la lista manualmente.");
+            alert("⚠️ No se pudo conectar con Telegram en este momento. Por favor, pega la lista manualmente.");
         } finally {
             btn.innerText = originalText;
             btn.disabled = false;
         }
     }
 
-    // Escuchar cambios en el Mes del Sorteo en Firebase
+    // Escuchar Mes del Sorteo
     db.ref('mes_sorteo').on('value', function(snapshot) {
         const mes = snapshot.val();
         const titleEl = document.getElementById('mainTitle');
@@ -657,7 +713,6 @@
         }
     });
 
-    // Guardar el mes del sorteo
     function guardarMesSorteo() {
         const mes = document.getElementById('monthSelect').value;
         if (!mes) {
@@ -665,15 +720,13 @@
             return;
         }
 
-        const confirmar = confirm("¿Confirmas que deseas cambiar el título del sorteo al mes de " + mes + "?");
-        if (confirmar) {
+        if (confirm("¿Confirmas que deseas cambiar el título del sorteo al mes de " + mes + "?")) {
             db.ref('mes_sorteo').set(mes).then(function() {
                 alert("¡Mes actualizado con éxito a: " + mes + "!");
             });
         }
     }
 
-    // Añadir ganador(es) manual(es) con formato Mes/Año
     function agregarGanadorManual() {
         const inputVal = document.getElementById('manualUserAdmin').value.trim();
         const customMonthVal = document.getElementById('manualWinnerMonth').value;
@@ -716,22 +769,15 @@
         document.getElementById('manualWinnerMonth').value = '';
     }
 
-    // Borrar un premio específico solicitando SIEMPRE confirmación explícita
     function borrarGanadorEspecifico(key, usuario, fecha) {
         if (!isAdminLoggedIn) return;
-        
-        const mensajeConfirmacion = `⚠️ ¿Estás seguro de que deseas ELIMINAR del historial a:\n\nUsuario: ${usuario}\nFecha: ${fecha}\n\nEsta acción borra la entrada directamente de Firebase y no se puede deshacer.`;
-        
-        if (confirm(mensajeConfirmacion)) {
+        if (confirm(`⚠️ ¿Estás seguro de que deseas ELIMINAR del historial a:\n\nUsuario: ${usuario}\nFecha: ${fecha}?`)) {
             db.ref('historial_ganadores/' + key).remove().then(function() {
                 alert("✅ Entrada eliminada correctamente del historial.");
-            }).catch(function(err) {
-                alert("❌ Error al intentar eliminar: " + err.message);
             });
         }
     }
 
-    // Verificar si el ganador actual es repetido
     function verificarRepetidoVisual() {
         if (!actualGanadorUser) return;
         
@@ -741,22 +787,17 @@
 
             if (data) {
                 Object.values(data).forEach(function(item) {
-                    if (item.user.toLowerCase() === actualGanadorUser.toLowerCase()) {
-                        totalVictorias++;
-                    }
+                    if (item.user.toLowerCase() === actualGanadorUser.toLowerCase()) totalVictorias++;
                 });
             }
 
             const noticeEl = document.getElementById('repeatNotice');
-            if (totalVictorias > 1) {
-                noticeEl.classList.remove('hidden');
-            } else {
-                noticeEl.classList.add('hidden');
-            }
+            if (totalVictorias > 1) noticeEl.classList.remove('hidden');
+            else noticeEl.classList.add('hidden');
         });
     }
 
-    // Escuchar Sorteo Actual en Firebase
+    // Escuchar Sorteo Actual
     db.ref('sorteo_actual').on('value', function(snapshot) {
         const data = snapshot.val();
         programData = data;
@@ -767,7 +808,6 @@
             document.getElementById('winnerCard').style.display = 'none';
             document.getElementById('waitingCard').classList.add('hidden');
             document.getElementById('countdownCard').classList.remove('hidden');
-
             iniciarRelojCuentaAtras(data.targetTime);
 
         } else if (data && data.ganador) {
@@ -803,11 +843,9 @@
         }
     });
 
-    // Reloj cuenta atrás
     function iniciarRelojCuentaAtras(targetTime) {
         function actualizar() {
-            const ahora = Date.now();
-            const diferencia = targetTime - ahora;
+            const diferencia = targetTime - Date.now();
 
             if (diferencia <= 0) {
                 clearInterval(timerInterval);
@@ -834,7 +872,7 @@
         timerInterval = setInterval(actualizar, 1000);
     }
 
-    // Escuchar Historial Global (Firebase únicamente)
+    // Escuchar Historial Global
     db.ref('historial_ganadores').on('value', function(snapshot) {
         const data = snapshot.val();
         let mapaConteo = {};
@@ -850,20 +888,16 @@
                 mapaConteo[userKey] = (mapaConteo[userKey] || 0) + 1;
             });
 
-            rawHistoryItems.sort(function(a, b) {
-                return (b.timestamp || 0) - (a.timestamp || 0);
-            });
+            rawHistoryItems.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
         }
 
-        rawWinnersCount = Object.keys(mapaConteo).map(function(usr) {
-            return { user: usr, total: mapaConteo[usr] };
-        }).sort(function(a, b) { return b.total - a.total; });
+        rawWinnersCount = Object.keys(mapaConteo).map(usr => ({ user: usr, total: mapaConteo[usr] }))
+            .sort((a, b) => b.total - a.total);
 
         renderWinnersList();
         renderHistoryList();
         verificarRepetidoVisual();
 
-        // Mostrar las tarjetas únicamente cuando ya tenemos los datos renderizados
         document.getElementById('winnersCountCard').classList.remove('hidden');
         document.getElementById('historyCard').classList.remove('hidden');
     });
@@ -938,6 +972,10 @@
             isAdminLoggedIn = true;
             document.getElementById('adminPanel').classList.remove('hidden');
             renderHistoryList();
+            
+            // Activar gestión de copias al iniciar sesión de admin
+            comprobarAutoBackupMensual();
+            cargarListaBackups();
         } else if (pass !== null) {
             alert("Contraseña incorrecta.");
         }
@@ -997,19 +1035,16 @@
                 targetDate.setDate(targetDate.getDate() + 1);
             }
 
-            const targetTime = targetDate.getTime();
-
             db.ref('sorteo_actual').set({
                 status: 'programado',
-                targetTime: targetTime,
+                targetTime: targetDate.getTime(),
                 rawLines: rawLines,
                 rawBlacklist: rawBlacklist
             }).then(function() {
-                alert("¡Sorteo programado con éxito! La cuenta atrás ya está activa.");
+                alert("¡Sorteo programado con éxito!");
             });
         } else {
-            const confirmarInmediato = confirm("El sorteo se realizará de inmediato si no especificas una hora. ¿Continuar?");
-            if (confirmarInmediato) {
+            if (confirm("El sorteo se realizará de inmediato si no especificas una hora. ¿Continuar?")) {
                 calcularYEjecutarTirada(rawLines, rawBlacklist);
             }
         }
@@ -1038,7 +1073,7 @@
         const total = participantesValidos.length;
         if (total === 0) return;
 
-        const blacklist = rawBlacklist.map(function(u) { return u.trim().toLowerCase(); }).filter(function(u) { return u.length > 0; });
+        const blacklist = rawBlacklist.map(u => u.trim().toLowerCase()).filter(u => u.length > 0);
 
         let log = [];
         let ganadorEncontrado = null;
@@ -1055,7 +1090,7 @@
                 listaCopia.splice(indexAleatorio, 1);
             } else {
                 ganadorEncontrado = entrada;
-                indexGanador = participantesValidos.findIndex(function(p) { return p.ticket === entrada.ticket; });
+                indexGanador = participantesValidos.findIndex(p => p.ticket === entrada.ticket);
                 log.push("✅ ¡TIRADA GANADORA!: " + entrada.ticket);
                 break;
             }
