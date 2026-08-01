@@ -642,7 +642,7 @@
     function verificarRepetidoVisual() {
         if (!actualGanadorUser) return;
         
-        db.ref('historial_').once('value', function(snapshot) {
+        db.ref('historial_ganadores').once('value', function(snapshot) {
             const data = snapshot.val();
             let totalVictorias = 0;
 
@@ -742,7 +742,7 @@
     }
 
     // Escuchar Historial Global (Firebase únicamente)
-    db.ref('historial_').on('value', function(snapshot) {
+    db.ref('historial_ganadores').on('value', function(snapshot) {
         const data = snapshot.val();
         let mapaConteo = {};
         rawHistoryItems = [];
