@@ -44,6 +44,8 @@
             --success: #22c55e;
             --success-hover: #16a34a;
             --gold: #f59e0b;
+            --telegram: #0088cc;
+            --telegram-hover: #0077b3;
         }
 
         body {
@@ -129,6 +131,14 @@
 
         button:active { 
             transform: scale(0.98); 
+        }
+
+        button.telegram-btn {
+            background-color: var(--telegram);
+            margin-bottom: 15px;
+        }
+        button.telegram-btn:hover {
+            background-color: var(--telegram-hover);
         }
 
         button.admin-btn { 
@@ -393,7 +403,9 @@
 
         <!-- SECCIÓN 2: DATOS Y FECHA DEL SORTEO -->
         <div class="admin-section">
-            <label><b>1. Pegar Participantes:</b></label>
+            <button class="telegram-btn" onclick="importarDesdeTelegram()">📲 CARGAR ÚLTIMA LISTA DE TELEGRAM (@retrojuegodelmes)</button>
+
+            <label><b>1. Participantes:</b></label>
             <textarea id="listInput" placeholder="138-@Themenda987&#10;PUNTO EXTRA&#10;146-@Zapador_1986"></textarea>
 
             <br><br>
@@ -450,6 +462,81 @@
         };
     }
 
+    // --- FUNCIÓN IMPORTAR DESDE TELEGRAM ---
+    async function importarDesdeTelegram() {
+        const btn = document.querySelector('.telegram-btn');
+        const originalText = btn.innerText;
+        btn.innerText = "⏳ Buscando última lista en Telegram...";
+        btn.disabled = true;
+
+        try {
+            // Usamos un proxy CORS para leer la vista pública de Telegram
+            const proxyUrl = 'https://api.allorigins.win/get?url=';
+            const targetUrl = encodeURIComponent('https://t.me/s/retrojuegodelmes');
+            
+            const response = await fetch(proxyUrl + targetUrl);
+            const data = await response.json();
+            
+            if (!data.contents) {
+                throw new Error("No se pudo obtener el contenido del canal.");
+            }
+
+            // Parser HTML
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(data.contents, 'text/html');
+            const messages = doc.querySelectorAll('.tgme_widget_message_text');
+
+            if (!messages || messages.length === 0) {
+                alert("No se encontraron mensajes públicos en el canal.");
+                return;
+            }
+
+            let ultimaListaEncontrada = "";
+            const regexPatronLista = /\d+[\s-]*@[\w_]+/i; // Busca patrones como "20-@usuario" o "20 @usuario"
+
+            // Recorremos los mensajes del más reciente al más antiguo
+            for (let i = messages.length - 1; i >= 0; i--) {
+                const textHtml = messages[i].innerHTML;
+                
+                // Reemplazamos saltos <br> por saltos de línea reales
+                let plainText = textHtml.replace(/<br\s*[\/]?>/gi, "\n");
+                // Eliminamos otras etiquetas HTML
+                let tempDiv = document.createElement("div");
+                tempDiv.innerHTML = plainText;
+                plainText = tempDiv.textContent || tempDiv.innerText || "";
+
+                // Verificamos si el mensaje tiene el patrón de lista de participantes
+                if (regexPatronLista.test(plainText)) {
+                    // Extraemos solo las líneas válidas que contienen participantes
+                    const lineas = plainText.split('\n');
+                    const lineasFiltradas = lineas.filter(l => {
+                        const limpia = l.trim();
+                        return regexPatronLista.test(limpia) || /PUNTO\s+EXTRA/i.test(limpia);
+                    });
+
+                    if (lineasFiltradas.length > 0) {
+                        ultimaListaEncontrada = lineasFiltradas.join('\n');
+                        break; // ¡Encontramos la lista activa más reciente!
+                    }
+                }
+            }
+
+            if (ultimaListaEncontrada) {
+                document.getElementById('listInput').value = ultimaListaEncontrada;
+                alert("¡Éxito! Se ha cargado la última lista activa encontrada en @retrojuegodelmes.");
+            } else {
+                alert("No se encontró ningún mensaje reciente que contenga una lista con el formato 'Número-@usuario'.");
+            }
+
+        } catch (error) {
+            console.error("Error al importar de Telegram:", error);
+            alert("Ocurrió un error al intentar conectar con Telegram. Puedes pegar la lista manualmente.");
+        } finally {
+            btn.innerText = originalText;
+            btn.disabled = false;
+        }
+    }
+
     // Escuchar cambios en el Mes del Sorteo en Firebase
     db.ref('mes_sorteo').on('value', function(snapshot) {
         const mes = snapshot.val();
@@ -486,7 +573,6 @@
             return;
         }
 
-        // Permite procesar múltiples usuarios separados por espacios, comas o saltos de línea
         const usuarios = inputVal.split(/[\n,\s]+/).map(u => u.trim()).filter(u => u.length > 0);
         let añadidos = 0;
 
@@ -733,7 +819,7 @@
         const rawBlacklist = document.getElementById('blacklistInput').value.trim();
 
         if (!rawLines) {
-            alert("Por favor, pega la lista de participantes.");
+            alert("Por favor, pega o importa la lista de participantes.");
             return;
         }
 
