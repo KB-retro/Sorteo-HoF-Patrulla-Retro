@@ -464,6 +464,9 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
+    // ⚡ URL DE TU WORKER PRIVADO EN CLOUDFLARE
+    const MI_CLOUDFLARE_WORKER = "https://dawn-band-8bc8.microbiops.workers.dev";
+
     let actualGanadorUser = "";
     let isWinnersExpanded = false;
     let isHistoryExpanded = false;
@@ -621,7 +624,7 @@
         };
     }
 
-    // --- FUNCIÓN IMPORTAR TELEGRAM MEJORADA Y REFORZADA ---
+    // --- FUNCIÓN IMPORTAR DESDE TELEGRAM USANDO TU CLOUDFLARE WORKER ---
     async function importarDesdeTelegram() {
         const btn = document.querySelector('.telegram-btn');
         const originalText = btn.innerText;
@@ -630,58 +633,26 @@
 
         const timestamp = Date.now();
         const targetUrl = `https://t.me/s/retrojuegodelmes?before=${timestamp}`;
-        
-        // Lista ampliada de proxies públicos de respaldo
-        const proxies = [
-            `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}&nocache=${timestamp}`,
-            `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`,
-            `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`,
-            `https://thingproxy.freeboard.io/fetch/${targetUrl}`
-        ];
-
-        let htmlContent = "";
-
-        // Helper para cancelar peticiones que tarden más de 4 segundos por proxy
-        const fetchWithTimeout = async (url, options = {}, timeout = 4000) => {
-            const controller = new AbortController();
-            const id = setTimeout(() => controller.abort(), timeout);
-            try {
-                const response = await fetch(url, { ...options, signal: controller.signal });
-                clearTimeout(id);
-                return response;
-            } catch (err) {
-                clearTimeout(id);
-                throw err;
-            }
-        };
-
-        for (let proxyUrl of proxies) {
-            try {
-                const response = await fetchWithTimeout(proxyUrl, { cache: "no-store" }, 4000);
-                if (!response.ok) continue;
-
-                if (proxyUrl.includes('allorigins')) {
-                    const data = await response.json();
-                    htmlContent = data.contents || "";
-                } else {
-                    htmlContent = await response.text();
-                }
-
-                if (htmlContent && htmlContent.includes('tgme_widget_message_text')) break;
-            } catch (e) {
-                console.warn("Proxy no disponible o agotado tiempo de espera, probando el siguiente...", e);
-            }
-        }
+        const workerUrl = `${MI_CLOUDFLARE_WORKER}?url=${encodeURIComponent(targetUrl)}`;
 
         try {
-            if (!htmlContent) throw new Error("No se pudo obtener respuesta de ningún proxy.");
+            const response = await fetch(workerUrl, { cache: "no-store" });
+            if (!response.ok) {
+                throw new Error(`Error en el servidor de Cloudflare: ${response.status}`);
+            }
+
+            const htmlContent = await response.text();
+
+            if (!htmlContent || !htmlContent.includes('tgme_widget_message_text')) {
+                throw new Error("No se pudo extraer la lista o el canal no devolvió resultados.");
+            }
 
             const parser = new DOMParser();
             const doc = parser.parseFromString(htmlContent, 'text/html');
             const messages = doc.querySelectorAll('.tgme_widget_message_text');
 
             if (!messages || messages.length === 0) {
-                alert("⚠️ Se conectó a Telegram pero no se encontraron mensajes públicos en el canal.");
+                alert("⚠️ Se conectó a Telegram pero no se encontraron mensajes públicos.");
                 return;
             }
 
@@ -710,14 +681,14 @@
             if (ultimaListaEncontrada) {
                 document.getElementById('listInput').value = ultimaListaEncontrada;
                 const totalCargados = ultimaListaEncontrada.split('\n').filter(l => regexPatronLista.test(l)).length;
-                alert(`¡Éxito! Se ha cargado la última lista en vivo con ${totalCargados} participantes detectados.`);
+                alert(`¡Éxito! Se ha cargado la última lista con ${totalCargados} participantes.`);
             } else {
                 alert("No se encontró ningún mensaje reciente que contenga una lista con el formato 'Número-@usuario'.");
             }
 
         } catch (error) {
-            console.error("Error al importar de Telegram:", error);
-            alert("⚠️ No se pudo conectar con Telegram en este momento. Los servidores proxy públicos están fallando. Por favor, pega la lista manualmente.");
+            console.error("Error al importar de Telegram vía Cloudflare:", error);
+            alert("⚠️ No se pudo conectar a través del Cloudflare Worker. Comprueba que el Worker de Cloudflare está activo.");
         } finally {
             btn.innerText = originalText;
             btn.disabled = false;
