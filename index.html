@@ -621,6 +621,7 @@
         };
     }
 
+    // --- FUNCIÓN IMPORTAR TELEGRAM MEJORADA Y REFORZADA ---
     async function importarDesdeTelegram() {
         const btn = document.querySelector('.telegram-btn');
         const originalText = btn.innerText;
@@ -630,16 +631,33 @@
         const timestamp = Date.now();
         const targetUrl = `https://t.me/s/retrojuegodelmes?before=${timestamp}`;
         
+        // Lista ampliada de proxies públicos de respaldo
         const proxies = [
             `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}&nocache=${timestamp}`,
-            `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`
+            `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`,
+            `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`,
+            `https://thingproxy.freeboard.io/fetch/${targetUrl}`
         ];
 
         let htmlContent = "";
 
+        // Helper para cancelar peticiones que tarden más de 4 segundos por proxy
+        const fetchWithTimeout = async (url, options = {}, timeout = 4000) => {
+            const controller = new AbortController();
+            const id = setTimeout(() => controller.abort(), timeout);
+            try {
+                const response = await fetch(url, { ...options, signal: controller.signal });
+                clearTimeout(id);
+                return response;
+            } catch (err) {
+                clearTimeout(id);
+                throw err;
+            }
+        };
+
         for (let proxyUrl of proxies) {
             try {
-                const response = await fetch(proxyUrl, { cache: "no-store" });
+                const response = await fetchWithTimeout(proxyUrl, { cache: "no-store" }, 4000);
                 if (!response.ok) continue;
 
                 if (proxyUrl.includes('allorigins')) {
@@ -649,21 +667,21 @@
                     htmlContent = await response.text();
                 }
 
-                if (htmlContent) break;
+                if (htmlContent && htmlContent.includes('tgme_widget_message_text')) break;
             } catch (e) {
-                console.warn("Fallo un proxy, probando el siguiente...", e);
+                console.warn("Proxy no disponible o agotado tiempo de espera, probando el siguiente...", e);
             }
         }
 
         try {
-            if (!htmlContent) throw new Error("No se pudo conectar con los servidores proxy.");
+            if (!htmlContent) throw new Error("No se pudo obtener respuesta de ningún proxy.");
 
             const parser = new DOMParser();
             const doc = parser.parseFromString(htmlContent, 'text/html');
             const messages = doc.querySelectorAll('.tgme_widget_message_text');
 
             if (!messages || messages.length === 0) {
-                alert("No se encontraron mensajes públicos en el canal.");
+                alert("⚠️ Se conectó a Telegram pero no se encontraron mensajes públicos en el canal.");
                 return;
             }
 
@@ -699,7 +717,7 @@
 
         } catch (error) {
             console.error("Error al importar de Telegram:", error);
-            alert("⚠️ No se pudo conectar con Telegram en este momento. Por favor, pega la lista manualmente.");
+            alert("⚠️ No se pudo conectar con Telegram en este momento. Los servidores proxy públicos están fallando. Por favor, pega la lista manualmente.");
         } finally {
             btn.innerText = originalText;
             btn.disabled = false;
