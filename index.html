@@ -624,12 +624,16 @@
         };
     }
 
-    // --- FUNCIÓN IMPORTAR DESDE TELEGRAM USANDO TU CLOUDFLARE WORKER ---
-    async function importarDesdeTelegram() {
+    // --- FUNCIÓN IMPORTAR DESDE TELEGRAM (Silenciosa en automático / Con avisos en manual) ---
+    async function importarDesdeTelegram(esManual = true) {
         const btn = document.querySelector('.telegram-btn');
-        const originalText = btn.innerText;
-        btn.innerText = "⏳ Cargando lista en vivo desde Telegram...";
-        btn.disabled = true;
+        let originalText = "";
+        
+        if (esManual) {
+            originalText = btn.innerText;
+            btn.innerText = "⏳ Cargando lista en vivo desde Telegram...";
+            btn.disabled = true;
+        }
 
         const timestamp = Date.now();
         const targetUrl = `https://t.me/s/retrojuegodelmes?before=${timestamp}`;
@@ -652,7 +656,7 @@
             const messages = doc.querySelectorAll('.tgme_widget_message_text');
 
             if (!messages || messages.length === 0) {
-                alert("⚠️ Se conectó a Telegram pero no se encontraron mensajes públicos.");
+                if (esManual) alert("⚠️ Se conectó a Telegram pero no se encontraron mensajes públicos.");
                 return;
             }
 
@@ -681,17 +685,25 @@
             if (ultimaListaEncontrada) {
                 document.getElementById('listInput').value = ultimaListaEncontrada;
                 const totalCargados = ultimaListaEncontrada.split('\n').filter(l => regexPatronLista.test(l)).length;
-                alert(`¡Éxito! Se ha cargado la última lista con ${totalCargados} participantes.`);
+                if (esManual) {
+                    alert(`¡Éxito! Se ha cargado la última lista con ${totalCargados} participantes.`);
+                }
             } else {
-                alert("No se encontró ningún mensaje reciente que contenga una lista con el formato 'Número-@usuario'.");
+                if (esManual) {
+                    alert("No se encontró ningún mensaje reciente que contenga una lista con el formato 'Número-@usuario'.");
+                }
             }
 
         } catch (error) {
             console.error("Error al importar de Telegram vía Cloudflare:", error);
-            alert("⚠️ No se pudo conectar a través del Cloudflare Worker. Comprueba que el Worker de Cloudflare está activo.");
+            if (esManual) {
+                alert("⚠️ No se ha podido cargar la lista por un problema de servidor o porque no hay lista disponible.");
+            }
         } finally {
-            btn.innerText = originalText;
-            btn.disabled = false;
+            if (esManual) {
+                btn.innerText = originalText;
+                btn.disabled = false;
+            }
         }
     }
 
@@ -962,6 +974,10 @@
         if (pass === "patrulla123") {
             isAdminLoggedIn = true;
             document.getElementById('adminPanel').classList.remove('hidden');
+            
+            // Carga automática silenciosa al abrir el panel de admin
+            importarDesdeTelegram(false);
+
             renderHistoryList();
             cargarListaBackups();
         } else if (pass !== null) {
