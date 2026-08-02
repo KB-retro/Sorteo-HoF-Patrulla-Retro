@@ -434,14 +434,17 @@
 
             <button style="background-color: #0284c7; margin-bottom: 10px;" onclick="crearBackupManual()">📸 CREAR COPIA DE SEGURIDAD AHORA</button>
 
-            <label style="font-size: 0.85rem; margin-top: 8px; display: block;"><b>📅 Seleccionar Copia para Restaurar:</b></label>
+            <label style="font-size: 0.85rem; margin-top: 8px; display: block;"><b>📅 Seleccionar Copia para Restaurar o Borrar:</b></label>
             <select id="backupSelect" style="margin-top: 4px; margin-bottom: 8px;">
                 <option value="">-- Cargando copias disponibles... --</option>
             </select>
 
-            <button style="background-color: var(--warning); color: black;" onclick="restaurarBackupSeleccionado()">🔄 RESTAURAR COPIA SELECCIONADA</button>
+            <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+                <button style="flex: 2; background-color: var(--warning); color: black;" onclick="restaurarBackupSeleccionado()">🔄 RESTAURAR COPIA</button>
+                <button style="flex: 1; background-color: var(--danger); color: white;" onclick="borrarBackupSeleccionado()">🗑️ BORRAR COPIA</button>
+            </div>
 
-            <div style="border-top: 1px dashed #334155; margin-top: 12px; padding-top: 10px; display: flex; gap: 8px; flex-wrap: wrap;">
+            <div style="border-top: 1px dashed #334155; padding-top: 10px; display: flex; gap: 8px; flex-wrap: wrap;">
                 <button style="flex: 1; background: #334155; font-size: 0.8rem; padding: 8px;" onclick="descargarBackupJSON()">📥 Descargar JSON PC</button>
                 <button style="flex: 1; background: #334155; font-size: 0.8rem; padding: 8px;" onclick="document.getElementById('jsonFileInput').click()">📤 Cargar JSON PC</button>
                 <input type="file" id="jsonFileInput" accept=".json" class="hidden" onchange="restaurarDesdeJSON(event)">
@@ -500,7 +503,7 @@
             db.ref('backups/' + clave).set(backupPayload).then(function() {
                 if (notificar) alert("✅ Copia de seguridad guardada con éxito bajo la clave: " + clave);
             }).catch(function(err) {
-                alert("❌ No se pudo guardar el backup. Asegúrate de haber activado temporalmente '.write: true' en Firebase.");
+                alert("❌ No se pudo guardar el backup.");
             });
         });
     }
@@ -508,7 +511,7 @@
     function cargarListaBackups() {
         db.ref('backups').on('value', function(snapshot) {
             const select = document.getElementById('backupSelect');
-            select.innerHTML = '<option value="">-- Selecciona una copia para restaurar --</option>';
+            select.innerHTML = '<option value="">-- Selecciona una copia para restaurar o borrar --</option>';
 
             const backups = snapshot.val();
             if (!backups) return;
@@ -543,6 +546,25 @@
                 db.ref('mes_sorteo').set(data.mes_sorteo || null).then(function() {
                     alert("🎉 ¡Datos restaurados correctamente desde la copia " + clave + "!");
                 });
+            });
+        }
+    }
+
+    function borrarBackupSeleccionado() {
+        const clave = document.getElementById('backupSelect').value;
+        if (!clave) {
+            alert("Por favor, selecciona primero del desplegable la copia de seguridad que quieres borrar.");
+            return;
+        }
+
+        const select = document.getElementById('backupSelect');
+        const textoSeleccionado = select.options[select.selectedIndex].text;
+
+        if (confirm(`⚠️ ¿Estás seguro de que deseas ELIMINAR permanentemente la copia de seguridad?\n\n"${textoSeleccionado}"\n\nEsta acción no se puede deshacer.`)) {
+            db.ref('backups/' + clave).remove().then(function() {
+                alert("🗑️ Copia de seguridad eliminada con éxito de Firebase.");
+            }).catch(function(err) {
+                alert("❌ Ocurrió un error al intentar eliminar la copia de seguridad.");
             });
         }
     }
