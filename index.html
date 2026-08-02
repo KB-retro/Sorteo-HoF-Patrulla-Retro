@@ -425,11 +425,11 @@
             <button style="background-color: #0284c7;" onclick="agregarGanadorManual()">➕ AÑADIR AL HISTORIAL DE FIREBASE</button>
         </div>
 
-        <!-- SECCIÓN 4: COPIAS DE SEGURIDAD Y RESTAURACIÓN (UBICADA AQUÍ) -->
+        <!-- SECCIÓN 4: COPIAS DE SEGURIDAD Y RESTAURACIÓN -->
         <div class="admin-section" style="border: 1px solid var(--accent); background: rgba(99, 102, 241, 0.08);">
             <label><b>💾 Copias de Seguridad y Restauración:</b></label>
             <p style="font-size: 0.8rem; color: var(--muted); margin: 4px 0 10px 0;">
-                El sistema realiza una copia automática en Firebase cada mes al entrar al panel. También puedes restaurar estados anteriores aquí.
+                Puedes guardar un punto de restauración en Firebase antes de hacer sorteos, o descargarte una copia física a tu PC.
             </p>
 
             <button style="background-color: #0284c7; margin-bottom: 10px;" onclick="crearBackupManual()">📸 CREAR COPIA DE SEGURIDAD AHORA</button>
@@ -474,20 +474,7 @@
     const nombresMeses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
     // --- SISTEMA DE COPIAS DE SEGURIDAD Y RESTAURACIÓN ---
-    
-    // Auto-backup mensual cuando entra el administrador
-    function comprobarAutoBackupMensual() {
-        const ahora = new Date();
-        const claveMes = `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, '0')}`;
 
-        db.ref('backups/' + claveMes).once('value', function(snapshot) {
-            if (!snapshot.exists()) {
-                realizarCopiaEnFirebase(claveMes, "Auto-Backup Inicio de Mes");
-            }
-        });
-    }
-
-    // Crear copia manual
     function crearBackupManual() {
         const ahora = new Date();
         const horaTag = `${String(ahora.getHours()).padStart(2,'0')}${String(ahora.getMinutes()).padStart(2,'0')}`;
@@ -496,7 +483,6 @@
         realizarCopiaEnFirebase(clave, "Copia Manual", true);
     }
 
-    // Guardar los datos actuales en /backups/CLAVE
     function realizarCopiaEnFirebase(clave, etiqueta, notificar = false) {
         Promise.all([
             db.ref('historial_ganadores').once('value'),
@@ -513,11 +499,12 @@
 
             db.ref('backups/' + clave).set(backupPayload).then(function() {
                 if (notificar) alert("✅ Copia de seguridad guardada con éxito bajo la clave: " + clave);
+            }).catch(function(err) {
+                alert("❌ No se pudo guardar el backup. Asegúrate de haber activado temporalmente '.write: true' en Firebase.");
             });
         });
     }
 
-    // Escuchar las copias disponibles y llenar el <select>
     function cargarListaBackups() {
         db.ref('backups').on('value', function(snapshot) {
             const select = document.getElementById('backupSelect');
@@ -536,7 +523,6 @@
         });
     }
 
-    // Restaurar copia seleccionada del desplegable
     function restaurarBackupSeleccionado() {
         const clave = document.getElementById('backupSelect').value;
         if (!clave) {
@@ -561,7 +547,6 @@
         }
     }
 
-    // Descargar respaldo completo en archivo .json
     function descargarBackupJSON() {
         Promise.all([
             db.ref('historial_ganadores').once('value'),
@@ -585,7 +570,6 @@
         });
     }
 
-    // Restaurar desde archivo .json local
     function restaurarDesdeJSON(event) {
         const file = event.target.files[0];
         if (!file) return;
@@ -615,7 +599,6 @@
         };
     }
 
-    // Importar desde Telegram
     async function importarDesdeTelegram() {
         const btn = document.querySelector('.telegram-btn');
         const originalText = btn.innerText;
@@ -701,7 +684,6 @@
         }
     }
 
-    // Escuchar Mes del Sorteo
     db.ref('mes_sorteo').on('value', function(snapshot) {
         const mes = snapshot.val();
         const titleEl = document.getElementById('mainTitle');
@@ -797,7 +779,6 @@
         });
     }
 
-    // Escuchar Sorteo Actual
     db.ref('sorteo_actual').on('value', function(snapshot) {
         const data = snapshot.val();
         programData = data;
@@ -872,7 +853,6 @@
         timerInterval = setInterval(actualizar, 1000);
     }
 
-    // Escuchar Historial Global
     db.ref('historial_ganadores').on('value', function(snapshot) {
         const data = snapshot.val();
         let mapaConteo = {};
@@ -972,9 +952,6 @@
             isAdminLoggedIn = true;
             document.getElementById('adminPanel').classList.remove('hidden');
             renderHistoryList();
-            
-            // Activar gestión de copias al iniciar sesión de admin
-            comprobarAutoBackupMensual();
             cargarListaBackups();
         } else if (pass !== null) {
             alert("Contraseña incorrecta.");
