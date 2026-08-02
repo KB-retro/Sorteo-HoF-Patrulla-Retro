@@ -425,7 +425,7 @@
             <button style="background-color: #0284c7;" onclick="agregarGanadorManual()">➕ AÑADIR AL HISTORIAL DE FIREBASE</button>
         </div>
 
-        <!-- SECCIÓN 4: COPIAS DE SEGURIDAD Y RESTAURACIÓN -->
+        <!-- SECCIÓN 4: COPIAS DE SEGURIDAD Y RESTAURACIÓN (MODIFICADA PARA 50/50) -->
         <div class="admin-section" style="border: 1px solid var(--accent); background: rgba(99, 102, 241, 0.08);">
             <label><b>💾 Copias de Seguridad y Restauración:</b></label>
             <p style="font-size: 0.8rem; color: var(--muted); margin: 4px 0 10px 0;">
@@ -439,8 +439,9 @@
                 <option value="">-- Cargando copias disponibles... --</option>
             </select>
 
+            <!-- CONTENEDOR AJUSTADO AL 50% / 50% -->
             <div style="display: flex; gap: 8px; margin-bottom: 10px;">
-                <button style="flex: 2; background-color: var(--warning); color: black;" onclick="restaurarBackupSeleccionado()">🔄 RESTAURAR COPIA</button>
+                <button style="flex: 1; background-color: var(--warning); color: black;" onclick="restaurarBackupSeleccionado()">🔄 RESTAURAR COPIA</button>
                 <button style="flex: 1; background-color: var(--danger); color: white;" onclick="borrarBackupSeleccionado()">🗑️ BORRAR COPIA</button>
             </div>
 
