@@ -320,6 +320,46 @@
             border-radius: 8px;
         }
 
+        .search-input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .search-input-wrapper input {
+            padding-right: 45px;
+        }
+
+        .mic-btn {
+            position: absolute;
+            right: 5px;
+            background: transparent;
+            border: none;
+            color: var(--muted);
+            cursor: pointer;
+            padding: 6px 10px;
+            font-size: 1.1rem;
+            width: auto;
+            border-radius: 4px;
+            transition: color 0.2s, background 0.2s;
+        }
+
+        .mic-btn:hover {
+            color: var(--text);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .mic-btn.listening {
+            color: var(--danger);
+            animation: pulseMic 1.2s infinite;
+        }
+
+        @keyframes pulseMic {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.15); opacity: 0.7; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
         .search-result-box {
             margin-top: 8px;
             padding: 8px 12px;
@@ -426,13 +466,16 @@
 
             <ul id="arcadeList" class="custom-list"></ul>
 
-            <!-- BUSCADOR CON DESPLEGABLE -->
+            <!-- BUSCADOR CON DESPLEGABLE Y MICRÓFONO -->
             <div class="search-container">
                 <label style="font-size: 0.8rem; color: var(--gold); display: block; margin-bottom: 4px; text-align: center;">
                     🔍 <b>Comprobar si un juego ya ha sido elegido:</b>
                 </label>
                 
-                <input type="text" id="gameSearchInput" list="gamesDatalist" placeholder="Escribe al menos 3 letras para sugerencias..." oninput="comprobarJuegoEnSheets()" autocomplete="off">
+                <div class="search-input-wrapper">
+                    <input type="text" id="gameSearchInput" list="gamesDatalist" placeholder="Escribe al menos 5 letras o usa el micro..." oninput="comprobarJuegoEnSheets()" autocomplete="off">
+                    <button type="button" id="micBtn" class="mic-btn" onclick="activarBusquedaVoz()" title="Buscar por voz">🎙️</button>
+                </div>
                 <datalist id="gamesDatalist"></datalist>
                 
                 <div id="searchResult" class="search-result-box"></div>
@@ -729,7 +772,7 @@
         }
     }
 
-    // --- COMPROBACIÓN Y FILTRADO DEL DESPLEGABLE (MÍNIMO 3 CARACTERES) ---
+    // --- COMPROBACIÓN Y FILTRADO DEL DESPLEGABLE (MÍNIMO 5 CARACTERES) ---
     async function comprobarJuegoEnSheets() {
         const inputEl = document.getElementById('gameSearchInput');
         const datalist = document.getElementById('gamesDatalist');
@@ -737,8 +780,8 @@
         const query = inputEl.value.trim();
         const queryNorm = normalizarTexto(query);
 
-        // 1. Si hay menos de 3 caracteres escritos, no desplegamos ni sugerimos nada
-        if (queryNorm.length < 3) {
+        // 1. Si hay menos de 5 caracteres escritos, no desplegamos ni sugerimos nada
+        if (queryNorm.length < 5) {
             datalist.innerHTML = '';
             resBox.style.display = 'none';
             return;
@@ -746,7 +789,7 @@
 
         const listaJuegos = await obtenerJuegosDesdeSheets();
 
-        // 2. Filtrar solo juegos donde el título o alguna de sus palabras empiece por lo escrito
+        // 2. Filtrar solo juegos donde el título o alguna de sus palabras empiece exactamente por las 5+ letras escritas
         const juegosFiltrados = listaJuegos.filter(j => {
             const tituloNorm = normalizarTexto(j.titulo);
             const palabras = tituloNorm.split(/\s+/);
@@ -778,6 +821,45 @@
             resBox.className = 'search-result-box result-not-found';
             resBox.innerHTML = `✅ <b>"${query}"</b> no aparece como jugado exactamente con ese nombre.<br><span style="font-weight:normal; font-size:0.75rem;">(Revisa las opciones del desplegable para confirmar el subtítulo)</span>`;
         }
+    }
+
+    // --- BÚSQUEDA POR VOZ ---
+    function activarBusquedaVoz() {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const micBtn = document.getElementById('micBtn');
+        const inputEl = document.getElementById('gameSearchInput');
+
+        if (!SpeechRecognition) {
+            alert("Lo siento, tu navegador no soporta la búsqueda por voz.");
+            return;
+        }
+
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'es-ES';
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+
+        recognition.onstart = function() {
+            micBtn.classList.add('listening');
+            micBtn.title = "Escuchando...";
+        };
+
+        recognition.onresult = function(event) {
+            const speechResult = event.results[0][0].transcript;
+            inputEl.value = speechResult;
+            comprobarJuegoEnSheets(); // Lanza el filtro automáticamente con lo dictado
+        };
+
+        recognition.onerror = function(event) {
+            console.error("Error en reconocimiento de voz:", event.error);
+        };
+
+        recognition.onend = function() {
+            micBtn.classList.remove('listening');
+            micBtn.title = "Buscar por voz";
+        };
+
+        recognition.start();
     }
 
     // --- COPIAS DE SEGURIDAD ---
