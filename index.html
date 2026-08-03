@@ -318,6 +318,7 @@
             background: rgba(255, 255, 255, 0.03);
             border: 1px solid #334155;
             border-radius: 8px;
+            position: relative;
         }
 
         .search-input-wrapper {
@@ -358,6 +359,44 @@
             0% { transform: scale(1); opacity: 1; }
             50% { transform: scale(1.15); opacity: 0.7; }
             100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* CAJA DE SUGERENCIAS PERSONALIZADA */
+        .custom-suggestions-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #0f172a;
+            border: 1px solid var(--accent);
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 99;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+            display: none;
+        }
+
+        .suggestion-item {
+            padding: 10px 12px;
+            font-size: 0.9rem;
+            border-bottom: 1px solid #1e293b;
+            cursor: pointer;
+            text-align: left;
+            transition: background 0.15s;
+        }
+
+        .suggestion-item:hover, .suggestion-item:active {
+            background: rgba(99, 102, 241, 0.25);
+            color: #fff;
+        }
+
+        .suggestion-item .suggestion-date {
+            display: block;
+            font-size: 0.75rem;
+            color: var(--muted);
+            margin-top: 2px;
         }
 
         .search-result-box {
@@ -466,17 +505,19 @@
 
             <ul id="arcadeList" class="custom-list"></ul>
 
-            <!-- BUSCADOR CON DESPLEGABLE Y MICRÓFONO ORIGINAL -->
+            <!-- BUSCADOR CON DESPLEGABLE PERSONALIZADO Y MICRÓFONO -->
             <div class="search-container">
                 <label style="font-size: 0.8rem; color: var(--gold); display: block; margin-bottom: 4px; text-align: center;">
                     🔍 <b>Comprobar si un juego ya ha sido elegido:</b>
                 </label>
                 
                 <div class="search-input-wrapper">
-                    <input type="text" id="gameSearchInput" list="gamesDatalist" placeholder="Escribe al menos 4 caracteres o usa el micro..." oninput="comprobarJuegoEnSheets()" onchange="comprobarJuegoEnSheets()" autocomplete="off">
+                    <input type="text" id="gameSearchInput" placeholder="Escribe al menos 4 caracteres o usa el micro..." oninput="comprobarJuegoEnSheets()" autocomplete="off">
                     <button type="button" id="micBtn" class="mic-btn" onclick="activarBusquedaVoz()" title="Búsqueda por voz">🎤</button>
+                    
+                    <!-- NUEVA LISTA DESPLEGABLE HTML FLOTANTE -->
+                    <div id="customSuggestions" class="custom-suggestions-dropdown"></div>
                 </div>
-                <datalist id="gamesDatalist"></datalist>
                 
                 <div id="searchResult" class="search-result-box"></div>
                 
@@ -772,46 +813,51 @@
         }
     }
 
-    // --- COMPROBACIÓN Y FILTRADO DEL DESPLEGABLE (MÍNIMO 4 CARACTERES / NÚMEROS) ---
+    // --- COMPROBACIÓN Y FILTRADO DEL DESPLEGABLE PERSONALIZADO ---
     async function comprobarJuegoEnSheets() {
         const inputEl = document.getElementById('gameSearchInput');
-        const datalist = document.getElementById('gamesDatalist');
+        const dropdown = document.getElementById('customSuggestions');
         const resBox = document.getElementById('searchResult');
         const query = inputEl.value.trim();
         const queryNorm = normalizarTexto(query);
 
-        // 1. Si hay menos de 4 caracteres o números escritos, no desplegamos ni sugerimos nada
+        // 1. Si hay menos de 4 caracteres, ocultamos las sugerencias
         if (queryNorm.length < 4) {
-            datalist.innerHTML = '';
+            dropdown.innerHTML = '';
+            dropdown.style.display = 'none';
             resBox.style.display = 'none';
             return;
         }
 
         const listaJuegos = await obtenerJuegosDesdeSheets();
-
         let coincidenciaExacta = listaJuegos.find(j => normalizarTexto(j.titulo) === queryNorm);
 
-        if (coincidenciaExacta) {
-            datalist.innerHTML = '';
-        }
-
-        // 2. Filtrar juegos cuyo título normalizado incluya el texto introducido en cualquier posición
+        // 2. Filtrar juegos cuyo título normalizado incluya el texto introducido
         const juegosFiltrados = listaJuegos.filter(j => {
-            const tituloNorm = normalizarTexto(j.titulo);
-            return tituloNorm.includes(queryNorm);
+            return normalizarTexto(j.titulo).includes(queryNorm);
         });
 
-        // 3. Insertar sugerencias limpias (máximo 15 elementos)
-        if (!coincidenciaExacta) {
-            datalist.innerHTML = '';
+        // 3. Rellenar y mostrar el contenedor flotante personalizado
+        dropdown.innerHTML = '';
+        if (juegosFiltrados.length > 0 && !coincidenciaExacta) {
             juegosFiltrados.slice(0, 15).forEach(j => {
-                const option = document.createElement('option');
-                option.value = j.titulo;
-                if (j.fecha) {
-                    option.label = `Jugado en: ${j.fecha}`;
-                }
-                datalist.appendChild(option);
+                const divItem = document.createElement('div');
+                divItem.className = 'suggestion-item';
+                divItem.innerHTML = `<div>${j.titulo}</div>` + (j.fecha ? `<span class="suggestion-date">Jugado en: ${j.fecha}</span>` : '');
+                
+                // Al hacer clic en una sugerencia, rellenamos el input y ocultamos la lista
+                divItem.onmousedown = function(e) {
+                    e.preventDefault(); // Evita que se pierda el foco bruscamente
+                    inputEl.value = j.titulo;
+                    dropdown.style.display = 'none';
+                    comprobarJuegoEnSheets();
+                };
+                
+                dropdown.appendChild(divItem);
             });
+            dropdown.style.display = 'block';
+        } else {
+            dropdown.style.display = 'none';
         }
 
         // 4. Mostrar estado actual
@@ -827,6 +873,14 @@
             resBox.innerHTML = `✅ <b>"${query}"</b> no aparece como jugado exactamente con ese nombre.<br><span style="font-weight:normal; font-size:0.75rem;">(Revisa las opciones del desplegable para confirmar el título completo)</span>`;
         }
     }
+
+    // Ocultar sugerencias si se hace clic fuera del buscador
+    document.addEventListener('click', function(e) {
+        const container = document.querySelector('.search-container');
+        if (container && !container.contains(e.target)) {
+            document.getElementById('customSuggestions').style.display = 'none';
+        }
+    });
 
     // --- BÚSQUEDA POR VOZ ---
     function activarBusquedaVoz() {
@@ -853,21 +907,8 @@
             const speechResult = event.results[0][0].transcript;
             inputEl.value = speechResult;
             
-            // Forzamos eventos y comprobación inmediata con el texto dictado
-            inputEl.dispatchEvent(new Event('input'));
-            inputEl.dispatchEvent(new Event('change'));
-            comprobarJuegoEnSheets();
-
-            // Truco mejorado para móviles: forzar cierre y reapertura del foco 
-            // simulando un toque real para que el navegador despliegue el datalist
-            inputEl.blur();
-            setTimeout(() => {
-                inputEl.focus();
-                // truco extra de selección para refrescar el control de formulario móvil
-                const valTemp = inputEl.value;
-                inputEl.value = "";
-                inputEl.value = valTemp;
-            }, 120);
+            // Al usar nuestro propio desplegable, llamamos a la función y se abrirá al instante
+            comprobarJuegoInmediato(speechResult);
         };
 
         recognition.onerror = function(event) {
@@ -880,6 +921,13 @@
         };
 
         recognition.start();
+    }
+
+    // Función auxiliar para forzar la apertura del desplegable de inmediato tras la voz
+    async function comprobarJuegoInmediato(texto) {
+        const inputEl = document.getElementById('gameSearchInput');
+        inputEl.value = texto;
+        await comprobarJuegoEnSheets();
     }
 
     // --- COPIAS DE SEGURIDAD ---
