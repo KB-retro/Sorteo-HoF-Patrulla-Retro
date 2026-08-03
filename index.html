@@ -466,15 +466,15 @@
 
             <ul id="arcadeList" class="custom-list"></ul>
 
-            <!-- BUSCADOR CON DESPLEGABLE Y MICRÓFONO -->
+            <!-- BUSCADOR CON DESPLEGABLE Y MICRÓFONO RETRO -->
             <div class="search-container">
                 <label style="font-size: 0.8rem; color: var(--gold); display: block; margin-bottom: 4px; text-align: center;">
                     🔍 <b>Comprobar si un juego ya ha sido elegido:</b>
                 </label>
                 
                 <div class="search-input-wrapper">
-                    <input type="text" id="gameSearchInput" list="gamesDatalist" placeholder="Escribe al menos 5 letras en cualquier parte o usa el micro..." oninput="comprobarJuegoEnSheets()" autocomplete="off">
-                    <button type="button" id="micBtn" class="mic-btn" onclick="activarBusquedaVoz()" title="Buscar por voz">🎙️</button>
+                    <input type="text" id="gameSearchInput" list="gamesDatalist" placeholder="Escribe al menos 4 caracteres o usa el micro..." oninput="comprobarJuegoEnSheets()" onchange="comprobarJuegoEnSheets()" autocomplete="off">
+                    <button type="button" id="micBtn" class="mic-btn" onclick="activarBusquedaVoz()" title="Búsqueda por voz">🕹️</button>
                 </div>
                 <datalist id="gamesDatalist"></datalist>
                 
@@ -772,7 +772,7 @@
         }
     }
 
-    // --- COMPROBACIÓN Y FILTRADO DEL DESPLEGABLE (5 CARACTERES EN CUALQUIER POSICIÓN) ---
+    // --- COMPROBACIÓN Y FILTRADO DEL DESPLEGABLE (MÍNIMO 4 CARACTERES / NÚMEROS) ---
     async function comprobarJuegoEnSheets() {
         const inputEl = document.getElementById('gameSearchInput');
         const datalist = document.getElementById('gamesDatalist');
@@ -780,14 +780,20 @@
         const query = inputEl.value.trim();
         const queryNorm = normalizarTexto(query);
 
-        // 1. Si hay menos de 5 caracteres escritos, no desplegamos ni sugerimos nada
-        if (queryNorm.length < 5) {
+        // 1. Si hay menos de 4 caracteres o números escritos, no desplegamos ni sugerimos nada
+        if (queryNorm.length < 4) {
             datalist.innerHTML = '';
             resBox.style.display = 'none';
             return;
         }
 
         const listaJuegos = await obtenerJuegosDesdeSheets();
+
+        let coincidenciaExacta = listaJuegos.find(j => normalizarTexto(j.titulo) === queryNorm);
+
+        if (coincidenciaExacta) {
+            datalist.innerHTML = '';
+        }
 
         // 2. Filtrar juegos cuyo título normalizado incluya el texto introducido en cualquier posición
         const juegosFiltrados = listaJuegos.filter(j => {
@@ -796,21 +802,21 @@
         });
 
         // 3. Insertar sugerencias limpias (máximo 15 elementos)
-        datalist.innerHTML = '';
-        juegosFiltrados.slice(0, 15).forEach(j => {
-            const option = document.createElement('option');
-            option.value = j.titulo;
-            if (j.fecha) {
-                option.label = `Jugado en: ${j.fecha}`;
-            }
-            datalist.appendChild(option);
-        });
+        if (!coincidenciaExacta) {
+            datalist.innerHTML = '';
+            juegosFiltrados.slice(0, 15).forEach(j => {
+                const option = document.createElement('option');
+                option.value = j.titulo;
+                if (j.fecha) {
+                    option.label = `Jugado en: ${j.fecha}`;
+                }
+                datalist.appendChild(option);
+            });
+        }
 
         // 4. Mostrar estado actual
         resBox.style.display = 'block';
         resBox.className = 'search-result-box';
-
-        let coincidenciaExacta = listaJuegos.find(j => normalizarTexto(j.titulo) === queryNorm);
 
         if (coincidenciaExacta) {
             resBox.className = 'search-result-box result-found';
@@ -840,13 +846,13 @@
 
         recognition.onstart = function() {
             micBtn.classList.add('listening');
-            micBtn.title = "Escuchando...";
+            micBtn.title = "Escuchando voz...";
         };
 
         recognition.onresult = function(event) {
             const speechResult = event.results[0][0].transcript;
             inputEl.value = speechResult;
-            comprobarJuegoEnSheets(); // Lanza el filtro automáticamente con lo dictado
+            comprobarJuegoEnSheets();
         };
 
         recognition.onerror = function(event) {
@@ -855,7 +861,7 @@
 
         recognition.onend = function() {
             micBtn.classList.remove('listening');
-            micBtn.title = "Buscar por voz";
+            micBtn.title = "Búsqueda por voz";
         };
 
         recognition.start();
