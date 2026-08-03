@@ -998,15 +998,25 @@
         try {
             const authUrl = `${MI_CLOUDFLARE_WORKER}?action=login`;
             
-            // Fíjate que AQUÍ HEMOS QUITADO las cabeceras 'headers'.
-            // Al enviar el JSON en el body sin cabecera Content-Type explicita,
-            // el navegador NO enviará la petición preflight OPTIONS de CORS.
             const response = await fetch(authUrl, {
                 method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
                 body: JSON.stringify({ password: pass })
             });
 
-            const resData = await response.json();
+            // Capturamos la respuesta como texto bruto para evitar un fallo crítico si llega HTML en vez de JSON
+            const responseText = await response.text();
+
+            let resData;
+            try {
+                resData = JSON.parse(responseText);
+            } catch (e) {
+                console.error("El Worker devolvió contenido que no es JSON:", responseText);
+                alert("⚠️ Error en la respuesta del Worker (no es JSON). Revisa la consola o asegúrate de que el Worker maneje el login correctamente.");
+                return;
+            }
 
             if (response.ok && resData.success) {
                 isAdminLoggedIn = true;
@@ -1022,7 +1032,7 @@
             }
         } catch (err) {
             console.error("Error al validar con el Worker:", err);
-            alert("⚠️ Error al conectar con el servidor de autenticación.");
+            alert("⚠️ Error de conexión/CORS al conectar con el servidor de autenticación.");
         }
     }
 
