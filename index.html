@@ -101,6 +101,8 @@
             max-width: 150px;
             width: 100%;
             height: auto;
+            cursor: pointer; /* Indica que es interactivo */
+            user-select: none;
         }
 
         .card {
@@ -301,7 +303,8 @@
 <body>
 
 <div class="container">
-    <img src="logo.png?v=2" alt="Logo Patrulla Retro" class="header-logo">
+    <!-- TRIPLE CLIC EN EL LOGO PARA ABRIR ADMIN -->
+    <img src="logo.png?v=2" alt="Logo Patrulla Retro" class="header-logo" onclick="contarClicksAdmin()">
     <h1 id="mainTitle">🏆 Sorteo HoF Patrulla Retro</h1>
 
     <!-- PANTALLA GANADOR -->
@@ -359,13 +362,7 @@
         <button id="btnToggleHistory" class="btn-toggle-view hidden" onclick="toggleHistoryView()">⬇️ Ver todo el historial</button>
     </div>
 
-    <div style="text-align: center;">
-        <button onclick="toggleAdminPanel()" style="width: auto; background: transparent; color: var(--muted); font-size: 0.8rem; text-decoration: underline; padding: 5px 10px;">
-            ¿Eres el Administrador? Haz clic aquí
-        </button>
-    </div>
-
-    <!-- PANEL ADMIN -->
+    <!-- PANEL ADMIN (OCULTO) -->
     <div id="adminPanel" class="card admin-panel hidden">
         <h2>🛠️ Panel de Control (Administrador)</h2>
 
@@ -477,7 +474,24 @@
     let timerInterval = null;
     let programData = null;
 
+    // Control de triple clic para Admin
+    let adminClicks = 0;
+    let adminClickTimer = null;
+
     const nombresMeses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+
+    // --- ACTIVACIÓN SECRETA DE ADMIN POR TRIPLE CLIC ---
+    function contarClicksAdmin() {
+        adminClicks++;
+        clearTimeout(adminClickTimer);
+        
+        if (adminClicks >= 3) {
+            adminClicks = 0;
+            toggleAdminPanel();
+        } else {
+            adminClickTimer = setTimeout(() => { adminClicks = 0; }, 800); // 800ms para completar los 3 clics
+        }
+    }
 
     // --- FUNCIÓN DE AZAR CRIPTOGRÁFICO SEGURO (WEB CRYPTO API) ---
     function obtenerIndiceCriptografico(max) {
@@ -490,7 +504,7 @@
         do {
             window.crypto.getRandomValues(arrayBuffer);
             valorRandom = arrayBuffer[0];
-        } while (valorRandom >= limiteEquitativo); // Rechaza valores para evitar el sesgo de módulo
+        } while (valorRandom >= limiteEquitativo);
 
         return valorRandom % max;
     }
