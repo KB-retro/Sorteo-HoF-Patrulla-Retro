@@ -1266,6 +1266,12 @@
 
         if (!rawLines) return alert("Pega o importa la lista de participantes.");
 
+        // Guardar copia de seguridad automática antes de cada tirada/programación
+        const ahora = new Date();
+        const horaTag = `${String(ahora.getHours()).padStart(2,'0')}${String(ahora.getMinutes()).padStart(2,'0')}`;
+        const claveAuto = `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, '0')}-${String(ahora.getDate()).padStart(2, '0')}_${horaTag}`;
+        realizarCopiaEnFirebase(claveAuto, "Auto-Backup previo a Sorteo", false);
+
         if (timeVal) {
             const timeParts = timeVal.split(':');
             let targetDate = new Date();
