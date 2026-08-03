@@ -95,7 +95,6 @@
             margin: 0 auto;
         }
 
-        /* LOGO CAMUFLADO: Sin cursor de mano, sin resaltado al tocarlo en móviles */
         .header-logo {
             display: block;
             margin: 0 auto 5px auto;
@@ -191,7 +190,6 @@
         }
         .btn-toggle-view:hover { background-color: #475569 !important; }
 
-        /* BOTÓN Y MODAL DE CRÉDITOS */
         .credits-btn {
             background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
             color: #fff;
@@ -314,7 +312,6 @@
 
         .arcade-title { font-size: 0.95rem; font-weight: bold; color: var(--gold); margin-bottom: 8px; text-align: center; }
 
-        /* BUSCADOR CON DESPLEGABLE */
         .search-container {
             margin-top: 15px;
             padding: 10px;
@@ -411,7 +408,6 @@
 <body>
 
 <div class="container">
-    <!-- TRIPLE CLIC DISCRETO EN EL LOGO PARA ABRIR ADMIN -->
     <img src="logo.png?v=2" alt="Logo Patrulla Retro" class="header-logo" onclick="contarClicksAdmin()">
     <h1 id="mainTitle">🏆 Sorteo HoF Patrulla Retro</h1>
 
@@ -428,16 +424,15 @@
         <div class="arcade-box">
             <div class="arcade-title">🕹️ Eligen el Arcade del Mes (5 Usuarios):</div>
 
-            <!-- LISTA DE GANADORES DEL ARCADE -->
             <ul id="arcadeList" class="custom-list"></ul>
 
-            <!-- BUSCADOR REUBICADO CON DESPLEGABLE / DATALIST -->
+            <!-- BUSCADOR CON DESPLEGABLE -->
             <div class="search-container">
                 <label style="font-size: 0.8rem; color: var(--gold); display: block; margin-bottom: 4px; text-align: center;">
                     🔍 <b>Comprobar si un juego ya ha sido elegido:</b>
                 </label>
                 
-                <input type="text" id="gameSearchInput" list="gamesDatalist" placeholder="Escribe para buscar o desplegar juegos..." oninput="comprobarJuegoEnSheets()" autocomplete="off">
+                <input type="text" id="gameSearchInput" list="gamesDatalist" placeholder="Escribe al menos 3 letras para sugerencias..." oninput="comprobarJuegoEnSheets()" autocomplete="off">
                 <datalist id="gamesDatalist"></datalist>
                 
                 <div id="searchResult" class="search-result-box"></div>
@@ -570,11 +565,11 @@
         <button class="clear-btn" onclick="borrarTodo()">🧹 BORRAR TODO</button>
     </div>
 
-    <!-- BOTÓN DE CRÉDITOS UBICADO ABAJO DEL TODO -->
+    <!-- BOTÓN DE CRÉDITOS -->
     <button class="credits-btn" onclick="abrirCreditos()">💳 Créditos</button>
 </div>
 
-<!-- VENTANA MODAL CRÉDITOS MINIMALISTA CON EMOJIS -->
+<!-- VENTANA MODAL CRÉDITOS -->
 <div id="creditsModal" class="modal-overlay hidden">
     <div class="modal-card">
         <h2 style="color: var(--gold); margin-top: 0; margin-bottom: 15px;">Créditos</h2>
@@ -623,11 +618,6 @@
 
     const nombresMeses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
-    // Cargar la lista en el datalist nativo al iniciar
-    document.addEventListener('DOMContentLoaded', () => {
-        poblarDatalistJuegos();
-    });
-
     // --- FUNCIONES MODAL CRÉDITOS ---
     function abrirCreditos() {
         document.getElementById('creditsModal').classList.remove('hidden');
@@ -644,7 +634,7 @@
         }
     });
 
-    // --- ACTIVACIÓN TRIPLE CLIC ADMIN ---
+    // --- TRIPLE CLIC ADMIN ---
     function contarClicksAdmin() {
         adminClicks++;
         clearTimeout(adminClickTimer);
@@ -673,7 +663,7 @@
         return valorRandom % max;
     }
 
-    // --- PARSER CSV COMPATIBLE CON COMAS Y COMILLAS ---
+    // --- PARSER CSV ---
     function parseCSVLine(linea) {
         let resultado = [];
         let celda = '';
@@ -692,6 +682,16 @@
         }
         resultado.push(celda.trim());
         return resultado;
+    }
+
+    // Normalizador de texto para ignorar tildes, mayúsculas y signos
+    function normalizarTexto(txt) {
+        if (!txt) return "";
+        return txt.toString()
+                  .normalize("NFD")
+                  .replace(/[\u0300-\u036f]/g, "")
+                  .toLowerCase()
+                  .trim();
     }
 
     // --- LECTURA DE JUEGOS Y FECHAS DESDE GOOGLE SHEETS ---
@@ -729,15 +729,33 @@
         }
     }
 
-    // Poblar el autocompletado del desplegable
-    async function poblarDatalistJuegos() {
+    // --- COMPROBACIÓN Y FILTRADO DEL DESPLEGABLE (MÍNIMO 3 CARACTERES) ---
+    async function comprobarJuegoEnSheets() {
+        const inputEl = document.getElementById('gameSearchInput');
         const datalist = document.getElementById('gamesDatalist');
-        if (!datalist) return;
-        
-        const listaJuegos = await obtenerJuegosDesdeSheets();
-        datalist.innerHTML = '';
+        const resBox = document.getElementById('searchResult');
+        const query = inputEl.value.trim();
+        const queryNorm = normalizarTexto(query);
 
-        listaJuegos.forEach(j => {
+        // 1. Si hay menos de 3 caracteres escritos, no desplegamos ni sugerimos nada
+        if (queryNorm.length < 3) {
+            datalist.innerHTML = '';
+            resBox.style.display = 'none';
+            return;
+        }
+
+        const listaJuegos = await obtenerJuegosDesdeSheets();
+
+        // 2. Filtrar solo juegos donde el título o alguna de sus palabras empiece por lo escrito
+        const juegosFiltrados = listaJuegos.filter(j => {
+            const tituloNorm = normalizarTexto(j.titulo);
+            const palabras = tituloNorm.split(/\s+/);
+            return tituloNorm.startsWith(queryNorm) || palabras.some(p => p.startsWith(queryNorm));
+        });
+
+        // 3. Insertar sugerencias limpias (máximo 15 elementos)
+        datalist.innerHTML = '';
+        juegosFiltrados.slice(0, 15).forEach(j => {
             const option = document.createElement('option');
             option.value = j.titulo;
             if (j.fecha) {
@@ -745,46 +763,20 @@
             }
             datalist.appendChild(option);
         });
-    }
 
-    // --- COMPROBACIÓN MEDIANTE EL DESPLEGABLE / SELECCIÓN ---
-    async function comprobarJuegoEnSheets() {
-        const query = document.getElementById('gameSearchInput').value.trim();
-        const resBox = document.getElementById('searchResult');
-
-        if (!query || query.length < 2) {
-            resBox.style.display = 'none';
-            return;
-        }
-
+        // 4. Mostrar estado actual
         resBox.style.display = 'block';
         resBox.className = 'search-result-box';
-        resBox.style.background = 'rgba(255,255,255,0.05)';
-        resBox.innerHTML = '⏳ Comprobando...';
 
-        const listaJuegos = await obtenerJuegosDesdeSheets();
+        let coincidenciaExacta = listaJuegos.find(j => normalizarTexto(j.titulo) === queryNorm);
 
-        const normalizar = (txt) => {
-            if (!txt) return "";
-            return txt.toString()
-                      .normalize("NFD")
-                      .replace(/[\u0300-\u036f]/g, "")
-                      .toLowerCase()
-                      .trim();
-        };
-
-        const queryNorm = normalizar(query);
-
-        // Busca coincidencia exacta o la mejor opción elegida del desplegable
-        let coincidencia = listaJuegos.find(j => normalizar(j.titulo) === queryNorm);
-
-        if (coincidencia) {
+        if (coincidenciaExacta) {
             resBox.className = 'search-result-box result-found';
-            let txtFecha = coincidencia.fecha ? ` - Jugado en: ${coincidencia.fecha}` : '';
-            resBox.innerHTML = `❌ <b>"${coincidencia.titulo}"</b> ya ha sido seleccionado antes.${txtFecha}`;
+            let txtFecha = coincidenciaExacta.fecha ? ` - Jugado en: ${coincidenciaExacta.fecha}` : '';
+            resBox.innerHTML = `❌ <b>"${coincidenciaExacta.titulo}"</b> ya ha sido seleccionado antes.${txtFecha}`;
         } else {
             resBox.className = 'search-result-box result-not-found';
-            resBox.innerHTML = `✅ <b>"${query}"</b> no aparece en la lista.<br><span style="font-weight:normal; font-size:0.75rem;">(¡Parece libre y elegible!)</span>`;
+            resBox.innerHTML = `✅ <b>"${query}"</b> no aparece como jugado exactamente con ese nombre.<br><span style="font-weight:normal; font-size:0.75rem;">(Revisa las opciones del desplegable para confirmar el subtítulo)</span>`;
         }
     }
 
