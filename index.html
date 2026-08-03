@@ -95,14 +95,20 @@
             margin: 0 auto;
         }
 
+        /* ESTILOS FANTASMA PARA EL LOGO (CERO PISTAS VISUALES) */
         .header-logo {
             display: block;
             margin: 0 auto 5px auto;
             max-width: 150px;
             width: 100%;
             height: auto;
-            cursor: pointer; /* Indica que es interactivo */
-            user-select: none;
+            cursor: default; /* Puntero normal, sin manita */
+            user-select: none; /* Imposible seleccionar */
+            -webkit-user-select: none;
+            -webkit-user-drag: none; /* Imposible arrastrar la imagen */
+            -webkit-touch-callout: none; /* Evita menú contextual al mantener pulsado en móvil */
+            -webkit-tap-highlight-color: transparent; /* Sin destello/recuadro azul al pulsar en móvil */
+            outline: none;
         }
 
         .card {
@@ -303,8 +309,9 @@
 <body>
 
 <div class="container">
-    <!-- TRIPLE CLIC EN EL LOGO PARA ABRIR ADMIN -->
-    <img src="logo.png?v=2" alt="Logo Patrulla Retro" class="header-logo" onclick="contarClicksAdmin()">
+    <!-- LOGO CON TRUCO DE CLIC INVISIBLE -->
+    <img src="logo.png?v=2" alt="Logo Patrulla Retro" class="header-logo" draggable="false" onclick="contarClicksAdmin()">
+    
     <h1 id="mainTitle">🏆 Sorteo HoF Patrulla Retro</h1>
 
     <!-- PANTALLA GANADOR -->
@@ -474,22 +481,24 @@
     let timerInterval = null;
     let programData = null;
 
-    // Control de triple clic para Admin
+    const nombresMeses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+
+    // --- TRUCO SECRETO: CONTADOR DE 3 CLICS EN EL LOGO ---
     let adminClicks = 0;
     let adminClickTimer = null;
 
-    const nombresMeses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
-
-    // --- ACTIVACIÓN SECRETA DE ADMIN POR TRIPLE CLIC ---
     function contarClicksAdmin() {
         adminClicks++;
-        clearTimeout(adminClickTimer);
-        
+        if (adminClickTimer) clearTimeout(adminClickTimer);
+
         if (adminClicks >= 3) {
             adminClicks = 0;
             toggleAdminPanel();
         } else {
-            adminClickTimer = setTimeout(() => { adminClicks = 0; }, 800); // 800ms para completar los 3 clics
+            // Reinicia el contador si pasan más de 1.5s entre clics
+            adminClickTimer = setTimeout(() => {
+                adminClicks = 0;
+            }, 1500);
         }
     }
 
