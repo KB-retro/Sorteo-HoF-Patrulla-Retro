@@ -985,54 +985,19 @@
     function toggleWinnersView() { isWinnersExpanded = !isWinnersExpanded; renderWinnersList(); }
     function toggleHistoryView() { isHistoryExpanded = !isHistoryExpanded; renderHistoryList(); }
 
-    // --- ACCESO Y AUTENTICACIÓN ADMIN VÍA WORKER DE CLOUDFLARE ---
-    async function toggleAdminPanel() {
-        if (isAdminLoggedIn) {
-            document.getElementById('adminPanel').classList.toggle('hidden');
-            return;
-        }
-
+    function toggleAdminPanel() {
         const pass = prompt("Introduce la clave de administrador:");
-        if (!pass) return;
-
-        try {
-            const authUrl = `${MI_CLOUDFLARE_WORKER}?action=login`;
+        if (pass === "patrulla123") {
+            isAdminLoggedIn = true;
+            document.getElementById('adminPanel').classList.remove('hidden');
             
-            const response = await fetch(authUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ password: pass })
-            });
+            // Carga automática silenciosa al abrir el panel de admin
+            importarDesdeTelegram(false);
 
-            // Capturamos la respuesta como texto bruto para evitar un fallo crítico si llega HTML en vez de JSON
-            const responseText = await response.text();
-
-            let resData;
-            try {
-                resData = JSON.parse(responseText);
-            } catch (e) {
-                console.error("El Worker devolvió contenido que no es JSON:", responseText);
-                alert("⚠️ Error en la respuesta del Worker (no es JSON). Revisa la consola o asegúrate de que el Worker maneje el login correctamente.");
-                return;
-            }
-
-            if (response.ok && resData.success) {
-                isAdminLoggedIn = true;
-                document.getElementById('adminPanel').classList.remove('hidden');
-                
-                // Carga automática silenciosa al abrir el panel de admin
-                importarDesdeTelegram(false);
-
-                renderHistoryList();
-                cargarListaBackups();
-            } else {
-                alert(resData.message || "Contraseña incorrecta.");
-            }
-        } catch (err) {
-            console.error("Error al validar con el Worker:", err);
-            alert("⚠️ Error de conexión/CORS al conectar con el servidor de autenticación.");
+            renderHistoryList();
+            cargarListaBackups();
+        } else if (pass !== null) {
+            alert("Contraseña incorrecta.");
         }
     }
 
