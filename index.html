@@ -473,7 +473,7 @@
                 </label>
                 
                 <div class="search-input-wrapper">
-                    <input type="text" id="gameSearchInput" list="gamesDatalist" placeholder="Escribe al menos 5 letras o usa el micro..." oninput="comprobarJuegoEnSheets()" autocomplete="off">
+                    <input type="text" id="gameSearchInput" list="gamesDatalist" placeholder="Escribe al menos 5 letras en cualquier parte o usa el micro..." oninput="comprobarJuegoEnSheets()" autocomplete="off">
                     <button type="button" id="micBtn" class="mic-btn" onclick="activarBusquedaVoz()" title="Buscar por voz">🎙️</button>
                 </div>
                 <datalist id="gamesDatalist"></datalist>
@@ -772,7 +772,7 @@
         }
     }
 
-    // --- COMPROBACIÓN Y FILTRADO DEL DESPLEGABLE (MÍNIMO 5 CARACTERES) ---
+    // --- COMPROBACIÓN Y FILTRADO DEL DESPLEGABLE (5 CARACTERES EN CUALQUIER POSICIÓN) ---
     async function comprobarJuegoEnSheets() {
         const inputEl = document.getElementById('gameSearchInput');
         const datalist = document.getElementById('gamesDatalist');
@@ -789,11 +789,10 @@
 
         const listaJuegos = await obtenerJuegosDesdeSheets();
 
-        // 2. Filtrar solo juegos donde el título o alguna de sus palabras empiece exactamente por las 5+ letras escritas
+        // 2. Filtrar juegos cuyo título normalizado incluya el texto introducido en cualquier posición
         const juegosFiltrados = listaJuegos.filter(j => {
             const tituloNorm = normalizarTexto(j.titulo);
-            const palabras = tituloNorm.split(/\s+/);
-            return tituloNorm.startsWith(queryNorm) || palabras.some(p => p.startsWith(queryNorm));
+            return tituloNorm.includes(queryNorm);
         });
 
         // 3. Insertar sugerencias limpias (máximo 15 elementos)
@@ -819,7 +818,7 @@
             resBox.innerHTML = `❌ <b>"${coincidenciaExacta.titulo}"</b> ya ha sido seleccionado antes.${txtFecha}`;
         } else {
             resBox.className = 'search-result-box result-not-found';
-            resBox.innerHTML = `✅ <b>"${query}"</b> no aparece como jugado exactamente con ese nombre.<br><span style="font-weight:normal; font-size:0.75rem;">(Revisa las opciones del desplegable para confirmar el subtítulo)</span>`;
+            resBox.innerHTML = `✅ <b>"${query}"</b> no aparece como jugado exactamente con ese nombre.<br><span style="font-weight:normal; font-size:0.75rem;">(Revisa las opciones del desplegable para confirmar el título completo)</span>`;
         }
     }
 
