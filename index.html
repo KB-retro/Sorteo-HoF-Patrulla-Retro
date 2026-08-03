@@ -479,6 +479,14 @@
 
     const nombresMeses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
+    // --- FUNCIÓN DE HASH SHA-256 NATIVO PARA SEGURIDAD DE CONTRASEÑA ---
+    async function calcularSHA256(texto) {
+        const msgUint8 = new TextEncoder().encode(texto);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
     // --- FUNCIÓN DE AZAR CRIPTOGRÁFICO SEGURO (WEB CRYPTO API) ---
     function obtenerIndiceCriptografico(max) {
         if (max <= 0) return 0;
@@ -985,18 +993,28 @@
     function toggleWinnersView() { isWinnersExpanded = !isWinnersExpanded; renderWinnersList(); }
     function toggleHistoryView() { isHistoryExpanded = !isHistoryExpanded; renderHistoryList(); }
 
-    function toggleAdminPanel() {
+    // --- ACCESO ADMIN CON VALIDACIÓN SHA-256 ---
+    async function toggleAdminPanel() {
+        if (isAdminLoggedIn) {
+            document.getElementById('adminPanel').classList.toggle('hidden');
+            return;
+        }
+
         const pass = prompt("Introduce la clave de administrador:");
-        if (pass === "patrulla123") {
+        if (!pass) return;
+
+        // Hash SHA-256 de "patrulla123"
+        const HASH_CORRECTO = "8f3d0a27e7d0139e88b2f9f1b98c399b1d9237c1e54a025688d070104e17f0a8";
+
+        const hashIntroducido = await calcularSHA256(pass);
+
+        if (hashIntroducido === HASH_CORRECTO) {
             isAdminLoggedIn = true;
             document.getElementById('adminPanel').classList.remove('hidden');
-            
-            // Carga automática silenciosa al abrir el panel de admin
-            importarDesdeTelegram(false);
 
             renderHistoryList();
             cargarListaBackups();
-        } else if (pass !== null) {
+        } else {
             alert("Contraseña incorrecta.");
         }
     }
