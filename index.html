@@ -95,20 +95,14 @@
             margin: 0 auto;
         }
 
-        /* ESTILOS FANTASMA PARA EL LOGO (CERO PISTAS VISUALES) */
         .header-logo {
             display: block;
             margin: 0 auto 5px auto;
             max-width: 150px;
             width: 100%;
             height: auto;
-            cursor: default; /* Puntero normal, sin manita */
-            user-select: none; /* Imposible seleccionar */
-            -webkit-user-select: none;
-            -webkit-user-drag: none; /* Imposible arrastrar la imagen */
-            -webkit-touch-callout: none; /* Evita menú contextual al mantener pulsado en móvil */
-            -webkit-tap-highlight-color: transparent; /* Sin destello/recuadro azul al pulsar en móvil */
-            outline: none;
+            cursor: pointer;
+            user-select: none;
         }
 
         .card {
@@ -243,6 +237,37 @@
 
         .arcade-title { font-size: 0.95rem; font-weight: bold; color: var(--gold); margin-bottom: 8px; text-align: center; }
 
+        /* BUSCADOR DE JUEGOS EN TIEMPO REAL */
+        .search-container {
+            margin: 12px 0;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid #334155;
+            border-radius: 8px;
+        }
+
+        .search-result-box {
+            margin-top: 8px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            display: none;
+            text-align: center;
+        }
+
+        .result-found {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid var(--danger);
+            color: #fca5a5;
+        }
+
+        .result-not-found {
+            background: rgba(34, 197, 94, 0.2);
+            border: 1px solid var(--success);
+            color: #86efac;
+        }
+
         .log-box {
             background: #090d16;
             border: 1px solid #334155;
@@ -309,9 +334,8 @@
 <body>
 
 <div class="container">
-    <!-- LOGO CON TRUCO DE CLIC INVISIBLE -->
-    <img src="logo.png?v=2" alt="Logo Patrulla Retro" class="header-logo" draggable="false" onclick="contarClicksAdmin()">
-    
+    <!-- TRIPLE CLIC EN EL LOGO PARA ABRIR ADMIN -->
+    <img src="logo.png?v=2" alt="Logo Patrulla Retro" class="header-logo" onclick="contarClicksAdmin()">
     <h1 id="mainTitle">🏆 Sorteo HoF Patrulla Retro</h1>
 
     <!-- PANTALLA GANADOR -->
@@ -327,13 +351,20 @@
         <div class="arcade-box">
             <div class="arcade-title">🕹️ Eligen el Arcade del Mes (5 Usuarios):</div>
 
-            <div style="text-align: center; margin: 10px 0 14px 0; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 6px;">
-                <p style="margin: 0 0 6px 0; font-size: 0.8rem; color: var(--muted);">
-                    ⚠️ <b>Aviso para los elegidos:</b> No se pueden repetir juegos que ya hayan salido en el grupo.
-                </p>
-                <a href="https://docs.google.com/spreadsheets/d/1JApebwPe9J_fbS_hnQBHHElSlELlWiAjxdvDJQ8yw2E/edit?gid=0#gid=0" target="_blank" rel="noopener noreferrer" style="display: inline-block; background-color: #0284c7; color: white; text-decoration: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; font-size: 0.85rem; transition: background 0.2s;">
-                    📜 Ver lista de juegos ya jugados ↗️
-                </a>
+            <!-- BUSCADOR CONECTADO EN TIEMPO REAL A GOOGLE SHEETS -->
+            <div class="search-container">
+                <label style="font-size: 0.8rem; color: var(--gold); display: block; margin-bottom: 4px; text-align: center;">
+                    🔍 <b>Comprobar si un juego ya ha sido elegido (Google Sheets en vivo):</b>
+                </label>
+                <input type="text" id="gameSearchInput" placeholder="Escribe el nombre del juego..." oninput="comprobarJuegoEnSheets()">
+                
+                <div id="searchResult" class="search-result-box"></div>
+                
+                <div style="text-align: center; margin-top: 8px;">
+                    <a href="https://docs.google.com/spreadsheets/d/1JApebwPe9J_fbS_hnQBHHElSlELlWiAjxdvDJQ8yw2E/edit?gid=0#gid=0" target="_blank" rel="noopener noreferrer" style="color: var(--muted); text-decoration: underline; font-size: 0.75rem;">
+                        📄 Abrir hoja de cálculo completa ↗️
+                    </a>
+                </div>
             </div>
 
             <ul id="arcadeList" class="custom-list"></ul>
@@ -415,7 +446,7 @@
             <button class="admin-btn" onclick="programarOEjecutarSorteo()">🎲 GUARDAR Y PROGRAMAR SORTEO</button>
         </div>
 
-        <!-- SECCIÓN 3: AÑADIR GANADOR(ES) MANUALMENTE CON MES Y AÑO -->
+        <!-- SECCIÓN 3: AÑADIR GANADOR(ES) MANUALMENTE -->
         <div class="admin-section">
             <label><b>➕ Añadir Ganador(es) Anterior(es) al Historial:</b></label>
             <p style="font-size: 0.8rem; color: var(--muted); margin: 4px 0 8px 0;">
@@ -468,8 +499,10 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // ⚡ URL DE TU WORKER PRIVADO EN CLOUDFLARE
     const MI_CLOUDFLARE_WORKER = "https://dawn-band-8bc8.microbiops.workers.dev";
+    
+    // URL DE EXPORTACIÓN PÚBLICA DE TU GOOGLE SHEETS
+    const GOOGLE_SHEETS_CSV_URL = "https://docs.google.com/spreadsheets/d/1JApebwPe9J_fbS_hnQBHHElSlELlWiAjxdvDJQ8yw2E/export?format=csv";
 
     let actualGanadorUser = "";
     let isWinnersExpanded = false;
@@ -477,32 +510,32 @@
     let rawHistoryItems = [];
     let rawWinnersCount = [];
     let isAdminLoggedIn = false;
+    
+    let cacheJuegosSheets = null;
+    let ultimaCargaSheets = 0;
 
     let timerInterval = null;
     let programData = null;
 
-    const nombresMeses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
-
-    // --- TRUCO SECRETO: CONTADOR DE 3 CLICS EN EL LOGO ---
     let adminClicks = 0;
     let adminClickTimer = null;
 
+    const nombresMeses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+
+    // --- ACTIVACIÓN TRIPLE CLIC ADMIN ---
     function contarClicksAdmin() {
         adminClicks++;
-        if (adminClickTimer) clearTimeout(adminClickTimer);
-
+        clearTimeout(adminClickTimer);
+        
         if (adminClicks >= 3) {
             adminClicks = 0;
             toggleAdminPanel();
         } else {
-            // Reinicia el contador si pasan más de 1.5s entre clics
-            adminClickTimer = setTimeout(() => {
-                adminClicks = 0;
-            }, 1500);
+            adminClickTimer = setTimeout(() => { adminClicks = 0; }, 800);
         }
     }
 
-    // --- FUNCIÓN DE AZAR CRIPTOGRÁFICO SEGURO (WEB CRYPTO API) ---
+    // --- AZAR CRIPTOGRÁFICO ---
     function obtenerIndiceCriptografico(max) {
         if (max <= 0) return 0;
         const arrayBuffer = new Uint32Array(1);
@@ -518,8 +551,62 @@
         return valorRandom % max;
     }
 
-    // --- SISTEMA DE COPIAS DE SEGURIDAD Y RESTAURACIÓN ---
+    // --- LECTURA EN TIEMPO REAL DESDE GOOGLE SHEETS ---
+    async function obtenerJuegosDesdeSheets() {
+        // Guardar en caché durante 30 segundos para evitar llamadas excesivas al escribir
+        if (cacheJuegosSheets && (Date.now() - ultimaCargaSheets < 30000)) {
+            return cacheJuegosSheets;
+        }
 
+        try {
+            const res = await fetch(GOOGLE_SHEETS_CSV_URL + "&t=" + Date.now());
+            if (!res.ok) throw new Error("Error al leer Sheets");
+            
+            const text = await res.text();
+            // Desglosar CSV por filas y limpiar comillas o caracteres
+            const lineas = text.split('\n').map(l => l.replace(/"/g, '').trim()).filter(l => l.length > 0);
+            
+            cacheJuegosSheets = lineas;
+            ultimaCargaSheets = Date.now();
+            return cacheJuegosSheets;
+
+        } catch (e) {
+            console.error("Error leyendo Google Sheets:", e);
+            return cacheJuegosSheets || [];
+        }
+    }
+
+    async function comprobarJuegoEnSheets() {
+        const query = document.getElementById('gameSearchInput').value.trim();
+        const resBox = document.getElementById('searchResult');
+
+        if (!query || query.length < 2) {
+            resBox.style.display = 'none';
+            return;
+        }
+
+        resBox.style.display = 'block';
+        resBox.className = 'search-result-box';
+        resBox.style.background = 'rgba(255,255,255,0.05)';
+        resBox.innerHTML = '⏳ Comprobando hoja de cálculo...';
+
+        const listaJuegos = await obtenerJuegosDesdeSheets();
+
+        const normalizar = (txt) => txt.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+        const queryNorm = normalizar(query);
+
+        const coincidencia = listaJuegos.find(juego => normalizar(juego).includes(queryNorm));
+
+        if (coincidencia) {
+            resBox.className = 'search-result-box result-found';
+            resBox.innerHTML = `❌ <b>"${coincidencia}"</b> YA HA SIDO JUGADO.<br><span style="font-weight:normal; font-size:0.75rem;">(Encontrado en Google Sheets)</span>`;
+        } else {
+            resBox.className = 'search-result-box result-not-found';
+            resBox.innerHTML = `✅ <b>"${query}"</b> no aparece en la lista.<br><span style="font-weight:normal; font-size:0.75rem;">(¡Parece libre y elegible!)</span>`;
+        }
+    }
+
+    // --- COPIAS DE SEGURIDAD ---
     function crearBackupManual() {
         const ahora = new Date();
         const horaTag = `${String(ahora.getHours()).padStart(2,'0')}${String(ahora.getMinutes()).padStart(2,'0')}`;
@@ -575,7 +662,7 @@
             return;
         }
 
-        if (confirm(`⚠️ ¿Estás seguro de RESTAURAR la copia "${clave}"?\n\nEsto sobrescribirá el historial y el sorteo actual con los datos guardados en ese momento.`)) {
+        if (confirm(`⚠️ ¿Estás seguro de RESTAURAR la copia "${clave}"?\n\nEsto sobrescribirá los datos con los guardados en ese momento.`)) {
             db.ref('backups/' + clave).once('value', function(snapshot) {
                 const data = snapshot.val();
                 if (!data) {
@@ -595,18 +682,16 @@
     function borrarBackupSeleccionado() {
         const clave = document.getElementById('backupSelect').value;
         if (!clave) {
-            alert("Por favor, selecciona primero del desplegable la copia de seguridad que quieres borrar.");
+            alert("Por favor, selecciona primero una copia del desplegable.");
             return;
         }
 
         const select = document.getElementById('backupSelect');
         const textoSeleccionado = select.options[select.selectedIndex].text;
 
-        if (confirm(`⚠️ ¿Estás seguro de que deseas ELIMINAR permanentemente la copia de seguridad?\n\n"${textoSeleccionado}"\n\nEsta acción no se puede deshacer.`)) {
+        if (confirm(`⚠️ ¿Estás seguro de que deseas ELIMINAR permanentemente la copia de seguridad?\n\n"${textoSeleccionado}"`)) {
             db.ref('backups/' + clave).remove().then(function() {
                 alert("🗑️ Copia de seguridad eliminada con éxito.");
-            }).catch(function(err) {
-                alert("❌ Ocurrió un error al intentar eliminar la copia de seguridad.");
             });
         }
     }
@@ -663,7 +748,7 @@
         };
     }
 
-    // --- FUNCIÓN IMPORTAR DESDE TELEGRAM ---
+    // --- IMPORTAR TELEGRAM ---
     async function importarDesdeTelegram(esManual = true) {
         const btn = document.querySelector('.telegram-btn');
         let originalText = "";
@@ -680,24 +765,16 @@
 
         try {
             const response = await fetch(workerUrl, { cache: "no-store" });
-            if (!response.ok) {
-                throw new Error(`Error en el servidor de Cloudflare: ${response.status}`);
-            }
+            if (!response.ok) throw new Error(`Error Cloudflare: ${response.status}`);
 
             const htmlContent = await response.text();
-
-            if (!htmlContent || !htmlContent.includes('tgme_widget_message_text')) {
-                throw new Error("No se pudo extraer la lista o el canal no devolvió resultados.");
-            }
+            if (!htmlContent || !htmlContent.includes('tgme_widget_message_text')) throw new Error("Sin resultados.");
 
             const parser = new DOMParser();
             const doc = parser.parseFromString(htmlContent, 'text/html');
             const messages = doc.querySelectorAll('.tgme_widget_message_text');
 
-            if (!messages || messages.length === 0) {
-                if (esManual) alert("⚠️ Se conectó a Telegram pero no se encontraron mensajes públicos.");
-                return;
-            }
+            if (!messages || messages.length === 0) return;
 
             let ultimaListaEncontrada = "";
             const regexPatronLista = /\d+[\s-]*@[\w_]+/i;
@@ -710,9 +787,7 @@
 
                 if (regexPatronLista.test(plainText)) {
                     const lineas = plainText.split('\n');
-                    const lineasFiltradas = lineas.map(l => l.trim()).filter(l => {
-                        return regexPatronLista.test(l) || /PUNTO\s+EXTRA/i.test(l);
-                    });
+                    const lineasFiltradas = lineas.map(l => l.trim()).filter(l => regexPatronLista.test(l) || /PUNTO\s+EXTRA/i.test(l));
 
                     if (lineasFiltradas.length > 0) {
                         ultimaListaEncontrada = lineasFiltradas.join('\n');
@@ -724,20 +799,14 @@
             if (ultimaListaEncontrada) {
                 document.getElementById('listInput').value = ultimaListaEncontrada;
                 const totalCargados = ultimaListaEncontrada.split('\n').filter(l => regexPatronLista.test(l)).length;
-                if (esManual) {
-                    alert(`¡Éxito! Se ha cargado la última lista con ${totalCargados} participantes.`);
-                }
-            } else {
-                if (esManual) {
-                    alert("No se encontró ningún mensaje reciente que contenga una lista con el formato 'Número-@usuario'.");
-                }
+                if (esManual) alert(`¡Éxito! Se ha cargado la última lista con ${totalCargados} participantes.`);
+            } else if (esManual) {
+                alert("No se encontró ningún mensaje reciente que contenga una lista.");
             }
 
         } catch (error) {
-            console.error("Error al importar de Telegram vía Cloudflare:", error);
-            if (esManual) {
-                alert("⚠️ No se ha podido cargar la lista por un problema de servidor o porque no hay lista disponible.");
-            }
+            console.error("Error Telegram:", error);
+            if (esManual) alert("⚠️ No se pudo cargar la lista desde Telegram.");
         } finally {
             if (esManual) {
                 btn.innerText = originalText;
@@ -759,15 +828,10 @@
 
     function guardarMesSorteo() {
         const mes = document.getElementById('monthSelect').value;
-        if (!mes) {
-            alert("Por favor, selecciona un mes del desplegable.");
-            return;
-        }
+        if (!mes) return alert("Por favor, selecciona un mes del desplegable.");
 
         if (confirm("¿Confirmas que deseas cambiar el título del sorteo al mes de " + mes + "?")) {
-            db.ref('mes_sorteo').set(mes).then(function() {
-                alert("¡Mes actualizado con éxito a: " + mes + "!");
-            });
+            db.ref('mes_sorteo').set(mes).then(() => alert("¡Mes actualizado con éxito!"));
         }
     }
 
@@ -775,10 +839,7 @@
         const inputVal = document.getElementById('manualUserAdmin').value.trim();
         const customMonthVal = document.getElementById('manualWinnerMonth').value;
 
-        if (!inputVal) {
-            alert("Introduce al menos un usuario (ej: @usuario).");
-            return;
-        }
+        if (!inputVal) return alert("Introduce al menos un usuario.");
 
         let fechaTexto = "";
         let timestampToSave = Date.now();
@@ -808,17 +869,15 @@
             añadidos++;
         });
 
-        alert("¡" + añadidos + " usuario(s) añadido(s) al historial con fecha " + fechaTexto + "!");
+        alert("¡" + añadidos + " usuario(s) añadido(s) al historial!");
         document.getElementById('manualUserAdmin').value = '';
         document.getElementById('manualWinnerMonth').value = '';
     }
 
     function borrarGanadorEspecifico(key, usuario, fecha) {
         if (!isAdminLoggedIn) return;
-        if (confirm(`⚠️ ¿Estás seguro de que deseas ELIMINAR del historial a:\n\nUsuario: ${usuario}\nFecha: ${fecha}?`)) {
-            db.ref('historial_ganadores/' + key).remove().then(function() {
-                alert("✅ Entrada eliminada correctamente del historial.");
-            });
+        if (confirm(`⚠️ ¿Eliminar del historial a ${usuario} (${fecha})?`)) {
+            db.ref('historial_ganadores/' + key).remove();
         }
     }
 
@@ -977,7 +1036,7 @@
         listEl.innerHTML = '';
         
         if (rawHistoryItems.length === 0) {
-            listEl.innerHTML = '<li style="text-align: center; color: var(--muted);">Sin sorteos o entradas registradas.</li>';
+            listEl.innerHTML = '<li style="text-align: center; color: var(--muted);">Sin sorteos registrados.</li>';
             btn.classList.add('hidden');
             return;
         }
@@ -1013,10 +1072,7 @@
         if (pass && btoa(pass) === "cGF0cnVsbGExMjM=") {
             isAdminLoggedIn = true;
             document.getElementById('adminPanel').classList.remove('hidden');
-            
-            // Carga automática silenciosa al abrir el panel de admin
             importarDesdeTelegram(false);
-
             renderHistoryList();
             cargarListaBackups();
         } else if (pass !== null) {
@@ -1041,7 +1097,7 @@
     }
 
     function borrarTodo() {
-        if (confirm("⚠️ ¿Estás seguro de que quieres BORRAR TODO el historial de la web? Esta acción no se puede deshacer.")) {
+        if (confirm("⚠️ ¿BORRAR TODO el historial de la web?")) {
             document.getElementById('listInput').value = '';
             document.getElementById('blacklistInput').value = '';
             document.getElementById('drawDateInput').value = '';
@@ -1058,10 +1114,7 @@
         const rawLines = document.getElementById('listInput').value.trim();
         const rawBlacklist = document.getElementById('blacklistInput').value.trim();
 
-        if (!rawLines) {
-            alert("Por favor, pega o importa la lista de participantes.");
-            return;
-        }
+        if (!rawLines) return alert("Pega o importa la lista de participantes.");
 
         if (timeVal) {
             const timeParts = timeVal.split(':');
@@ -1083,11 +1136,9 @@
                 targetTime: targetDate.getTime(),
                 rawLines: rawLines,
                 rawBlacklist: rawBlacklist
-            }).then(function() {
-                alert("¡Sorteo programado con éxito!");
-            });
+            }).then(() => alert("¡Sorteo programado con éxito!"));
         } else {
-            if (confirm("El sorteo se realizará de inmediato si no especificas una hora. ¿Continuar?")) {
+            if (confirm("El sorteo se realizará de inmediato. ¿Continuar?")) {
                 calcularYEjecutarTirada(rawLines, rawBlacklist);
             }
         }
@@ -1124,7 +1175,6 @@
         let listaCopia = participantesValidos.slice();
 
         while (listaCopia.length > 0) {
-            // USO DE CRIPTO AZAR SEGURO
             const indexAleatorio = obtenerIndiceCriptografico(listaCopia.length);
             const entrada = listaCopia[indexAleatorio];
             const usuarioMinusculas = entrada.user.toLowerCase();
