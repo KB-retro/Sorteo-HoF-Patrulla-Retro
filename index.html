@@ -225,19 +225,18 @@
             background: rgba(30, 41, 59, 0.98);
             border: 2px solid var(--gold);
             border-radius: 12px;
-            max-width: 450px;
+            max-width: 400px;
             width: 100%;
-            padding: 24px 20px;
+            padding: 20px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
             text-align: center;
-            position: relative;
             animation: fadeIn 0.3s ease-out;
         }
 
         .credits-list {
             list-style: none;
             padding: 0;
-            margin: 20px 0;
+            margin: 15px 0;
             display: flex;
             flex-direction: column;
             gap: 10px;
@@ -246,15 +245,11 @@
         .credits-item {
             background: #0f172a;
             border: 1px solid #334155;
-            padding: 12px;
+            padding: 10px;
             border-radius: 8px;
-            font-size: 1.05rem;
+            font-size: 1rem;
             font-weight: bold;
             color: #fff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
         }
 
         .winner-box {
@@ -409,7 +404,7 @@
     <h1 id="mainTitle">🏆 Sorteo HoF Patrulla Retro</h1>
 
     <!-- BOTÓN DE CRÉDITOS -->
-    <button class="credits-btn" onclick="abrirCreditos()">💳 Créditos Creadores del Juego</button>
+    <button class="credits-btn" onclick="abrirCreditos()">💳 Créditos</button>
 
     <!-- PANTALLA GANADOR -->
     <div id="winnerCard" class="winner-box">
@@ -564,19 +559,18 @@
     </div>
 </div>
 
-<!-- VENTANA MODAL CRÉDITOS -->
+<!-- VENTANA MODAL CRÉDITOS MINIMALISTA -->
 <div id="creditsModal" class="modal-overlay hidden">
     <div class="modal-card">
-        <h2 style="color: var(--gold); margin-bottom: 5px;">🎮 Creadores del Juego 🕹️</h2>
-        <p style="font-size: 0.85rem; color: var(--muted); margin-top: 0;">Créditos del Juego del Mes de Patrulla Retro</p>
+        <h2 style="color: var(--gold); margin-top: 0; margin-bottom: 15px;">Créditos</h2>
         
         <ul class="credits-list">
-            <li class="credits-item">👾 @M_1_c_h_3_l</li>
-            <li class="credits-item">👑 @AlexisToretto</li>
-            <li class="credits-item">🧠 @cerebrosolido</li>
+            <li class="credits-item">@M_1_c_h_3_l</li>
+            <li class="credits-item">@AlexisToretto</li>
+            <li class="credits-item">@cerebrosolido</li>
         </ul>
 
-        <button onclick="cerrarCreditos()" style="background-color: var(--accent); margin-top: 10px;">Cerrar Ventana</button>
+        <button onclick="cerrarCreditos()" style="background-color: var(--accent); margin-top: 10px;">Cerrar</button>
     </div>
 </div>
 
@@ -691,7 +685,6 @@
             
             let juegos = [];
             
-            // Asumimos que la Columna 0 es el TÍTULO y la Columna 1 es la FECHA
             lineas.forEach(lineaRaw => {
                 const columnas = parseCSVLine(lineaRaw);
                 const titulo = columnas[0] ? columnas[0].replace(/^"+|"+$/g, '').trim() : '';
@@ -729,11 +722,9 @@
 
         const listaJuegos = await obtenerJuegosDesdeSheets();
 
-        // Limpia tildes, caracteres especiales y convierte a minúsculas
         const normalizar = (txt) => txt ? txt.toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase() : "";
         const queryNorm = normalizar(query);
 
-        // ✅ COINCIDENCIA EXACTA (===): previene que "Metal Slug" coincida con "Metal Slug 3"
         const coincidencia = listaJuegos.find(j => normalizar(j.titulo) === queryNorm);
 
         if (coincidencia) {
