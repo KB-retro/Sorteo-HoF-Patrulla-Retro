@@ -724,7 +724,7 @@
         }
     }
 
-    // --- COMPROBACIÓN CON COINCIDENCIA EXACTA ---
+    // --- COMPROBACIÓN AVANZADA POR VARIABLES (RESPETANDO SAGAS) ---
     async function comprobarJuegoEnSheets() {
         const query = document.getElementById('gameSearchInput').value.trim();
         const resBox = document.getElementById('searchResult');
@@ -741,10 +741,48 @@
 
         const listaJuegos = await obtenerJuegosDesdeSheets();
 
-        const normalizar = (txt) => txt ? txt.toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase() : "";
-        const queryNorm = normalizar(query);
+        // Normalización limpia (quita acentos, convierte a minúsculas y separa caracteres especiales)
+        const normalizar = (txt) => {
+            if (!txt) return "";
+            return txt.toString()
+                      .normalize("NFD")
+                      .replace(/[\u0300-\u036f]/g, "")
+                      .toLowerCase()
+                      .replace(/[^a-z0-9\s]/g, " ")
+                      .replace(/\s+/g, " ")
+                      .trim();
+        };
 
-        const coincidencia = listaJuegos.find(j => normalizar(j.titulo) === queryNorm);
+        const queryNorm = normalizar(query);
+        const tokensQuery = queryNorm.split(" ").filter(t => t.length > 0);
+
+        // 1. Coincidencia Exacta (Máxima prioridad)
+        let coincidencia = listaJuegos.find(j => normalizar(j.titulo) === queryNorm);
+
+        // 2. Coincidencia por Variables/Tokens (Respetando Sagas)
+        if (!coincidencia) {
+            coincidencia = listaJuegos.find(j => {
+                const tituloNorm = normalizar(j.titulo);
+                const tokensTitulo = tituloNorm.split(" ").filter(t => t.length > 0);
+
+                // Requisito 1: Todos los términos buscados deben estar presentes
+                const todosPresentes = tokensQuery.every(t => tituloNorm.includes(t));
+                if (!todosPresentes) return false;
+
+                // Requisito 2: Discriminación de Sagas / Números
+                // Si el título guardado tiene números o sufijos de saga que el usuario NO buscó, se descarta para no confundir entregas.
+                const regexNumeros = /^(\d+|i+|v|x|ii|iii|iv|vi|vii|viii|ix)$/i;
+                
+                const tieneNumeroEnTitulo = tokensTitulo.some(t => regexNumeros.test(t));
+                const tieneNumeroEnQuery = tokensQuery.some(t => regexNumeros.test(t));
+
+                if (tieneNumeroEnTitulo && !tieneNumeroEnQuery) {
+                    return false;
+                }
+
+                return true;
+            });
+        }
 
         if (coincidencia) {
             resBox.className = 'search-result-box result-found';
@@ -1265,12 +1303,6 @@
         const rawBlacklist = document.getElementById('blacklistInput').value.trim();
 
         if (!rawLines) return alert("Pega o importa la lista de participantes.");
-
-        // Guardar copia de seguridad automática antes de cada tirada/programación
-        const ahora = new Date();
-        const horaTag = `${String(ahora.getHours()).padStart(2,'0')}${String(ahora.getMinutes()).padStart(2,'0')}`;
-        const claveAuto = `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, '0')}-${String(ahora.getDate()).padStart(2, '0')}_${horaTag}`;
-        realizarCopiaEnFirebase(claveAuto, "Auto-Backup previo a Sorteo", false);
 
         if (timeVal) {
             const timeParts = timeVal.split(':');
