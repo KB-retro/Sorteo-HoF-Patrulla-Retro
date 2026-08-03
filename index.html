@@ -748,7 +748,7 @@
 
         if (coincidencia) {
             resBox.className = 'search-result-box result-found';
-            let txtFecha = coincidencia.fecha ? ` - Jugado el: ${coincidencia.fecha}` : '';
+            let txtFecha = coincidencia.fecha ? ` - Jugado en: ${coincidencia.fecha}` : '';
             resBox.innerHTML = `❌ <b>"${coincidencia.titulo}"</b>${txtFecha}`;
         } else {
             resBox.className = 'search-result-box result-not-found';
