@@ -553,7 +553,28 @@
         return valorRandom % max;
     }
 
-    // --- LECTURA EN TIEMPO REAL DESDE GOOGLE SHEETS ---
+    // --- PARSER CSV COMPATIBLE CON COMAS Y COMILLAS ---
+    function parseCSVLine(linea) {
+        let resultado = [];
+        let celda = '';
+        let enComillas = false;
+
+        for (let i = 0; i < linea.length; i++) {
+            let char = linea[i];
+            if (char === '"') {
+                enComillas = !enComillas;
+            } else if (char === ',' && !enComillas) {
+                resultado.push(celda.trim());
+                celda = '';
+            } else {
+                celda += char;
+            }
+        }
+        resultado.push(celda.trim());
+        return resultado;
+    }
+
+    // --- LECTURA DE JUEGOS Y FECHAS DESDE GOOGLE SHEETS ---
     async function obtenerJuegosDesdeSheets() {
         if (cacheJuegosSheets && (Date.now() - ultimaCargaSheets < 30000)) {
             return cacheJuegosSheets;
@@ -564,9 +585,22 @@
             if (!res.ok) throw new Error("Error al leer Sheets");
             
             const text = await res.text();
-            const lineas = text.split('\n').map(l => l.replace(/"/g, '').trim()).filter(l => l.length > 0);
+            const lineas = text.split('\n').filter(l => l.trim().length > 0);
             
-            cacheJuegosSheets = lineas;
+            let juegos = [];
+            
+            // Asumimos que la Columna 0 es el TÍTULO y la Columna 1 es la FECHA
+            lineas.forEach(lineaRaw => {
+                const columnas = parseCSVLine(lineaRaw);
+                const titulo = columnas[0] ? columnas[0].replace(/^"+|"+$/g, '').trim() : '';
+                const fecha = columnas[1] ? columnas[1].replace(/^"+|"+$/g, '').trim() : '';
+
+                if (titulo) {
+                    juegos.push({ titulo: titulo, fecha: fecha });
+                }
+            });
+
+            cacheJuegosSheets = juegos;
             ultimaCargaSheets = Date.now();
             return cacheJuegosSheets;
 
@@ -595,11 +629,12 @@
         const normalizar = (txt) => txt.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
         const queryNorm = normalizar(query);
 
-        const coincidencia = listaJuegos.find(juego => normalizar(juego).includes(queryNorm));
+        const coincidencia = listaJuegos.find(j => normalizar(j.titulo).includes(queryNorm));
 
         if (coincidencia) {
             resBox.className = 'search-result-box result-found';
-            resBox.innerHTML = `❌ <b>"${coincidencia}"</b> YA HA SIDO JUGADO.`;
+            let txtFecha = coincidencia.fecha ? ` - Jugado el: ${coincidencia.fecha}` : '';
+            resBox.innerHTML = `❌ <b>"${coincidencia.titulo}"</b>${txtFecha}`;
         } else {
             resBox.className = 'search-result-box result-not-found';
             resBox.innerHTML = `✅ <b>"${query}"</b> no aparece en la lista.<br><span style="font-weight:normal; font-size:0.75rem;">(¡Parece libre y elegible!)</span>`;
