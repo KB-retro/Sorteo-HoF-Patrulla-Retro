@@ -853,16 +853,21 @@
             const speechResult = event.results[0][0].transcript;
             inputEl.value = speechResult;
             
-            // Forzamos eventos y comprobación síncrona/asíncrona inmediata con el texto dictado
+            // Forzamos eventos y comprobación inmediata con el texto dictado
             inputEl.dispatchEvent(new Event('input'));
             inputEl.dispatchEvent(new Event('change'));
             comprobarJuegoEnSheets();
 
-            // Truco de enfoque/desenfoque para forzar al navegador móvil a desplegar el datalist con las sugerencias
+            // Truco mejorado para móviles: forzar cierre y reapertura del foco 
+            // simulando un toque real para que el navegador despliegue el datalist
             inputEl.blur();
             setTimeout(() => {
                 inputEl.focus();
-            }, 150);
+                // truco extra de selección para refrescar el control de formulario móvil
+                const valTemp = inputEl.value;
+                inputEl.value = "";
+                inputEl.value = valTemp;
+            }, 120);
         };
 
         recognition.onerror = function(event) {
@@ -1328,7 +1333,7 @@
         });
 
         if (rawHistoryItems.length > 3) {
-            btn.classList.add('hidden'); // placeholder update or toggle check
+            btn.classList.add('hidden'); 
             btn.classList.remove('hidden');
             btn.innerText = isHistoryExpanded ? '⬆️ Mostrar solo los últimos 3 sorteos' : '⬇️ Ver todo el historial (' + rawHistoryItems.length + ')';
         } else {
