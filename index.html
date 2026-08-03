@@ -191,6 +191,72 @@
         }
         .btn-toggle-view:hover { background-color: #475569 !important; }
 
+        /* BOTÓN Y MODAL DE CRÉDITOS */
+        .credits-btn {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+        }
+        .credits-btn:hover {
+            background: linear-gradient(135deg, #4338ca 0%, #6d28d9 100%);
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(6px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 15px;
+        }
+
+        .modal-card {
+            background: rgba(30, 41, 59, 0.98);
+            border: 2px solid var(--gold);
+            border-radius: 12px;
+            max-width: 450px;
+            width: 100%;
+            padding: 24px 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+            text-align: center;
+            position: relative;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .credits-list {
+            list-style: none;
+            padding: 0;
+            margin: 20px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .credits-item {
+            background: #0f172a;
+            border: 1px solid #334155;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 1.05rem;
+            font-weight: bold;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
         .winner-box {
             display: none;
             text-align: center;
@@ -341,6 +407,9 @@
     <!-- TRIPLE CLIC DISCRETO EN EL LOGO PARA ABRIR ADMIN -->
     <img src="logo.png?v=2" alt="Logo Patrulla Retro" class="header-logo" onclick="contarClicksAdmin()">
     <h1 id="mainTitle">🏆 Sorteo HoF Patrulla Retro</h1>
+
+    <!-- BOTÓN DE CRÉDITOS -->
+    <button class="credits-btn" onclick="abrirCreditos()">💳 Créditos Creadores del Juego</button>
 
     <!-- PANTALLA GANADOR -->
     <div id="winnerCard" class="winner-box">
@@ -495,6 +564,22 @@
     </div>
 </div>
 
+<!-- VENTANA MODAL CRÉDITOS -->
+<div id="creditsModal" class="modal-overlay hidden">
+    <div class="modal-card">
+        <h2 style="color: var(--gold); margin-bottom: 5px;">🎮 Creadores del Juego 🕹️</h2>
+        <p style="font-size: 0.85rem; color: var(--muted); margin-top: 0;">Créditos del Juego del Mes de Patrulla Retro</p>
+        
+        <ul class="credits-list">
+            <li class="credits-item">👾 @M_1_c_h_3_l</li>
+            <li class="credits-item">👑 @AlexisToretto</li>
+            <li class="credits-item">🧠 @cerebrosolido</li>
+        </ul>
+
+        <button onclick="cerrarCreditos()" style="background-color: var(--accent); margin-top: 10px;">Cerrar Ventana</button>
+    </div>
+</div>
+
 <script>
     const firebaseConfig = {
         databaseURL: "https://sorteo-hof-default-rtdb.europe-west1.firebasedatabase.app"
@@ -523,6 +608,23 @@
     let adminClickTimer = null;
 
     const nombresMeses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+
+    // --- FUNCIONES MODAL CRÉDITOS ---
+    function abrirCreditos() {
+        document.getElementById('creditsModal').classList.remove('hidden');
+    }
+
+    function cerrarCreditos() {
+        document.getElementById('creditsModal').classList.add('hidden');
+    }
+
+    // Cerrar al hacer clic fuera de la tarjeta
+    window.addEventListener('click', function(event) {
+        const modal = document.getElementById('creditsModal');
+        if (event.target === modal) {
+            cerrarCreditos();
+        }
+    });
 
     // --- ACTIVACIÓN TRIPLE CLIC ADMIN ---
     function contarClicksAdmin() {
