@@ -466,7 +466,7 @@
 
             <ul id="arcadeList" class="custom-list"></ul>
 
-            <!-- BUSCADOR CON DESPLEGABLE Y MICRÓFONO RETRO -->
+            <!-- BUSCADOR CON DESPLEGABLE Y MICRÓFONO ORIGINAL -->
             <div class="search-container">
                 <label style="font-size: 0.8rem; color: var(--gold); display: block; margin-bottom: 4px; text-align: center;">
                     🔍 <b>Comprobar si un juego ya ha sido elegido:</b>
@@ -474,7 +474,7 @@
                 
                 <div class="search-input-wrapper">
                     <input type="text" id="gameSearchInput" list="gamesDatalist" placeholder="Escribe al menos 4 caracteres o usa el micro..." oninput="comprobarJuegoEnSheets()" onchange="comprobarJuegoEnSheets()" autocomplete="off">
-                    <button type="button" id="micBtn" class="mic-btn" onclick="activarBusquedaVoz()" title="Búsqueda por voz">🕹️</button>
+                    <button type="button" id="micBtn" class="mic-btn" onclick="activarBusquedaVoz()" title="Búsqueda por voz">🎙️</button>
                 </div>
                 <datalist id="gamesDatalist"></datalist>
                 
@@ -852,6 +852,10 @@
         recognition.onresult = function(event) {
             const speechResult = event.results[0][0].transcript;
             inputEl.value = speechResult;
+            
+            // Forzamos eventos y actualización de sugerencias inmediatamente tras voz
+            inputEl.dispatchEvent(new Event('input'));
+            inputEl.dispatchEvent(new Event('change'));
             comprobarJuegoEnSheets();
         };
 
@@ -1486,7 +1490,7 @@
             user: ganadorEncontrado.user,
             ticket: ganadorEncontrado.ticket,
             fecha: fechaFormateada,
-            timestamp: Date.now()
+            timestamp: Date.now() + Math.random() // Añadido offset aleatorio para prevenir colisiones de milisegundos exactos
         });
 
         db.ref('sorteo_actual').set({
