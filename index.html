@@ -199,7 +199,9 @@
             padding: 10px 16px;
             border-radius: 8px;
             font-size: 0.9rem;
-            margin-bottom: 5px;
+            margin: 10px auto 0 auto;
+            display: block;
+            max-width: 200px;
             box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
         }
         .credits-btn:hover {
@@ -280,7 +282,7 @@
             font-size: 0.9rem;
             font-weight: bold;
             line-height: 1.4;
-            text-align: center; /* Centrado perfecto para todas las líneas */
+            text-align: center;
         }
 
         .countdown-timer {
@@ -305,7 +307,7 @@
 
         /* BUSCADOR DE JUEGOS */
         .search-container {
-            margin: 12px 0;
+            margin-top: 15px;
             padding: 10px;
             background: rgba(255, 255, 255, 0.03);
             border: 1px solid #334155;
@@ -404,9 +406,6 @@
     <img src="logo.png?v=2" alt="Logo Patrulla Retro" class="header-logo" onclick="contarClicksAdmin()">
     <h1 id="mainTitle">🏆 Sorteo HoF Patrulla Retro</h1>
 
-    <!-- BOTÓN DE CRÉDITOS -->
-    <button class="credits-btn" onclick="abrirCreditos()">💳 Créditos</button>
-
     <!-- PANTALLA GANADOR -->
     <div id="winnerCard" class="winner-box">
         <div class="winner-title">🎉 ¡Tenemos Ganador Oficial! 🎉</div>
@@ -414,13 +413,16 @@
         <div id="winnerTicket" class="winner-ticket"></div>
 
         <div id="repeatNotice" class="repeat-winner-banner hidden">
-            🚨 <b>¡Campeón!</b> ¡Teniendo ya la camiseta en el armario, es hora de repartir el botín!<br>Elige a un compañero de la lista de este mes para cederle el premio. 🚨
+            🚨 <b>¡Campeón!</b> ¡Teniendo ya la camiseta en el armario, es hora de repartir el botín!<br>Elige a un compañero de la lista de este mes para cederle el premio.
         </div>
 
         <div class="arcade-box">
             <div class="arcade-title">🕹️ Eligen el Arcade del Mes (5 Usuarios):</div>
 
-            <!-- BUSCADOR LIMPIO -->
+            <!-- LISTA DE GANADORES DEL ARCADE -->
+            <ul id="arcadeList" class="custom-list"></ul>
+
+            <!-- BUSCADOR REUBICADO ABAJO DE LOS GANADORES -->
             <div class="search-container">
                 <label style="font-size: 0.8rem; color: var(--gold); display: block; margin-bottom: 4px; text-align: center;">
                     🔍 <b>Comprobar si un juego ya ha sido elegido:</b>
@@ -435,8 +437,6 @@
                     </a>
                 </div>
             </div>
-
-            <ul id="arcadeList" class="custom-list"></ul>
         </div>
 
         <div class="log-box" id="publicLog"></div>
@@ -558,6 +558,9 @@
         <button class="warning-btn" onclick="borrarUltimoSorteo()">↩️ BORRAR ÚLTIMO SORTEO</button>
         <button class="clear-btn" onclick="borrarTodo()">🧹 BORRAR TODO</button>
     </div>
+
+    <!-- BOTÓN DE CRÉDITOS UBICADO ABAJO DEL TODO -->
+    <button class="credits-btn" onclick="abrirCreditos()">💳 Créditos</button>
 </div>
 
 <!-- VENTANA MODAL CRÉDITOS MINIMALISTA -->
