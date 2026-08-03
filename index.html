@@ -610,6 +610,7 @@
         }
     }
 
+    // --- COMPROBACIÓN CON COINCIDENCIA EXACTA ---
     async function comprobarJuegoEnSheets() {
         const query = document.getElementById('gameSearchInput').value.trim();
         const resBox = document.getElementById('searchResult');
@@ -626,10 +627,12 @@
 
         const listaJuegos = await obtenerJuegosDesdeSheets();
 
-        const normalizar = (txt) => txt.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+        // Limpia tildes, caracteres especiales y convierte a minúsculas
+        const normalizar = (txt) => txt ? txt.toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase() : "";
         const queryNorm = normalizar(query);
 
-        const coincidencia = listaJuegos.find(j => normalizar(j.titulo).includes(queryNorm));
+        // ✅ COINCIDENCIA EXACTA (===): previene que "Metal Slug" coincida con "Metal Slug 3"
+        const coincidencia = listaJuegos.find(j => normalizar(j.titulo) === queryNorm);
 
         if (coincidencia) {
             resBox.className = 'search-result-box result-found';
