@@ -190,21 +190,31 @@
         }
         .btn-toggle-view:hover { background-color: #475569 !important; }
 
-        .credits-btn {
+        /* ESTILO BOTONES ESTILO CRÉDITOS (Fila de botones inferiores) */
+        .footer-buttons-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .footer-btn {
             background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
             color: #fff;
             border: 1px solid rgba(255, 255, 255, 0.2);
             padding: 10px 16px;
             border-radius: 8px;
             font-size: 0.9rem;
-            margin: 10px auto 0 auto;
-            display: block;
-            max-width: 200px;
+            flex: 1;
+            text-align: center;
             box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s, transform 0.1s;
         }
-        .credits-btn:hover {
+        .footer-btn:hover {
             background: linear-gradient(135deg, #4338ca 0%, #6d28d9 100%);
         }
+        .footer-btn:active { transform: scale(0.98); }
 
         .modal-overlay {
             position: fixed;
@@ -231,6 +241,9 @@
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
             text-align: center;
             animation: fadeIn 0.3s ease-out;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
         }
 
         .credits-list {
@@ -240,6 +253,8 @@
             display: flex;
             flex-direction: column;
             gap: 10px;
+            overflow-y: auto;
+            text-align: left;
         }
 
         .credits-item {
@@ -247,9 +262,13 @@
             border: 1px solid #334155;
             padding: 10px;
             border-radius: 8px;
-            font-size: 1rem;
+            font-size: 0.95rem;
             font-weight: bold;
             color: #fff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
         }
 
         .credits-link {
@@ -260,6 +279,46 @@
         .credits-link:hover {
             color: #93c5fd;
             text-decoration: underline;
+        }
+
+        /* ACORDEÓN / DESPLEGABLE DE PARTICIPANTES SUPERIOR */
+        .probabilities-dropdown-card {
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid var(--gold);
+            border-radius: 8px;
+            margin-bottom: 15px;
+            overflow: hidden;
+            text-align: left;
+        }
+
+        .probabilities-toggle-btn {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--gold);
+            border: none;
+            width: 100%;
+            padding: 10px 14px;
+            text-align: left;
+            font-weight: bold;
+            font-size: 0.95rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.2s;
+        }
+
+        .probabilities-toggle-btn:hover {
+            background: rgba(245, 158, 11, 0.25);
+        }
+
+        .probabilities-content {
+            padding: 12px;
+            border-top: 1px solid #334155;
+            max-height: 250px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
         }
 
         .winner-box {
@@ -276,8 +335,8 @@
         }
 
         .winner-title { color: var(--gold); font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px; }
-        .winner-name { font-size: 2rem; font-weight: bold; margin: 10px 0; color: #fff; word-break: break-word; }
-        .winner-ticket { font-size: 0.95rem; color: var(--muted); word-break: break-word; }
+        .winner-name { font-size: 2rem; font-weight: bold; margin: 10px 0 5px 0; color: #fff; word-break: break-word; }
+        .winner-ticket { font-size: 1.05rem; font-weight: bold; color: var(--muted); word-break: break-word; margin-bottom: 5px; }
 
         .repeat-winner-banner {
             background: rgba(245, 158, 11, 0.2);
@@ -493,6 +552,20 @@
     <!-- PANTALLA GANADOR -->
     <div id="winnerCard" class="winner-box">
         <div class="winner-title">🎉 ¡Tenemos Ganador Oficial! 🎉</div>
+
+        <!-- ACORDEÓN / DESPLEGABLE DE PROBABILIDADES DE PREMIO ARRIBA DEL TODO -->
+        <div class="probabilities-dropdown-card">
+            <button class="probabilities-toggle-btn" onclick="toggleProbabilidadesAcordeon()">
+                <span>📊 Probabilidades de premio</span>
+                <span id="probToggleIcon">▼</span>
+            </button>
+            <div id="probabilitiesContent" class="probabilities-content hidden">
+                <ul id="participantsListModal" class="custom-list" style="margin: 0; gap: 6px;">
+                    <li class="custom-item" style="justify-content: center; color: var(--muted);">Cargando participantes...</li>
+                </ul>
+            </div>
+        </div>
+
         <div id="winnerName" class="winner-name">Cargando...</div>
         <div id="winnerTicket" class="winner-ticket"></div>
 
@@ -589,7 +662,7 @@
             <button class="telegram-btn" onclick="importarDesdeTelegram()">📲 CARGAR ÚLTIMA LISTA DE TELEGRAM</button>
 
             <label><b>1. Participantes:</b></label>
-            <textarea id="listInput" placeholder="1-@M_1_c_h_3_l&#10;2-@cerebrosolido"></textarea>
+            <textarea id="listInput" placeholder="1-@M_1_c_h_3_l&#10;2-@cerebrosolido" oninput="calcularYMostrarProbabilidades()"></textarea>
 
             <br><br>
             <label><b>2. Excluidos / Lista Negra (1 por línea):</b></label>
@@ -649,8 +722,10 @@
         <button class="clear-btn" onclick="borrarTodo()">🧹 BORRAR TODO</button>
     </div>
 
-    <!-- BOTÓN DE CRÉDITOS -->
-    <button class="credits-btn" onclick="abrirCreditos()">💳 Créditos</button>
+    <!-- FILA DE BOTONES INFERIORES (SOLO CRÉDITOS) -->
+    <div class="footer-buttons-group">
+        <button class="footer-btn" onclick="abrirCreditos()" style="width: 100%;">💳 Créditos</button>
+    </div>
 </div>
 
 <!-- VENTANA MODAL CRÉDITOS -->
@@ -659,14 +734,14 @@
         <h2 style="color: var(--gold); margin-top: 0; margin-bottom: 15px;">Créditos</h2>
         
         <ul class="credits-list">
-            <li class="credits-item">
+            <li class="credits-item" style="justify-content: center;">
                 <a href="https://elreclamo.es/" target="_blank" rel="noopener noreferrer" class="credits-link">
                     👕 @elReclamo.es ↗️
                 </a>
             </li>
-            <li class="credits-item">💻 @M_1_c_h_3_l</li>
-            <li class="credits-item">🕹️ @AlexisToretto</li>
-            <li class="credits-item">🧠 @cerebrosolido</li>
+            <li class="credits-item" style="justify-content: center;">💻 @M_1_c_h_3_l</li>
+            <li class="credits-item" style="justify-content: center;">🕹️ @AlexisToretto</li>
+            <li class="credits-item" style="justify-content: center;">🧠 @cerebrosolido</li>
         </ul>
 
         <button onclick="cerrarCreditos()" style="background-color: var(--accent); margin-top: 10px;">Cerrar</button>
@@ -712,11 +787,74 @@
     }
 
     window.addEventListener('click', function(event) {
-        const modal = document.getElementById('creditsModal');
-        if (event.target === modal) {
-            cerrarCreditos();
-        }
+        const credModal = document.getElementById('creditsModal');
+        if (event.target === credModal) cerrarCreditos();
     });
+
+    // --- CONTROL ACORDEÓN DE PROBABILIDADES ---
+    function toggleProbabilidadesAcordeon() {
+        const content = document.getElementById('probabilitiesContent');
+        const icon = document.getElementById('probToggleIcon');
+        
+        if (content.classList.contains('hidden')) {
+            content.classList.remove('hidden');
+            icon.innerText = '▲';
+            calcularYMostrarProbabilidades();
+        } else {
+            content.classList.add('hidden');
+            icon.innerText = '▼';
+        }
+    }
+
+    // --- CÁLCULO DE PROBABILIDADES DE PARTICIPANTES ---
+    function calcularYMostrarProbabilidades() {
+        const rawLinesStr = document.getElementById('listInput').value.trim();
+        const modalListEl = document.getElementById('participantsListModal');
+        if (!modalListEl) return;
+        
+        modalListEl.innerHTML = '';
+
+        if (!rawLinesStr) {
+            modalListEl.innerHTML = '<li class="custom-item" style="justify-content: center; color: var(--muted);">No hay participantes cargados actualmente.</li>';
+            return;
+        }
+
+        const rawLines = rawLinesStr.split('\n');
+        let conteoTicketsPorUsuario = {};
+        let totalBoletosValidos = 0;
+
+        rawLines.forEach(function(line) {
+            let lineaLimpia = line.trim();
+            if (!lineaLimpia) return;
+            const matchUser = lineaLimpia.match(/@[\w_]+/);
+            if (matchUser) {
+                let user = matchUser[0];
+                conteoTicketsPorUsuario[user] = (conteoTicketsPorUsuario[user] || 0) + 1;
+                totalBoletosValidos++;
+            }
+        });
+
+        if (totalBoletosValidos === 0) {
+            modalListEl.innerHTML = '<li class="custom-item" style="justify-content: center; color: var(--muted);">No se encontraron participantes válidos.</li>';
+            return;
+        }
+
+        let listaParticipantes = Object.keys(conteoTicketsPorUsuario).map(user => {
+            let tickets = conteoTicketsPorUsuario[user];
+            let probabilidad = (tickets / totalBoletosValidos) * 100;
+            return { user: user, tickets: tickets, prob: probabilidad };
+        });
+
+        listaParticipantes.sort((a, b) => b.tickets - a.tickets);
+
+        listaParticipantes.forEach(p => {
+            const li = document.createElement('li');
+            li.className = 'custom-item';
+            li.innerHTML = `<div class="custom-item-text"><strong>${p.user}</strong> <span style="font-size:0.75rem; color:var(--muted);">(${p.tickets} ${p.tickets === 1 ? 'boleto' : 'boletos'})</span></div>` +
+                           `<span style="color: var(--gold); font-family: monospace; font-size: 0.9rem;">${p.prob.toFixed(3)}%</span>`;
+            modalListEl.appendChild(li);
+        });
+    }
 
     // --- TRIPLE CLIC ADMIN ---
     function contarClicksAdmin() {
@@ -768,7 +906,6 @@
         return resultado;
     }
 
-    // Normalizador de texto para ignorar tildes, mayúsculas y signos
     function normalizarTexto(txt) {
         if (!txt) return "";
         return txt.toString()
@@ -778,7 +915,6 @@
                   .trim();
     }
 
-    // --- LECTURA DE JUEGOS Y FECHAS DESDE GOOGLE SHEETS ---
     async function obtenerJuegosDesdeSheets() {
         if (cacheJuegosSheets && (Date.now() - ultimaCargaSheets < 30000)) {
             return cacheJuegosSheets;
@@ -813,7 +949,6 @@
         }
     }
 
-    // --- COMPROBACIÓN Y FILTRADO DEL DESPLEGABLE PERSONALIZADO ---
     async function comprobarJuegoEnSheets() {
         const inputEl = document.getElementById('gameSearchInput');
         const dropdown = document.getElementById('customSuggestions');
@@ -821,7 +956,6 @@
         const query = inputEl.value.trim();
         const queryNorm = normalizarTexto(query);
 
-        // 1. Si hay menos de 4 caracteres, ocultamos las sugerencias
         if (queryNorm.length < 4) {
             dropdown.innerHTML = '';
             dropdown.style.display = 'none';
@@ -832,12 +966,10 @@
         const listaJuegos = await obtenerJuegosDesdeSheets();
         let coincidenciaExacta = listaJuegos.find(j => normalizarTexto(j.titulo) === queryNorm);
 
-        // 2. Filtrar juegos cuyo título normalizado incluya el texto introducido
         const juegosFiltrados = listaJuegos.filter(j => {
             return normalizarTexto(j.titulo).includes(queryNorm);
         });
 
-        // 3. Rellenar y mostrar el contenedor flotante personalizado
         dropdown.innerHTML = '';
         if (juegosFiltrados.length > 0 && !coincidenciaExacta) {
             juegosFiltrados.slice(0, 15).forEach(j => {
@@ -845,9 +977,8 @@
                 divItem.className = 'suggestion-item';
                 divItem.innerHTML = `<div>${j.titulo}</div>` + (j.fecha ? `<span class="suggestion-date">Jugado en: ${j.fecha}</span>` : '');
                 
-                // Al hacer clic en una sugerencia, rellenamos el input y ocultamos la lista
                 divItem.onmousedown = function(e) {
-                    e.preventDefault(); // Evita que se pierda el foco bruscamente
+                    e.preventDefault();
                     inputEl.value = j.titulo;
                     dropdown.style.display = 'none';
                     comprobarJuegoEnSheets();
@@ -860,7 +991,6 @@
             dropdown.style.display = 'none';
         }
 
-        // 4. Mostrar estado actual
         resBox.style.display = 'block';
         resBox.className = 'search-result-box';
 
@@ -874,7 +1004,6 @@
         }
     }
 
-    // Ocultar sugerencias si se hace clic fuera del buscador
     document.addEventListener('click', function(e) {
         const container = document.querySelector('.search-container');
         if (container && !container.contains(e.target)) {
@@ -882,7 +1011,6 @@
         }
     });
 
-    // --- BÚSQUEDA POR VOZ ---
     function activarBusquedaVoz() {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         const micBtn = document.getElementById('micBtn');
@@ -906,8 +1034,6 @@
         recognition.onresult = function(event) {
             const speechResult = event.results[0][0].transcript;
             inputEl.value = speechResult;
-            
-            // Al usar nuestro propio desplegable, llamamos a la función y se abrirá al instante
             comprobarJuegoInmediato(speechResult);
         };
 
@@ -923,14 +1049,12 @@
         recognition.start();
     }
 
-    // Función auxiliar para forzar la apertura del desplegable de inmediato tras la voz
     async function comprobarJuegoInmediato(texto) {
         const inputEl = document.getElementById('gameSearchInput');
         inputEl.value = texto;
         await comprobarJuegoEnSheets();
     }
 
-    // --- COPIAS DE SEGURIDAD ---
     function crearBackupManual() {
         const ahora = new Date();
         const horaTag = `${String(ahora.getHours()).padStart(2,'0')}${String(ahora.getMinutes()).padStart(2,'0')}`;
@@ -1064,7 +1188,6 @@
         reader.readAsText(file);
     }
 
-    // Fallback logo
     const logoImg = document.querySelector('.header-logo');
     if (logoImg) {
         logoImg.onerror = function() {
@@ -1072,7 +1195,6 @@
         };
     }
 
-    // --- IMPORTAR TELEGRAM ---
     async function importarDesdeTelegram(esManual = true) {
         const btn = document.querySelector('.telegram-btn');
         let originalText = "";
@@ -1122,6 +1244,7 @@
 
             if (ultimaListaEncontrada) {
                 document.getElementById('listInput').value = ultimaListaEncontrada;
+                calcularYMostrarProbabilidades();
                 const totalCargados = ultimaListaEncontrada.split('\n').filter(l => regexPatronLista.test(l)).length;
                 if (esManual) alert(`¡Éxito! Se ha cargado la última lista con ${totalCargados} participantes.`);
             } else if (esManual) {
@@ -1243,7 +1366,15 @@
             
             actualGanadorUser = data.ganador.user;
             document.getElementById('winnerName').innerText = data.ganador.user;
-            document.getElementById('winnerTicket').innerText = "Boleto premiado: " + data.ganador.ticket;
+            
+            let numeroBoleto = data.ganador.ticket;
+            const matchNum = data.ganador.ticket.match(/^(\d+)/);
+            if (matchNum) {
+                numeroBoleto = "Boleto premiado Nº " + matchNum[1];
+            } else {
+                numeroBoleto = "Boleto premiado: " + data.ganador.ticket;
+            }
+            document.getElementById('winnerTicket').innerText = numeroBoleto;
 
             verificarRepetidoVisual();
             
