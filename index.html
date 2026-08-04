@@ -559,9 +559,9 @@
     <img src="logo.png?v=2" alt="Logo Patrulla Retro" class="header-logo" onclick="contarClicksAdmin()">
     <h1 id="mainTitle">🏆 Sorteo HoF Patrulla Retro</h1>
 
-    <!-- BOTÓN SUPERIOR DE PROBABILIDADES (Estilo Popup compacto y centrado) -->
+    <!-- BOTÓN SUPERIOR (Cambiado a Lista de Participantes) -->
     <div class="top-prob-btn-container">
-        <button class="top-prob-btn" onclick="abrirProbabilidadesModal()">📊 Probabilidades de premio</button>
+        <button class="top-prob-btn" onclick="abrirProbabilidadesModal()">📊 Lista de Participantes</button>
     </div>
 
     <!-- PANTALLA GANADOR -->
@@ -750,10 +750,10 @@
     </div>
 </div>
 
-<!-- VENTANA MODAL PROBABILIDADES -->
+<!-- VENTANA MODAL PARTICIPANTES (Cambiado de nombre) -->
 <div id="probabilitiesModal" class="modal-overlay hidden">
     <div class="modal-card">
-        <h2 style="color: var(--gold); margin-top: 0; margin-bottom: 10px;">📊 Probabilidades de premio</h2>
+        <h2 style="color: var(--gold); margin-top: 0; margin-bottom: 10px;">📊 Lista de Participantes</h2>
         
         <ul id="participantsListModal" class="credits-list" style="margin: 5px 0 15px 0; max-height: 50vh;">
             <li class="custom-item" style="justify-content: center; color: var(--muted);">Cargando participantes...</li>
@@ -792,6 +792,28 @@
 
     const nombresMeses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
+    // --- SINCRONIZACIÓN DE LA LISTA EN FIREBASE ---
+    db.ref('sorteo_participantes_raw').on('value', function(snapshot) {
+        const val = snapshot.val();
+        const textarea = document.getElementById('listInput');
+        if (val !== null && textarea) {
+            textarea.value = val;
+            calcularYMostrarProbabilidades();
+        }
+    });
+
+    function guardarParticipantesFirebase() {
+        const val = document.getElementById('listInput').value;
+        db.ref('sorteo_participantes_raw').set(val);
+    }
+
+    // --- SINC sin bucles molestos al escribir ---
+    document.getElementById('listInput').addEventListener('input', function() {
+        calcularYMostrarProbabilidades();
+        // Guardado directo en base de datos para persistir al refrescar
+        db.ref('sorteo_participantes_raw').set(this.value);
+    });
+
     // --- FUNCIONES MODAL CRÉDITOS ---
     function abrirCreditos() {
         document.getElementById('creditsModal').classList.remove('hidden');
@@ -801,7 +823,7 @@
         document.getElementById('creditsModal').classList.add('hidden');
     }
 
-    // --- FUNCIONES MODAL PROBABILIDADES ---
+    // --- FUNCIONES MODAL PARTICIPANTES ---
     function abrirProbabilidadesModal() {
         calcularYMostrarProbabilidades();
         document.getElementById('probabilitiesModal').classList.remove('hidden');
@@ -1269,6 +1291,7 @@
 
             if (ultimaListaEncontrada) {
                 document.getElementById('listInput').value = ultimaListaEncontrada;
+                guardarParticipantesFirebase();
                 const totalCargados = ultimaListaEncontrada.split('\n').filter(l => regexPatronLista.test(l)).length;
                 if (esManual) alert(`¡Éxito! Se ha cargado la última lista con ${totalCargados} participantes.`);
             } else if (esManual) {
@@ -1584,6 +1607,7 @@
             document.getElementById('drawTimeInput').value = '';
             db.ref('sorteo_actual').remove();
             db.ref('historial_ganadores').remove();
+            db.ref('sorteo_participantes_raw').remove();
             alert("Todo borrado correctamente.");
         }
     }
