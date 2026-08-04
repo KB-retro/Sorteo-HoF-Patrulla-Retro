@@ -284,6 +284,13 @@
             gap: 10px;
             overflow-y: auto;
             text-align: left;
+            
+            /* OPCIÓN 1: Ocultar barra de desplazamiento manteniendo funcionalidad táctil/rueda */
+            scrollbar-width: none;
+        }
+        .credits-list::-webkit-scrollbar {
+            width: 0px;
+            background: transparent;
         }
 
         .credits-item {
@@ -424,6 +431,13 @@
             z-index: 99;
             box-shadow: 0 8px 16px rgba(0,0,0,0.5);
             display: none;
+            
+            /* OPCIÓN 1: Ocultar scroll también aquí */
+            scrollbar-width: none;
+        }
+        .custom-suggestions-dropdown::-webkit-scrollbar {
+            width: 0px;
+            background: transparent;
         }
 
         .suggestion-item {
@@ -482,6 +496,13 @@
             margin-top: 12px;
             text-align: left;
             word-break: break-all;
+            
+            /* OPCIÓN 1 */
+            scrollbar-width: none;
+        }
+        .log-box::-webkit-scrollbar {
+            width: 0px;
+            background: transparent;
         }
 
         .custom-list { list-style: none; padding: 0; margin: 0; }
@@ -811,7 +832,7 @@
         }
 
         const rawLines = rawLinesStr.split('\n');
-        let conteoTicketsPorUsuario = {};
+        let boletosPorUsuario = {};
         let totalBoletosValidos = 0;
 
         rawLines.forEach(function(line) {
@@ -820,7 +841,13 @@
             const matchUser = lineaLimpia.match(/@[\w_]+/);
             if (matchUser) {
                 let user = matchUser[0];
-                conteoTicketsPorUsuario[user] = (conteoTicketsPorUsuario[user] || 0) + 1;
+                let numBoletoMatch = lineaLimpia.match(/^(\d+)/);
+                let numeroBoleto = numBoletoMatch ? numBoletoMatch[1] : (boletosPorUsuario[user] ? boletosPorUsuario[user].length + 1 : 1);
+
+                if (!boletosPorUsuario[user]) {
+                    boletosPorUsuario[user] = [];
+                }
+                boletosPorUsuario[user].push(numeroBoleto);
                 totalBoletosValidos++;
             }
         });
@@ -830,19 +857,26 @@
             return;
         }
 
-        let listaParticipantes = Object.keys(conteoTicketsPorUsuario).map(user => {
-            let tickets = conteoTicketsPorUsuario[user];
-            let probabilidad = (tickets / totalBoletosValidos) * 100;
-            return { user: user, tickets: tickets, prob: probabilidad };
+        let listaParticipantes = Object.keys(boletosPorUsuario).map(user => {
+            let listaB = boletosPorUsuario[user];
+            let probabilidad = (listaB.length / totalBoletosValidos) * 100;
+            return { user: user, boletos: listaB, count: listaB.length, prob: probabilidad };
         });
 
-        listaParticipantes.sort((a, b) => b.tickets - a.tickets);
+        listaParticipantes.sort((a, b) => b.count - a.count);
 
         listaParticipantes.forEach(p => {
             const li = document.createElement('li');
             li.className = 'custom-item';
-            li.innerHTML = `<div class="custom-item-text"><strong>${p.user}</strong> <span style="font-size:0.75rem; color:var(--muted);">(${p.tickets} ${p.tickets === 1 ? 'boleto' : 'boletos'})</span></div>` +
-                           `<span style="color: var(--gold); font-family: monospace; font-size: 0.9rem;">${p.prob.toFixed(3)}%</span>`;
+            
+            // Limitado a un máximo de 3 cifras mediante .toFixed(3)
+            let porcentajeStr = p.prob.toFixed(3) + "%";
+
+            li.innerHTML = `<div class="custom-item-text">
+                                <strong>${p.user}</strong> <span style="font-size:0.75rem; color:var(--muted);">(${p.count} ${p.count === 1 ? 'boleto' : 'boletos'})</span>
+                                <div style="font-size: 0.75rem; color: #aaa; margin-top: 2px; word-break: break-all;">Números: ${p.boletos.join(', ')}</div>
+                           </div>` +
+                           `<span style="color: var(--gold); font-family: monospace; font-size: 0.9rem; white-space: nowrap;">${porcentajeStr}</span>`;
             modalListEl.appendChild(li);
         });
     }
