@@ -118,7 +118,7 @@
             overflow: hidden;
         }
 
-        h1 { font-size: 1.5rem; margin-top: 0; margin-bottom: 10px; text-align: center; line-height: 1.2; }
+        h1 { font-size: 1.5rem; margin-top: 0; margin-bottom: 5px; text-align: center; line-height: 1.2; }
         h2 { font-size: 1.2rem; margin-top: 0; text-align: center; }
         h3 { font-size: 1.05rem; margin-top: 0; text-align: center; }
         
@@ -190,7 +190,7 @@
         }
         .btn-toggle-view:hover { background-color: #475569 !important; }
 
-        /* ESTILO BOTONES ESTILO CRÉDITOS (Fila de botones inferiores) */
+        /* ESTILO BOTONES ESTILO CRÉDITOS (Fila de botones) */
         .footer-buttons-group {
             display: flex;
             gap: 10px;
@@ -215,6 +215,33 @@
             background: linear-gradient(135deg, #4338ca 0%, #6d28d9 100%);
         }
         .footer-btn:active { transform: scale(0.98); }
+
+        /* BOTÓN SUPERIOR DE PROBABILIDADES (Estilo similar a créditos pero adaptado arriba) */
+        .top-prob-btn-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 5px;
+        }
+
+        .top-prob-btn {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: #000;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+            transition: background 0.2s, transform 0.1s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .top-prob-btn:hover {
+            background: linear-gradient(135deg, #fbbf24 0%, #b45309 100%);
+        }
+        .top-prob-btn:active { transform: scale(0.98); }
 
         .modal-overlay {
             position: fixed;
@@ -279,46 +306,6 @@
         .credits-link:hover {
             color: #93c5fd;
             text-decoration: underline;
-        }
-
-        /* ACORDEÓN / DESPLEGABLE DE PARTICIPANTES SUPERIOR */
-        .probabilities-dropdown-card {
-            background: rgba(15, 23, 42, 0.85);
-            border: 1px solid var(--gold);
-            border-radius: 8px;
-            margin-bottom: 15px;
-            overflow: hidden;
-            text-align: left;
-        }
-
-        .probabilities-toggle-btn {
-            background: rgba(245, 158, 11, 0.15);
-            color: var(--gold);
-            border: none;
-            width: 100%;
-            padding: 10px 14px;
-            text-align: left;
-            font-weight: bold;
-            font-size: 0.95rem;
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            transition: background 0.2s;
-        }
-
-        .probabilities-toggle-btn:hover {
-            background: rgba(245, 158, 11, 0.25);
-        }
-
-        .probabilities-content {
-            padding: 12px;
-            border-top: 1px solid #334155;
-            max-height: 250px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
         }
 
         .winner-box {
@@ -549,22 +536,14 @@
     <img src="logo.png?v=2" alt="Logo Patrulla Retro" class="header-logo" onclick="contarClicksAdmin()">
     <h1 id="mainTitle">🏆 Sorteo HoF Patrulla Retro</h1>
 
+    <!-- BOTÓN SUPERIOR DE PROBABILIDADES (Estilo Popup / No invasivo) -->
+    <div class="top-prob-btn-container">
+        <button class="top-prob-btn" onclick="abrirProbabilidadesModal()">📊 Probabilidades de premio</button>
+    </div>
+
     <!-- PANTALLA GANADOR -->
     <div id="winnerCard" class="winner-box">
         <div class="winner-title">🎉 ¡Tenemos Ganador Oficial! 🎉</div>
-
-        <!-- ACORDEÓN / DESPLEGABLE DE PROBABILIDADES DE PREMIO ARRIBA DEL TODO -->
-        <div class="probabilities-dropdown-card">
-            <button class="probabilities-toggle-btn" onclick="toggleProbabilidadesAcordeon()">
-                <span>📊 Probabilidades de premio</span>
-                <span id="probToggleIcon">▼</span>
-            </button>
-            <div id="probabilitiesContent" class="probabilities-content hidden">
-                <ul id="participantsListModal" class="custom-list" style="margin: 0; gap: 6px;">
-                    <li class="custom-item" style="justify-content: center; color: var(--muted);">Cargando participantes...</li>
-                </ul>
-            </div>
-        </div>
 
         <div id="winnerName" class="winner-name">Cargando...</div>
         <div id="winnerTicket" class="winner-ticket"></div>
@@ -748,6 +727,19 @@
     </div>
 </div>
 
+<!-- VENTANA MODAL PROBABILIDADES -->
+<div id="probabilitiesModal" class="modal-overlay hidden">
+    <div class="modal-card">
+        <h2 style="color: var(--gold); margin-top: 0; margin-bottom: 10px;">📊 Probabilidades de premio</h2>
+        
+        <ul id="participantsListModal" class="credits-list" style="margin: 5px 0 15px 0; max-height: 50vh;">
+            <li class="custom-item" style="justify-content: center; color: var(--muted);">Cargando participantes...</li>
+        </ul>
+
+        <button onclick="cerrarProbabilidadesModal()" style="background-color: var(--accent); margin-top: 5px;">Cerrar</button>
+    </div>
+</div>
+
 <script>
     const firebaseConfig = {
         databaseURL: "https://sorteo-hof-default-rtdb.europe-west1.firebasedatabase.app"
@@ -786,25 +778,22 @@
         document.getElementById('creditsModal').classList.add('hidden');
     }
 
+    // --- FUNCIONES MODAL PROBABILIDADES ---
+    function abrirProbabilidadesModal() {
+        calcularYMostrarProbabilidades();
+        document.getElementById('probabilitiesModal').classList.remove('hidden');
+    }
+
+    function cerrarProbabilidadesModal() {
+        document.getElementById('probabilitiesModal').classList.add('hidden');
+    }
+
     window.addEventListener('click', function(event) {
         const credModal = document.getElementById('creditsModal');
+        const probModal = document.getElementById('probabilitiesModal');
         if (event.target === credModal) cerrarCreditos();
+        if (event.target === probModal) cerrarProbabilidadesModal();
     });
-
-    // --- CONTROL ACORDEÓN DE PROBABILIDADES ---
-    function toggleProbabilidadesAcordeon() {
-        const content = document.getElementById('probabilitiesContent');
-        const icon = document.getElementById('probToggleIcon');
-        
-        if (content.classList.contains('hidden')) {
-            content.classList.remove('hidden');
-            icon.innerText = '▲';
-            calcularYMostrarProbabilidades();
-        } else {
-            content.classList.add('hidden');
-            icon.innerText = '▼';
-        }
-    }
 
     // --- CÁLCULO DE PROBABILIDADES DE PARTICIPANTES ---
     function calcularYMostrarProbabilidades() {
@@ -1244,7 +1233,6 @@
 
             if (ultimaListaEncontrada) {
                 document.getElementById('listInput').value = ultimaListaEncontrada;
-                calcularYMostrarProbabilidades();
                 const totalCargados = ultimaListaEncontrada.split('\n').filter(l => regexPatronLista.test(l)).length;
                 if (esManual) alert(`¡Éxito! Se ha cargado la última lista con ${totalCargados} participantes.`);
             } else if (esManual) {
