@@ -190,10 +190,10 @@
         }
         .btn-toggle-view:hover { background-color: #475569 !important; }
 
-        /* ESTILO BOTONES ESTILO CRÉDITOS (Fila de botones) */
+        /* FILA DE BOTONES INFERIORES (CRÉDITOS COMPACTO) */
         .footer-buttons-group {
             display: flex;
-            gap: 10px;
+            justify-content: center;
             margin-top: 10px;
         }
 
@@ -201,22 +201,23 @@
             background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
             color: #fff;
             border: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 10px 16px;
+            padding: 8px 16px;
             border-radius: 8px;
-            font-size: 0.9rem;
-            flex: 1;
+            font-size: 0.85rem;
             text-align: center;
             box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
             cursor: pointer;
             font-weight: bold;
             transition: background 0.2s, transform 0.1s;
+            width: auto;
+            display: inline-block;
         }
         .footer-btn:hover {
             background: linear-gradient(135deg, #4338ca 0%, #6d28d9 100%);
         }
         .footer-btn:active { transform: scale(0.98); }
 
-        /* BOTÓN SUPERIOR DE PROBABILIDADES (Estilo similar a créditos pero adaptado arriba) */
+        /* BOTÓN SUPERIOR DE PROBABILIDADES (Idéntico a créditos y centrado) */
         .top-prob-btn-container {
             display: flex;
             justify-content: center;
@@ -224,22 +225,23 @@
         }
 
         .top-prob-btn {
-            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-            color: #000;
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
             padding: 8px 16px;
             border-radius: 8px;
             font-size: 0.85rem;
             font-weight: bold;
             cursor: pointer;
-            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
             transition: background 0.2s, transform 0.1s;
             display: inline-flex;
             align-items: center;
             gap: 6px;
+            width: auto;
         }
         .top-prob-btn:hover {
-            background: linear-gradient(135deg, #fbbf24 0%, #b45309 100%);
+            background: linear-gradient(135deg, #4338ca 0%, #6d28d9 100%);
         }
         .top-prob-btn:active { transform: scale(0.98); }
 
@@ -536,7 +538,7 @@
     <img src="logo.png?v=2" alt="Logo Patrulla Retro" class="header-logo" onclick="contarClicksAdmin()">
     <h1 id="mainTitle">🏆 Sorteo HoF Patrulla Retro</h1>
 
-    <!-- BOTÓN SUPERIOR DE PROBABILIDADES (Estilo Popup / No invasivo) -->
+    <!-- BOTÓN SUPERIOR DE PROBABILIDADES (Estilo Popup compacto y centrado) -->
     <div class="top-prob-btn-container">
         <button class="top-prob-btn" onclick="abrirProbabilidadesModal()">📊 Probabilidades de premio</button>
     </div>
@@ -701,9 +703,9 @@
         <button class="clear-btn" onclick="borrarTodo()">🧹 BORRAR TODO</button>
     </div>
 
-    <!-- FILA DE BOTONES INFERIORES (SOLO CRÉDITOS) -->
+    <!-- FILA DE BOTONES INFERIORES (CRÉDITOS COMPACTO) -->
     <div class="footer-buttons-group">
-        <button class="footer-btn" onclick="abrirCreditos()" style="width: 100%;">💳 Créditos</button>
+        <button class="footer-btn" onclick="abrirCreditos()">💳 Créditos</button>
     </div>
 </div>
 
