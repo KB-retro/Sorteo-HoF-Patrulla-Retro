@@ -285,7 +285,6 @@
             overflow-y: auto;
             text-align: left;
             
-            /* OPCIÓN 1: Ocultar barra de desplazamiento manteniendo funcionalidad táctil/rueda */
             scrollbar-width: none;
         }
         .credits-list::-webkit-scrollbar {
@@ -416,7 +415,6 @@
             100% { transform: scale(1); opacity: 1; }
         }
 
-        /* CAJA DE SUGERENCIAS PERSONALIZADA */
         .custom-suggestions-dropdown {
             position: absolute;
             top: 100%;
@@ -432,7 +430,6 @@
             box-shadow: 0 8px 16px rgba(0,0,0,0.5);
             display: none;
             
-            /* OPCIÓN 1: Ocultar scroll también aquí */
             scrollbar-width: none;
         }
         .custom-suggestions-dropdown::-webkit-scrollbar {
@@ -497,7 +494,6 @@
             text-align: left;
             word-break: break-all;
             
-            /* OPCIÓN 1 */
             scrollbar-width: none;
         }
         .log-box::-webkit-scrollbar {
@@ -559,7 +555,6 @@
     <img src="logo.png?v=2" alt="Logo Patrulla Retro" class="header-logo" onclick="contarClicksAdmin()">
     <h1 id="mainTitle">🏆 Sorteo HoF Patrulla Retro</h1>
 
-    <!-- BOTÓN SUPERIOR (Cambiado a Lista de Participantes) -->
     <div class="top-prob-btn-container">
         <button class="top-prob-btn" onclick="abrirProbabilidadesModal()">📊 Lista de Participantes</button>
     </div>
@@ -580,7 +575,6 @@
 
             <ul id="arcadeList" class="custom-list"></ul>
 
-            <!-- BUSCADOR CON DESPLEGABLE PERSONALIZADO Y MICRÓFONO -->
             <div class="search-container">
                 <label style="font-size: 0.8rem; color: var(--gold); display: block; margin-bottom: 4px; text-align: center;">
                     🔍 <b>Comprobar si un juego ya ha sido elegido:</b>
@@ -590,7 +584,6 @@
                     <input type="text" id="gameSearchInput" placeholder="Escribe al menos 4 caracteres o usa el micro..." oninput="comprobarJuegoEnSheets()" autocomplete="off">
                     <button type="button" id="micBtn" class="mic-btn" onclick="activarBusquedaVoz()" title="Búsqueda por voz">🎤</button>
                     
-                    <!-- NUEVA LISTA DESPLEGABLE HTML FLOTANTE -->
                     <div id="customSuggestions" class="custom-suggestions-dropdown"></div>
                 </div>
                 
@@ -750,7 +743,7 @@
     </div>
 </div>
 
-<!-- VENTANA MODAL PARTICIPANTES (Cambiado de nombre) -->
+<!-- VENTANA MODAL PARTICIPANTES -->
 <div id="probabilitiesModal" class="modal-overlay hidden">
     <div class="modal-card">
         <h2 style="color: var(--gold); margin-top: 0; margin-bottom: 10px;">📊 Lista de Participantes</h2>
@@ -792,7 +785,6 @@
 
     const nombresMeses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
-    // --- SINCRONIZACIÓN DE LA LISTA EN FIREBASE ---
     db.ref('sorteo_participantes_raw').on('value', function(snapshot) {
         const val = snapshot.val();
         const textarea = document.getElementById('listInput');
@@ -807,14 +799,11 @@
         db.ref('sorteo_participantes_raw').set(val);
     }
 
-    // --- SINC sin bucles molestos al escribir ---
     document.getElementById('listInput').addEventListener('input', function() {
         calcularYMostrarProbabilidades();
-        // Guardado directo en base de datos para persistir al refrescar
         db.ref('sorteo_participantes_raw').set(this.value);
     });
 
-    // --- FUNCIONES MODAL CRÉDITOS ---
     function abrirCreditos() {
         document.getElementById('creditsModal').classList.remove('hidden');
     }
@@ -823,7 +812,6 @@
         document.getElementById('creditsModal').classList.add('hidden');
     }
 
-    // --- FUNCIONES MODAL PARTICIPANTES ---
     function abrirProbabilidadesModal() {
         calcularYMostrarProbabilidades();
         document.getElementById('probabilitiesModal').classList.remove('hidden');
@@ -840,7 +828,6 @@
         if (event.target === probModal) cerrarProbabilidadesModal();
     });
 
-    // --- CÁLCULO DE PROBABILIDADES DE PARTICIPANTES ---
     function calcularYMostrarProbabilidades() {
         const rawLinesStr = document.getElementById('listInput').value.trim();
         const modalListEl = document.getElementById('participantsListModal');
@@ -891,7 +878,6 @@
             const li = document.createElement('li');
             li.className = 'custom-item';
             
-            // Limitado a un máximo de 3 cifras mediante .toFixed(3)
             let porcentajeStr = p.prob.toFixed(3) + "%";
 
             li.innerHTML = `<div class="custom-item-text">
@@ -903,7 +889,6 @@
         });
     }
 
-    // --- TRIPLE CLIC ADMIN ---
     function contarClicksAdmin() {
         adminClicks++;
         clearTimeout(adminClickTimer);
@@ -916,7 +901,6 @@
         }
     }
 
-    // --- AZAR CRIPTOGRÁFICO ---
     function obtenerIndiceCriptografico(max) {
         if (max <= 0) return 0;
         const arrayBuffer = new Uint32Array(1);
@@ -932,7 +916,6 @@
         return valorRandom % max;
     }
 
-    // --- PARSER CSV ---
     function parseCSVLine(linea) {
         let resultado = [];
         let celda = '';
