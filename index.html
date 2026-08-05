@@ -1598,16 +1598,33 @@
     function toggleWinnersView() { isWinnersExpanded = !isWinnersExpanded; renderWinnersList(); }
     function toggleHistoryView() { isHistoryExpanded = !isHistoryExpanded; renderHistoryList(); }
 
-    function toggleAdminPanel() {
+    // --- VALIDACIÓN DE ADMINISTRADOR CON SHA-256 NATIVO ---
+    async function toggleAdminPanel() {
         const pass = prompt("Introduce la clave de administrador:");
-        if (pass && btoa(pass) === "cGF0cnVsbGExMjM=") {
-            isAdminLoggedIn = true;
-            document.getElementById('adminPanel').classList.remove('hidden');
-            importarDesdeTelegram(false);
-            renderHistoryList();
-            cargarListaBackups();
-        } else if (pass !== null) {
-            alert("Contraseña incorrecta.");
+        if (!pass) return;
+
+        try {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(pass);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+            // Hash SHA-256 correspondiente a la contraseña "patrulla123"
+            const hashEsperado = "3a7a62725f0a719c35a8f47c3abec0181525b6a71e469d7bdf9b77fa8f60ff0d";
+
+            if (hashHex === hashEsperado) {
+                isAdminLoggedIn = true;
+                document.getElementById('adminPanel').classList.remove('hidden');
+                importarDesdeTelegram(false);
+                renderHistoryList();
+                cargarListaBackups();
+            } else {
+                alert("Contraseña incorrecta.");
+            }
+        } catch (err) {
+            console.error("Error al validar la contraseña:", err);
+            alert("Ocurrió un error al verificar la seguridad.");
         }
     }
 
