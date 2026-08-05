@@ -285,7 +285,6 @@
             overflow-y: auto;
             text-align: left;
             
-            /* OPCIÓN 1: Ocultar barra de desplazamiento manteniendo funcionalidad táctil/rueda */
             scrollbar-width: none;
         }
         .credits-list::-webkit-scrollbar {
@@ -416,7 +415,6 @@
             100% { transform: scale(1); opacity: 1; }
         }
 
-        /* CAJA DE SUGERENCIAS PERSONALIZADA */
         .custom-suggestions-dropdown {
             position: absolute;
             top: 100%;
@@ -432,7 +430,6 @@
             box-shadow: 0 8px 16px rgba(0,0,0,0.5);
             display: none;
             
-            /* OPCIÓN 1: Ocultar scroll también aquí */
             scrollbar-width: none;
         }
         .custom-suggestions-dropdown::-webkit-scrollbar {
@@ -497,7 +494,6 @@
             text-align: left;
             word-break: break-all;
             
-            /* OPCIÓN 1 */
             scrollbar-width: none;
         }
         .log-box::-webkit-scrollbar {
@@ -559,7 +555,6 @@
     <img src="logo.png?v=2" alt="Logo Patrulla Retro" class="header-logo" onclick="contarClicksAdmin()">
     <h1 id="mainTitle">🏆 Sorteo HoF Patrulla Retro</h1>
 
-    <!-- BOTÓN SUPERIOR (Cambiado a Lista de Participantes) -->
     <div class="top-prob-btn-container">
         <button class="top-prob-btn" onclick="abrirProbabilidadesModal()">📊 Lista de Participantes</button>
     </div>
@@ -580,7 +575,6 @@
 
             <ul id="arcadeList" class="custom-list"></ul>
 
-            <!-- BUSCADOR CON DESPLEGABLE PERSONALIZADO Y MICRÓFONO -->
             <div class="search-container">
                 <label style="font-size: 0.8rem; color: var(--gold); display: block; margin-bottom: 4px; text-align: center;">
                     🔍 <b>Comprobar si un juego ya ha sido elegido:</b>
@@ -590,7 +584,6 @@
                     <input type="text" id="gameSearchInput" placeholder="Escribe al menos 4 caracteres o usa el micro..." oninput="comprobarJuegoEnSheets()" autocomplete="off">
                     <button type="button" id="micBtn" class="mic-btn" onclick="activarBusquedaVoz()" title="Búsqueda por voz">🎤</button>
                     
-                    <!-- NUEVA LISTA DESPLEGABLE HTML FLOTANTE -->
                     <div id="customSuggestions" class="custom-suggestions-dropdown"></div>
                 </div>
                 
@@ -617,7 +610,7 @@
     <!-- MENSAJE ESPERA -->
     <div id="waitingCard" class="card hidden" style="text-align: center;">
         <h2>⏳ El sorteo aún no se ha realizado</h2>
-        <p style="color: var(--muted); font-size: 0.85rem;">El administrador realizará o programará la tirada en breve. Esta página se actualizará automáticamente.</p>
+        <p style="color: var(--muted); font-size: 0.85rem;">El administrador realizará o programará la tirada en breve. Recarga la página para comprobar actualizaciones.</p>
     </div>
 
     <!-- LISTA DE PREMIADOS -->
@@ -750,7 +743,7 @@
     </div>
 </div>
 
-<!-- VENTANA MODAL PARTICIPANTES (Cambiado de nombre) -->
+<!-- VENTANA MODAL PARTICIPANTES -->
 <div id="probabilitiesModal" class="modal-overlay hidden">
     <div class="modal-card">
         <h2 style="color: var(--gold); margin-top: 0; margin-bottom: 10px;">📊 Lista de Participantes</h2>
@@ -792,25 +785,52 @@
 
     const nombresMeses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
-    // --- SINCRONIZACIÓN DE LA LISTA EN FIREBASE ---
-    db.ref('sorteo_participantes_raw').on('value', function(snapshot) {
-        const val = snapshot.val();
-        const textarea = document.getElementById('listInput');
-        if (val !== null && textarea) {
-            textarea.value = val;
-            calcularYMostrarProbabilidades();
-        }
-    });
+    // --- CARGA INICIAL BAJO DEMANDA (SIN OYENTES EN TIEMPO REAL) ---
+    function inicializarDatosWeb() {
+        // 1. Cargar participantes una sola vez al entrar
+        db.ref('sorteo_participantes_raw').once('value').then(function(snapshot) {
+            const val = snapshot.val();
+            const textarea = document.getElementById('listInput');
+            if (val !== null && textarea) {
+                textarea.value = val;
+                calcularYMostrarProbabilidades();
+            }
+        });
+
+        // 2. Cargar mes del sorteo una sola vez
+        db.ref('mes_sorteo').once('value').then(function(snapshot) {
+            const mes = snapshot.val();
+            const titleEl = document.getElementById('mainTitle');
+            if (mes) {
+                titleEl.innerText = "🏆 Sorteo HoF Patrulla Retro de " + mes;
+                const monthSelect = document.getElementById('monthSelect');
+                if (monthSelect) monthSelect.value = mes;
+            } else {
+                titleEl.innerText = "🏆 Sorteo HoF Patrulla Retro";
+            }
+        });
+
+        // 3. Cargar estado actual del sorteo una sola vez
+        db.ref('sorteo_actual').once('value').then(function(snapshot) {
+            procesarEstadoSorteo(snapshot.val());
+        });
+
+        // 4. Cargar historial de ganadores una sola vez
+        db.ref('historial_ganadores').once('value').then(function(snapshot) {
+            procesarHistorialGanadores(snapshot.val());
+        });
+    }
+
+    // Ejecutar la carga al iniciar la página
+    window.addEventListener('DOMContentLoaded', inicializarDatosWeb);
 
     function guardarParticipantesFirebase() {
         const val = document.getElementById('listInput').value;
         db.ref('sorteo_participantes_raw').set(val);
     }
 
-    // --- SINC sin bucles molestos al escribir ---
     document.getElementById('listInput').addEventListener('input', function() {
         calcularYMostrarProbabilidades();
-        // Guardado directo en base de datos para persistir al refrescar
         db.ref('sorteo_participantes_raw').set(this.value);
     });
 
@@ -891,7 +911,6 @@
             const li = document.createElement('li');
             li.className = 'custom-item';
             
-            // Limitado a un máximo de 3 cifras mediante .toFixed(3)
             let porcentajeStr = p.prob.toFixed(3) + "%";
 
             li.innerHTML = `<div class="custom-item-text">
@@ -1133,7 +1152,7 @@
     }
 
     function cargarListaBackups() {
-        db.ref('backups').on('value', function(snapshot) {
+        db.ref('backups').once('value').then(function(snapshot) {
             const select = document.getElementById('backupSelect');
             select.innerHTML = '<option value="">-- Selecciona una copia para restaurar o borrar --</option>';
 
@@ -1158,7 +1177,7 @@
         }
 
         if (confirm(`⚠️ ¿Estás seguro de RESTAURAR la copia "${clave}"?\n\nEsto sobrescribirá los datos con los guardados en ese momento.`)) {
-            db.ref('backups/' + clave).once('value', function(snapshot) {
+            db.ref('backups/' + clave).once('value').then(function(snapshot) {
                 const data = snapshot.val();
                 if (!data) {
                     alert("Error al leer la copia de seguridad.");
@@ -1169,6 +1188,7 @@
                 db.ref('sorteo_actual').set(data.sorteo_actual || null);
                 db.ref('mes_sorteo').set(data.mes_sorteo || null).then(function() {
                     alert("🎉 ¡Datos restaurados correctamente desde la copia " + clave + "!");
+                    inicializarDatosWeb(); // Recargar datos tras restaurar
                 });
             });
         }
@@ -1187,6 +1207,7 @@
         if (confirm(`⚠️ ¿Estás seguro de que deseas ELIMINAR permanentemente la copia de seguridad?\n\n"${textoSeleccionado}"`)) {
             db.ref('backups/' + clave).remove().then(function() {
                 alert("🗑️ Copia de seguridad eliminada con éxito.");
+                cargarListaBackups();
             });
         }
     }
@@ -1227,6 +1248,7 @@
                     if ('sorteo_actual' in data) db.ref('sorteo_actual').set(data.sorteo_actual);
                     if ('mes_sorteo' in data) db.ref('mes_sorteo').set(data.mes_sorteo);
                     alert("✅ ¡Copia de seguridad local restaurada con éxito!");
+                    inicializarDatosWeb();
                 }
             } catch (err) {
                 alert("❌ El archivo no tiene un formato JSON válido.");
@@ -1309,23 +1331,15 @@
         }
     }
 
-    db.ref('mes_sorteo').on('value', function(snapshot) {
-        const mes = snapshot.val();
-        const titleEl = document.getElementById('mainTitle');
-        if (mes) {
-            titleEl.innerText = "🏆 Sorteo HoF Patrulla Retro de " + mes;
-            document.getElementById('monthSelect').value = mes;
-        } else {
-            titleEl.innerText = "🏆 Sorteo HoF Patrulla Retro";
-        }
-    });
-
     function guardarMesSorteo() {
         const mes = document.getElementById('monthSelect').value;
         if (!mes) return alert("Por favor, selecciona un mes del desplegable.");
 
         if (confirm("¿Confirmas que deseas cambiar el título del sorteo al mes de " + mes + "?")) {
-            db.ref('mes_sorteo').set(mes).then(() => alert("¡Mes actualizado con éxito!"));
+            db.ref('mes_sorteo').set(mes).then(() => {
+                alert("¡Mes actualizado con éxito!");
+                inicializarDatosWeb();
+            });
         }
     }
 
@@ -1352,9 +1366,9 @@
         const usuarios = inputVal.split(/[\n,\s]+/).map(u => u.trim()).filter(u => u.length > 0);
         let añadidos = 0;
 
-        usuarios.forEach(function(usr) {
+        let promesas = usuarios.map(function(usr) {
             let userFinal = usr.startsWith('@') ? usr : '@' + usr;
-            db.ref('historial_ganadores').push({
+            return db.ref('historial_ganadores').push({
                 user: userFinal,
                 ticket: "Entrada Manual",
                 fecha: fechaTexto,
@@ -1363,22 +1377,28 @@
             añadidos++;
         });
 
-        alert("¡" + añadidos + " usuario(s) añadido(s) al historial!");
-        document.getElementById('manualUserAdmin').value = '';
-        document.getElementById('manualWinnerMonth').value = '';
+        Promise.all(promesas).then(() => {
+            alert("¡Usuarios añadidos al historial!");
+            document.getElementById('manualUserAdmin').value = '';
+            document.getElementById('manualWinnerMonth').value = '';
+            // Recargar historial
+            db.ref('historial_ganadores').once('value').then(snapshot => procesarHistorialGanadores(snapshot.val()));
+        });
     }
 
     function borrarGanadorEspecifico(key, usuario, fecha) {
         if (!isAdminLoggedIn) return;
         if (confirm(`⚠️ ¿Eliminar del historial a ${usuario} (${fecha})?`)) {
-            db.ref('historial_ganadores/' + key).remove();
+            db.ref('historial_ganadores/' + key).remove().then(() => {
+                db.ref('historial_ganadores').once('value').then(snapshot => procesarHistorialGanadores(snapshot.val()));
+            });
         }
     }
 
     function verificarRepetidoVisual() {
         if (!actualGanadorUser) return;
         
-        db.ref('historial_ganadores').once('value', function(snapshot) {
+        db.ref('historial_ganadores').once('value').then(function(snapshot) {
             const data = snapshot.val();
             let totalVictorias = 0;
 
@@ -1394,8 +1414,7 @@
         });
     }
 
-    db.ref('sorteo_actual').on('value', function(snapshot) {
-        const data = snapshot.val();
+    function procesarEstadoSorteo(data) {
         programData = data;
         
         if (timerInterval) clearInterval(timerInterval);
@@ -1445,7 +1464,7 @@
             document.getElementById('countdownCard').classList.add('hidden');
             document.getElementById('waitingCard').classList.remove('hidden');
         }
-    });
+    }
 
     function iniciarRelojCuentaAtras(targetTime) {
         function actualizar() {
@@ -1476,8 +1495,7 @@
         timerInterval = setInterval(actualizar, 1000);
     }
 
-    db.ref('historial_ganadores').on('value', function(snapshot) {
-        const data = snapshot.val();
+    function procesarHistorialGanadores(data) {
         let mapaConteo = {};
         rawHistoryItems = [];
 
@@ -1503,7 +1521,7 @@
 
         document.getElementById('winnersCountCard').classList.remove('hidden');
         document.getElementById('historyCard').classList.remove('hidden');
-    });
+    }
 
     function renderWinnersList() {
         const listEl = document.getElementById('winnersCountList');
@@ -1521,7 +1539,6 @@
             li.className = 'custom-item';
             const textoVez = item.total === 1 ? 'vez premiado' : 'veces premiado';
             
-            // Asignación de medallas para el Top 3 global del Hall of Fame
             let medallaIcono = '';
             if (index === 0) {
                 medallaIcono = '🥇 ';
@@ -1601,10 +1618,13 @@
                 const data = snapshot.val();
                 if (data) {
                     const keyBorrar = Object.keys(data)[0];
-                    db.ref('historial_ganadores/' + keyBorrar).remove();
-                    alert("Último sorteo borrado.");
+                    db.ref('historial_ganadores/' + keyBorrar).remove().then(() => {
+                        alert("Último sorteo borrado.");
+                        inicializarDatosWeb();
+                    });
                 } else {
                     alert("Estado actual borrado.");
+                    inicializarDatosWeb();
                 }
             });
         }
@@ -1616,10 +1636,14 @@
             document.getElementById('blacklistInput').value = '';
             document.getElementById('drawDateInput').value = '';
             document.getElementById('drawTimeInput').value = '';
-            db.ref('sorteo_actual').remove();
-            db.ref('historial_ganadores').remove();
-            db.ref('sorteo_participantes_raw').remove();
-            alert("Todo borrado correctamente.");
+            Promise.all([
+                db.ref('sorteo_actual').remove(),
+                db.ref('historial_ganadores').remove(),
+                db.ref('sorteo_participantes_raw').remove()
+            ]).then(() => {
+                alert("Todo borrado correctamente.");
+                inicializarDatosWeb();
+            });
         }
     }
 
@@ -1651,7 +1675,10 @@
                 targetTime: targetDate.getTime(),
                 rawLines: rawLines,
                 rawBlacklist: rawBlacklist
-            }).then(() => alert("¡Sorteo programado con éxito!"));
+            }).then(() => {
+                alert("¡Sorteo programado con éxito!");
+                inicializarDatosWeb();
+            });
         } else {
             if (confirm("El sorteo se realizará de inmediato. ¿Continuar?")) {
                 calcularYEjecutarTirada(rawLines, rawBlacklist);
@@ -1736,18 +1763,21 @@
         const ahora = new Date();
         const fechaFormateada = `${nombresMeses[ahora.getMonth()]} ${ahora.getFullYear()}`;
 
-        db.ref('historial_ganadores').push({
-            user: ganadorEncontrado.user,
-            ticket: ganadorEncontrado.ticket,
-            fecha: fechaFormateada,
-            timestamp: Date.now() + Math.random()
-        });
-
-        db.ref('sorteo_actual').set({
-            ganador: ganadorEncontrado,
-            arcadeGroup: arcadeGroup,
-            log: log,
-            timestamp: Date.now()
+        Promise.all([
+            db.ref('historial_ganadores').push({
+                user: ganadorEncontrado.user,
+                ticket: ganadorEncontrado.ticket,
+                fecha: fechaFormateada,
+                timestamp: Date.now() + Math.random()
+            }),
+            db.ref('sorteo_actual').set({
+                ganador: ganadorEncontrado,
+                arcadeGroup: arcadeGroup,
+                log: log,
+                timestamp: Date.now()
+            })
+        ]).then(() => {
+            inicializarDatosWeb();
         });
     }
 </script>
