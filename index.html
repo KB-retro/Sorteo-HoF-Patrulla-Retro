@@ -11,7 +11,6 @@
     <meta property="og:title" content="🏆 Sorteo HoF Patrulla Retro">
     <meta property="og:description" content="Entra para ver la cuenta atrás en directo y el resultado del sorteo de la Patrulla Retro.">
     <meta property="og:url" content="https://kb-retro.github.io/Sorteo-HoF-Patrulla-Retro/">
-    
     <meta property="og:image" content="https://kb-retro.github.io/Sorteo-HoF-Patrulla-Retro/logo.png?v=2">
     <meta property="og:image:secure_url" content="https://kb-retro.github.io/Sorteo-HoF-Patrulla-Retro/logo.png?v=2">
     <meta property="og:image:type" content="image/png">
@@ -190,7 +189,6 @@
         }
         .btn-toggle-view:hover { background-color: #475569 !important; }
 
-        /* FILA DE BOTONES INFERIORES (CRÉDITOS COMPACTO) */
         .footer-buttons-group {
             display: flex;
             justify-content: center;
@@ -212,12 +210,9 @@
             width: auto;
             display: inline-block;
         }
-        .footer-btn:hover {
-            background: linear-gradient(135deg, #4338ca 0%, #6d28d9 100%);
-        }
+        .footer-btn:hover { background: linear-gradient(135deg, #4338ca 0%, #6d28d9 100%); }
         .footer-btn:active { transform: scale(0.98); }
 
-        /* BOTÓN SUPERIOR DE PROBABILIDADES (Idéntico a créditos y centrado) */
         .top-prob-btn-container {
             display: flex;
             justify-content: center;
@@ -240,9 +235,7 @@
             gap: 6px;
             width: auto;
         }
-        .top-prob-btn:hover {
-            background: linear-gradient(135deg, #4338ca 0%, #6d28d9 100%);
-        }
+        .top-prob-btn:hover { background: linear-gradient(135deg, #4338ca 0%, #6d28d9 100%); }
         .top-prob-btn:active { transform: scale(0.98); }
 
         .modal-overlay {
@@ -284,13 +277,9 @@
             gap: 10px;
             overflow-y: auto;
             text-align: left;
-            
             scrollbar-width: none;
         }
-        .credits-list::-webkit-scrollbar {
-            width: 0px;
-            background: transparent;
-        }
+        .credits-list::-webkit-scrollbar { width: 0px; background: transparent; }
 
         .credits-item {
             background: #0f172a;
@@ -301,7 +290,7 @@
             font-weight: bold;
             color: #fff;
             display: flex;
-            justify-content: space-between;
+            justify-content: center;
             align-items: center;
             gap: 10px;
         }
@@ -311,10 +300,7 @@
             text-decoration: none;
             transition: color 0.2s;
         }
-        .credits-link:hover {
-            color: #93c5fd;
-            text-decoration: underline;
-        }
+        .credits-link:hover { color: #93c5fd; text-decoration: underline; }
 
         .winner-box {
             display: none;
@@ -381,9 +367,7 @@
             align-items: center;
         }
 
-        .search-input-wrapper input {
-            padding-right: 45px;
-        }
+        .search-input-wrapper input { padding-right: 45px; }
 
         .mic-btn {
             position: absolute;
@@ -398,16 +382,8 @@
             border-radius: 4px;
             transition: color 0.2s, background 0.2s;
         }
-
-        .mic-btn:hover {
-            color: var(--text);
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .mic-btn.listening {
-            color: var(--danger);
-            animation: pulseMic 1.2s infinite;
-        }
+        .mic-btn:hover { color: var(--text); background: rgba(255, 255, 255, 0.1); }
+        .mic-btn.listening { color: var(--danger); animation: pulseMic 1.2s infinite; }
 
         @keyframes pulseMic {
             0% { transform: scale(1); opacity: 1; }
@@ -429,13 +405,9 @@
             z-index: 99;
             box-shadow: 0 8px 16px rgba(0,0,0,0.5);
             display: none;
-            
             scrollbar-width: none;
         }
-        .custom-suggestions-dropdown::-webkit-scrollbar {
-            width: 0px;
-            background: transparent;
-        }
+        .custom-suggestions-dropdown::-webkit-scrollbar { width: 0px; background: transparent; }
 
         .suggestion-item {
             padding: 10px 12px;
@@ -445,18 +417,8 @@
             text-align: left;
             transition: background 0.15s;
         }
-
-        .suggestion-item:hover, .suggestion-item:active {
-            background: rgba(99, 102, 241, 0.25);
-            color: #fff;
-        }
-
-        .suggestion-item .suggestion-date {
-            display: block;
-            font-size: 0.75rem;
-            color: var(--muted);
-            margin-top: 2px;
-        }
+        .suggestion-item:hover, .suggestion-item:active { background: rgba(99, 102, 241, 0.25); color: #fff; }
+        .suggestion-item .suggestion-date { display: block; font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
 
         .search-result-box {
             margin-top: 8px;
@@ -467,18 +429,8 @@
             display: none;
             text-align: center;
         }
-
-        .result-found {
-            background: rgba(239, 68, 68, 0.2);
-            border: 1px solid var(--danger);
-            color: #fca5a5;
-        }
-
-        .result-not-found {
-            background: rgba(34, 197, 94, 0.2);
-            border: 1px solid var(--success);
-            color: #86efac;
-        }
+        .result-found { background: rgba(239, 68, 68, 0.2); border: 1px solid var(--danger); color: #fca5a5; }
+        .result-not-found { background: rgba(34, 197, 94, 0.2); border: 1px solid var(--success); color: #86efac; }
 
         .log-box {
             background: #090d16;
@@ -493,13 +445,9 @@
             margin-top: 12px;
             text-align: left;
             word-break: break-all;
-            
             scrollbar-width: none;
         }
-        .log-box::-webkit-scrollbar {
-            width: 0px;
-            background: transparent;
-        }
+        .log-box::-webkit-scrollbar { width: 0px; background: transparent; }
 
         .custom-list { list-style: none; padding: 0; margin: 0; }
 
@@ -514,7 +462,6 @@
             align-items: center;
             gap: 8px;
         }
-
         .custom-item-text { flex: 1 1 auto; min-width: 0; word-break: break-word; font-size: 0.9rem; }
 
         .item-badge {
@@ -563,7 +510,6 @@
     <!-- PANTALLA GANADOR -->
     <div id="winnerCard" class="winner-box">
         <div class="winner-title">🎉 ¡Tenemos Ganador Oficial! 🎉</div>
-
         <div id="winnerName" class="winner-name">Cargando...</div>
         <div id="winnerTicket" class="winner-ticket"></div>
 
@@ -573,7 +519,6 @@
 
         <div class="arcade-box">
             <div class="arcade-title">🕹️ Eligen el Arcade del Mes (5 Usuarios):</div>
-
             <ul id="arcadeList" class="custom-list"></ul>
 
             <!-- BUSCADOR CON DESPLEGABLE PERSONALIZADO Y MICRÓFONO -->
@@ -585,7 +530,6 @@
                 <div class="search-input-wrapper">
                     <input type="text" id="gameSearchInput" placeholder="Escribe al menos 4 caracteres o usa el micro..." oninput="comprobarJuegoEnSheets()" autocomplete="off">
                     <button type="button" id="micBtn" class="mic-btn" onclick="activarBusquedaVoz()" title="Búsqueda por voz">🎤</button>
-                    
                     <div id="customSuggestions" class="custom-suggestions-dropdown"></div>
                 </div>
                 
@@ -731,14 +675,14 @@
         <h2 style="color: var(--gold); margin-top: 0; margin-bottom: 15px;">Créditos</h2>
         
         <ul class="credits-list">
-            <li class="credits-item" style="justify-content: center;">
+            <li class="credits-item">
                 <a href="https://elreclamo.es/" target="_blank" rel="noopener noreferrer" class="credits-link">
                     👕 @elReclamo.es ↗️
                 </a>
             </li>
-            <li class="credits-item" style="justify-content: center;">💻 @M_1_c_h_3_l</li>
-            <li class="credits-item" style="justify-content: center;">🕹️ @AlexisToretto</li>
-            <li class="credits-item" style="justify-content: center;">🧠 @cerebrosolido</li>
+            <li class="credits-item">💻 @M_1_c_h_3_l</li>
+            <li class="credits-item">🕹️ @AlexisToretto</li>
+            <li class="credits-item">🧠 @cerebrosolido</li>
         </ul>
 
         <button onclick="cerrarCreditos()" style="background-color: var(--accent); margin-top: 10px;">Cerrar</button>
@@ -787,7 +731,6 @@
 
     const nombresMeses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
-    // --- SINCRONIZACIÓN DE LA LISTA EN FIREBASE ---
     db.ref('sorteo_participantes_raw').on('value', function(snapshot) {
         const val = snapshot.val();
         const textarea = document.getElementById('listInput');
@@ -807,13 +750,10 @@
         db.ref('sorteo_participantes_raw').set(this.value);
     });
 
-    // --- FUNCIÓN DE CARGA AUTOMÁTICA AL ENTRAR EN LA WEB ---
     window.addEventListener('DOMContentLoaded', function() {
-        // Ejecuta la importación desde Telegram en modo silencioso (esManual = false) al arrancar la web
         importarDesdeTelegram(false);
     });
 
-    // --- FUNCIONES MODAL CRÉDITOS ---
     function abrirCreditos() {
         document.getElementById('creditsModal').classList.remove('hidden');
     }
@@ -822,7 +762,6 @@
         document.getElementById('creditsModal').classList.add('hidden');
     }
 
-    // --- FUNCIONES MODAL PARTICIPANTES ---
     function abrirProbabilidadesModal() {
         calcularYMostrarProbabilidades();
         document.getElementById('probabilitiesModal').classList.remove('hidden');
@@ -839,7 +778,6 @@
         if (event.target === probModal) cerrarProbabilidadesModal();
     });
 
-    // --- CÁLCULO DE PROBABILIDADES DE PARTICIPANTES ---
     function calcularYMostrarProbabilidades() {
         const rawLinesStr = document.getElementById('listInput').value.trim();
         const modalListEl = document.getElementById('participantsListModal');
@@ -889,7 +827,6 @@
         listaParticipantes.forEach(p => {
             const li = document.createElement('li');
             li.className = 'custom-item';
-            
             let porcentajeStr = p.prob.toFixed(3) + "%";
 
             li.innerHTML = `<div class="custom-item-text">
@@ -901,7 +838,6 @@
         });
     }
 
-    // --- TRIPLE CLIC ADMIN ---
     function contarClicksAdmin() {
         adminClicks++;
         clearTimeout(adminClickTimer);
@@ -914,7 +850,6 @@
         }
     }
 
-    // --- AZAR CRIPTOGRÁFICO ---
     function obtenerIndiceCriptografico(max) {
         if (max <= 0) return 0;
         const arrayBuffer = new Uint32Array(1);
@@ -930,7 +865,6 @@
         return valorRandom % max;
     }
 
-    // --- PARSER CSV ---
     function parseCSVLine(linea) {
         let resultado = [];
         let celda = '';
@@ -971,7 +905,6 @@
             
             const text = await res.text();
             const lineas = text.split('\n').filter(l => l.trim().length > 0);
-            
             let juegos = [];
             
             lineas.forEach(lineaRaw => {
@@ -987,7 +920,6 @@
             cacheJuegosSheets = juegos;
             ultimaCargaSheets = Date.now();
             return cacheJuegosSheets;
-
         } catch (e) {
             console.error("Error leyendo Google Sheets:", e);
             return cacheJuegosSheets || [];
@@ -1010,10 +942,7 @@
 
         const listaJuegos = await obtenerJuegosDesdeSheets();
         let coincidenciaExacta = listaJuegos.find(j => normalizarTexto(j.titulo) === queryNorm);
-
-        const juegosFiltrados = listaJuegos.filter(j => {
-            return normalizarTexto(j.titulo).includes(queryNorm);
-        });
+        const juegosFiltrados = listaJuegos.filter(j => normalizarTexto(j.titulo).includes(queryNorm));
 
         dropdown.innerHTML = '';
         if (juegosFiltrados.length > 0 && !coincidenciaExacta) {
@@ -1104,7 +1033,6 @@
         const ahora = new Date();
         const horaTag = `${String(ahora.getHours()).padStart(2,'0')}${String(ahora.getMinutes()).padStart(2,'0')}`;
         const clave = `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, '0')}-${String(ahora.getDate()).padStart(2, '0')}_${horaTag}`;
-        
         realizarCopiaEnFirebase(clave, "Copia Manual", true);
     }
 
@@ -1295,7 +1223,6 @@
             } else if (esManual) {
                 alert("No se encontró ningún mensaje reciente que contenga una lista.");
             }
-
         } catch (error) {
             console.error("Error Telegram:", error);
             if (esManual) alert("⚠️ No se pudo cargar la lista desde Telegram.");
@@ -1403,7 +1330,6 @@
             document.getElementById('waitingCard').classList.add('hidden');
             document.getElementById('countdownCard').classList.remove('hidden');
             iniciarRelojCuentaAtras(data.targetTime);
-
         } else if (data && data.ganador) {
             document.getElementById('countdownCard').classList.add('hidden');
             document.getElementById('waitingCard').classList.add('hidden');
@@ -1484,7 +1410,6 @@
                 const item = data[key];
                 item.key = key;
                 rawHistoryItems.push(item);
-
                 const userKey = item.user;
                 mapaConteo[userKey] = (mapaConteo[userKey] || 0) + 1;
             });
@@ -1520,13 +1445,9 @@
             const textoVez = item.total === 1 ? 'vez premiado' : 'veces premiado';
             
             let medallaIcono = '';
-            if (index === 0) {
-                medallaIcono = '🥇 ';
-            } else if (index === 1) {
-                medallaIcono = '🥈 ';
-            } else if (index === 2) {
-                medallaIcono = '🥉 ';
-            }
+            if (index === 0) medallaIcono = '🥇 ';
+            else if (index === 1) medallaIcono = '🥈 ';
+            else if (index === 2) medallaIcono = '🥉 ';
 
             li.innerHTML = '<div class="custom-item-text"><strong>' + medallaIcono + item.user + '</strong></div><span class="item-badge">' + item.total + ' ' + textoVez + '</span>';
             listEl.appendChild(li);
@@ -1567,7 +1488,6 @@
         });
 
         if (rawHistoryItems.length > 3) {
-            btn.classList.add('hidden'); 
             btn.classList.remove('hidden');
             btn.innerText = isHistoryExpanded ? '⬆️ Mostrar solo los últimos 3 sorteos' : '⬇️ Ver todo el historial (' + rawHistoryItems.length + ')';
         } else {
