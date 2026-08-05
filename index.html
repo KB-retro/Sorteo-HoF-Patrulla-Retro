@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sorteo HoF Patrulla Retro</title>
 
-    <!-- Meta etiquetas Open Graph para Telegram / Redes Sociales -->
+    <!-- Meta etiquetas Open Graph / Redes Sociales -->
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="Patrulla Retro">
     <meta property="og:title" content="🏆 Sorteo HoF Patrulla Retro">
@@ -34,7 +34,6 @@
 
     <style>
         :root {
-            --bg: #0f172a;
             --card: rgba(30, 41, 59, 0.92);
             --accent: #6366f1;
             --accent-hover: #4f46e5;
@@ -61,7 +60,7 @@
 
         body {
             font-family: system-ui, -apple-system, sans-serif;
-            background-color: #000000;
+            background-color: #000;
             color: var(--text);
             padding: 20px 10px;
             display: flex;
@@ -79,7 +78,7 @@
             height: 100vh;
             background-image: url('fondo.png');
             background-size: cover;
-            background-position: center center;
+            background-position: center;
             background-repeat: no-repeat;
             z-index: -1;
             transform: translateZ(0);
@@ -96,14 +95,13 @@
 
         .header-logo {
             display: block;
-            margin: 0 auto 5px auto;
+            margin: 0 auto 5px;
             max-width: 150px;
             width: 100%;
             height: auto;
             cursor: default;
             user-select: none;
             -webkit-user-select: none;
-            -webkit-touch-callout: none;
             -webkit-tap-highlight-color: transparent;
         }
 
@@ -117,9 +115,9 @@
             overflow: hidden;
         }
 
-        h1 { font-size: 1.5rem; margin-top: 0; margin-bottom: 5px; text-align: center; line-height: 1.2; }
-        h2 { font-size: 1.2rem; margin-top: 0; text-align: center; }
-        h3 { font-size: 1.05rem; margin-top: 0; text-align: center; }
+        h1 { font-size: 1.5rem; margin: 0 0 5px; text-align: center; line-height: 1.2; }
+        h2 { font-size: 1.2rem; margin: 0; text-align: center; }
+        h3 { font-size: 1.05rem; margin: 0; text-align: center; }
         
         textarea, input[type="text"], input[type="time"], input[type="date"], input[type="month"], select {
             width: 100%;
@@ -316,7 +314,7 @@
         }
 
         .winner-title { color: var(--gold); font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px; }
-        .winner-name { font-size: 2rem; font-weight: bold; margin: 10px 0 5px 0; color: #fff; word-break: break-word; }
+        .winner-name { font-size: 2rem; font-weight: bold; margin: 10px 0 5px; color: #fff; word-break: break-word; }
         .winner-ticket { font-size: 1.05rem; font-weight: bold; color: var(--muted); word-break: break-word; margin-bottom: 5px; }
 
         .repeat-winner-banner {
