@@ -28,6 +28,9 @@
     <link rel="icon" type="image/png" sizes="16x16" href="logo.png?v=2">
     <link rel="apple-touch-icon" sizes="180x180" href="logo.png?v=2">
 
+    <!-- Fuente Pixel Art 8-Bits -->
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+
     <!-- Firebase JS SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -48,6 +51,7 @@
             --gold: #f59e0b;
             --telegram: #0088cc;
             --telegram-hover: #0077b3;
+            --pixel-border: #f59e0b;
         }
 
         * { box-sizing: border-box; }
@@ -321,99 +325,112 @@
             font-family: monospace;
         }
 
-        /* --- NUEVA ANIMACIÓN DEL BOMBO INTEGRADA EN RECUADRO --- */
+        /* --- NUEVO BOMBO RETRO / 8-BITS CON FÍSICAS CAÓTICAS --- */
         .bombo-card-box {
             display: none;
-            background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 27, 75, 0.95) 100%);
-            border: 2px solid var(--accent);
-            border-radius: 12px;
-            padding: 25px 15px;
+            background: #090c15;
+            border: 4px solid #f59e0b;
+            box-shadow: inset 0 0 0 4px #000, 0 0 20px rgba(245, 158, 11, 0.4);
+            border-radius: 4px;
+            padding: 20px 10px;
             text-align: center;
-            box-shadow: 0 8px 30px rgba(99, 102, 241, 0.3);
             animation: fadeIn 0.4s ease-out;
+            image-rendering: pixelated;
         }
 
-        .bombo-title {
-            color: var(--gold);
-            font-size: 1.25rem;
-            font-weight: bold;
+        .bombo-title-pixel {
+            font-family: 'Press Start 2P', monospace;
+            color: #f59e0b;
+            font-size: 0.75rem;
+            line-height: 1.5;
             margin-bottom: 15px;
-            letter-spacing: 1px;
             text-transform: uppercase;
-            text-shadow: 0 2px 10px rgba(245, 158, 11, 0.4);
+            text-shadow: 2px 2px 0 #000;
         }
 
-        .bombo-sphere-wrapper {
+        .bombo-arcade-frame {
             position: relative;
-            width: 210px;
-            height: 210px;
+            width: 240px;
+            height: 200px;
             margin: 0 auto;
-            border-radius: 50%;
-            background: radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.25) 0%, rgba(99, 102, 241, 0.1) 60%, rgba(0, 0, 0, 0.6) 100%);
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            box-shadow: inset -10px -10px 25px rgba(0, 0, 0, 0.8), 
-                        inset 8px 8px 20px rgba(255, 255, 255, 0.4),
-                        0 0 25px rgba(99, 102, 241, 0.4);
+            background: #000;
+            border: 4px solid #334155;
+            box-shadow: inset 0 0 10px rgba(0,255,255,0.2), 0 0 0 4px #000;
+            border-radius: 8px;
             overflow: hidden;
         }
 
-        .bombo-sphere-wrapper::after {
+        /* Estructura cristal pixelada */
+        .bombo-arcade-frame::before {
             content: "";
             position: absolute;
-            top: 8%;
-            left: 15%;
-            width: 40%;
-            height: 20%;
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0) 100%);
-            border-radius: 50%;
-            transform: rotate(-25deg);
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 50%, rgba(0,0,0,0.4) 100%);
             pointer-events: none;
+            z-index: 10;
         }
 
         .bombo-balls-container {
             position: absolute;
             width: 100%;
             height: 100%;
-            animation: girarGasto 1.8s infinite linear;
+            top: 0;
+            left: 0;
         }
 
-        @keyframes girarGasto {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .bombo-ball {
+        /* Estilo 8-bits de las bolas */
+        .bombo-ball-pixel {
             position: absolute;
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            border-radius: 2px;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 0.45rem;
             color: #fff;
-            font-size: 0.7rem;
-            font-weight: bold;
             display: flex;
             justify-content: center;
             align-items: center;
-            box-shadow: inset -2px -2px 4px rgba(0,0,0,0.6), 0 2px 5px rgba(0,0,0,0.4);
-            animation: rebotarBola 0.5s infinite alternate ease-in-out;
+            border: 1px solid #000;
+            box-shadow: inset -1px -1px 0 rgba(0,0,0,0.5);
+            text-shadow: 1px 1px 0 #000;
         }
 
-        @keyframes rebotarBola {
-            0% { transform: translate(0, 0) scale(0.95); }
-            100% { transform: translate(10px, -10px) scale(1.05); }
+        /* Trayectorias caóticas individuales */
+        @keyframes chaosBounce1 {
+            0% { transform: translate(10px, 150px); }
+            20% { transform: translate(80px, 20px); }
+            40% { transform: translate(180px, 140px); }
+            60% { transform: translate(120px, 10px); }
+            80% { transform: translate(30px, 100px); }
+            100% { transform: translate(10px, 150px); }
         }
 
-        .bombo-countdown-badge {
-            margin-top: 18px;
+        @keyframes chaosBounce2 {
+            0% { transform: translate(200px, 140px); }
+            25% { transform: translate(50px, 10px); }
+            50% { transform: translate(10px, 130px); }
+            75% { transform: translate(160px, 40px); }
+            100% { transform: translate(200px, 140px); }
+        }
+
+        @keyframes chaosBounce3 {
+            0% { transform: translate(100px, 20px); }
+            33% { transform: translate(190px, 150px); }
+            66% { transform: translate(20px, 80px); }
+            100% { transform: translate(100px, 20px); }
+        }
+
+        .bombo-countdown-pixel {
+            margin-top: 15px;
             display: inline-block;
-            background: rgba(15, 23, 42, 0.9);
-            border: 1px solid var(--gold);
-            padding: 8px 18px;
-            border-radius: 20px;
-            font-family: monospace;
-            font-size: 1.3rem;
-            font-weight: bold;
-            color: var(--gold);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            background: #000;
+            border: 2px solid #22c55e;
+            padding: 8px 16px;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 0.9rem;
+            color: #22c55e;
+            text-shadow: 1px 1px 0 #000;
+            box-shadow: inset 0 0 6px rgba(34, 197, 94, 0.4);
         }
 
         .arcade-box {
@@ -582,13 +599,13 @@
         <button class="top-prob-btn" onclick="abrirProbabilidadesModal()">📊 Lista de Participantes</button>
     </div>
 
-    <!-- TARJETA DE ANIMACIÓN DEL BOMBO (SE MUESTRA SOLO EN EL ÚLTIMO MINUTO PROGRAMADO) -->
+    <!-- TARJETA DE ANIMACIÓN DEL BOMBO RETRO 8-BITS -->
     <div id="bomboCard" class="bombo-card-box">
-        <div class="bombo-title">🎰 Mezclando bolas en el bombo...</div>
-        <div class="bombo-sphere-wrapper">
+        <div class="bombo-title-pixel">MEZCLANDO BOLAS EN EL BOMBO RETRO...</div>
+        <div class="bombo-arcade-frame">
             <div id="bomboBallsContainer" class="bombo-balls-container"></div>
         </div>
-        <div id="bomboCountdownText" class="bombo-countdown-badge">00:60</div>
+        <div id="bomboCountdownText" class="bombo-countdown-pixel">00:60</div>
     </div>
 
     <!-- PANTALLA GANADOR -->
@@ -815,37 +832,31 @@
 
     const nombresMeses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
-    // Generar 18 bolas dinámicas dentro del bombo
+    // Generar 60 bolas pixeladas estilo retro con físicas caóticas desfasadas
     function inicializarBolasBombo() {
         const container = document.getElementById('bomboBallsContainer');
         if (!container) return;
         container.innerHTML = '';
 
-        const coloresGradients = [
-            'radial-gradient(circle at 35% 35%, #ef4444, #7f1d1d)',
-            'radial-gradient(circle at 35% 35%, #38bdf8, #0369a1)',
-            'radial-gradient(circle at 35% 35%, #22c55e, #14532d)',
-            'radial-gradient(circle at 35% 35%, #f59e0b, #78350f)',
-            'radial-gradient(circle at 35% 35%, #a855f7, #581c87)',
-            'radial-gradient(circle at 35% 35%, #ec4899, #831843)',
-            'radial-gradient(circle at 35% 35%, #f97316, #7c2d12)'
+        const paletaRetro = [
+            '#ef4444', '#38bdf8', '#22c55e', '#f59e0b', 
+            '#a855f7', '#ec4899', '#f97316', '#06b6d4'
         ];
 
-        for (let i = 1; i <= 18; i++) {
-            const bola = document.createElement('div');
-            bola.className = 'bombo-ball';
-            
-            // Distribución física realista dentro del diámetro
-            const angulo = (i / 18) * 2 * Math.PI;
-            const radio = 35 + (i % 4) * 16;
-            const posX = 90 + radio * Math.cos(angulo);
-            const posY = 90 + radio * Math.sin(angulo);
+        const tiposAnimacion = ['chaosBounce1', 'chaosBounce2', 'chaosBounce3'];
 
-            bola.style.left = `${posX}px`;
-            bola.style.top = `${posY}px`;
-            bola.style.background = coloresGradients[i % coloresGradients.length];
-            bola.style.animationDelay = `${(i * 0.08).toFixed(2)}s`;
-            bola.style.animationDuration = `${0.3 + (i % 5) * 0.1}s`;
+        for (let i = 1; i <= 60; i++) {
+            const bola = document.createElement('div');
+            bola.className = 'bombo-ball-pixel';
+            
+            // Asignación de animación caótica con duraciones y offsets aleatorios
+            const animSeleccionada = tiposAnimacion[i % tiposAnimacion.length];
+            const duracion = (0.7 + (i % 7) * 0.15).toFixed(2);
+            const delay = ((i * 0.05) % 0.8).toFixed(2);
+
+            bola.style.background = paletaRetro[i % paletaRetro.length];
+            bola.style.animation = `${animSeleccionada} ${duracion}s infinite alternate ease-in-out`;
+            bola.style.animationDelay = `${delay}s`;
             bola.innerText = String(i).padStart(2, '0');
 
             container.appendChild(bola);
@@ -1506,7 +1517,7 @@
                 return;
             }
 
-            // Si faltan 60 segundos o menos, mostramos el bombo interactivo en lugar del contador normal
+            // Si faltan 60 segundos o menos, se muestra el bombo Pixel Art
             if (diferencia <= 60000) {
                 document.getElementById('countdownCard').classList.add('hidden');
                 document.getElementById('bomboCard').style.display = 'block';
@@ -1707,7 +1718,6 @@
             }).then(() => alert("¡Sorteo programado con éxito!"));
         } else {
             if (confirm("El sorteo se realizará de inmediato sin animación previa. ¿Continuar?")) {
-                // Ejecución directa inmediata sin animación
                 calcularYEjecutarTirada(rawLines, rawBlacklist);
             }
         }
