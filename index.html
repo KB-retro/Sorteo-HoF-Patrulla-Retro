@@ -527,6 +527,32 @@
     overflow: hidden !important;
 }
 
+
+/* ===== REDONDEADO COMPLETO DE LA TRAGAPERRAS ===== */
+#slotMachineCard {
+    border-radius: 22px !important;
+    overflow: hidden !important;
+}
+#slotMachineCard .slot-cabinet {
+    border-radius: 18px !important;
+    overflow: hidden !important;
+}
+#slotMachineCard .slot-display {
+    border-radius: 14px !important;
+    overflow: hidden !important;
+}
+#slotMachineCard .slot-reel {
+    border-radius: 10px !important;
+    overflow: hidden !important;
+}
+#slotMachineCard .slot-marquee {
+    border-radius: 12px !important;
+}
+#slotMachineCard .slot-light,
+#slotMachineCard .slot-lights {
+    border-radius: 50% !important;
+}
+
 </style>
 </head>
 <body>
@@ -1469,7 +1495,7 @@
             // para que termine la cuenta atrás y se realice la tirada.
             if (!slotFinalizing) {
                 document.getElementById('slotStatus').innerText =
-                    '🎰 Buena suerte, la necesitarás.  ' + formatearCuentaAtras(diferencia);
+                    '🎰 "Buena suerte, la necesitarás"   ' + formatearCuentaAtras(diferencia);
             }
         } else if (diferencia > 0) {
             slot.classList.remove('active');
