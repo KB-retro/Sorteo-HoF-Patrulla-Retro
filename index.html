@@ -488,6 +488,77 @@
 
         .hidden { display: none !important; }
 
+        /* --- ESTILOS DE LA ANIMACIÓN DEL BOMBO --- */
+        #bombo-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.88);
+            backdrop-filter: blur(8px);
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 2000;
+        }
+
+        .bombo-container {
+            position: relative;
+            width: 220px;
+            height: 220px;
+            border: 8px solid #cbd5e1;
+            border-radius: 50%;
+            background: rgba(56, 189, 248, 0.08);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            animation: girarBombo 1.2s infinite linear;
+            box-shadow: 0 0 35px rgba(99, 102, 241, 0.5);
+        }
+
+        @keyframes girarBombo {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .bola {
+            position: absolute;
+            width: 36px;
+            height: 36px;
+            background: radial-gradient(circle at 30% 30%, #ef4444, #991b1b);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            font-size: 0.85rem;
+            box-shadow: inset -3px -3px 6px rgba(0,0,0,0.6);
+            animation: moverBolas 0.6s infinite alternate ease-in-out;
+        }
+
+        .bola:nth-child(1) { top: 25px; left: 45px; animation-delay: 0.05s; }
+        .bola:nth-child(2) { top: 55px; right: 35px; animation-delay: 0.25s; background: radial-gradient(circle at 30% 30%, #38bdf8, #0369a1); }
+        .bola:nth-child(3) { bottom: 35px; left: 55px; animation-delay: 0.15s; background: radial-gradient(circle at 30% 30%, #22c55e, #15803d); }
+        .bola:nth-child(4) { bottom: 45px; right: 45px; animation-delay: 0.35s; background: radial-gradient(circle at 30% 30%, #f59e0b, #b45309); }
+        .bola:nth-child(5) { top: 90px; left: 90px; animation-delay: 0.2s; background: radial-gradient(circle at 30% 30%, #a855f7, #6b21a8); }
+
+        @keyframes moverBolas {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(12px, -12px) scale(1.1); }
+        }
+
+        .bombo-texto {
+            margin-top: 25px;
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: var(--gold);
+            text-align: center;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+        }
+
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(-10px); }
             to { opacity: 1; transform: translateY(0); }
@@ -665,6 +736,18 @@
     <div class="footer-buttons-group">
         <button class="footer-btn" onclick="abrirCreditos()">💳 Créditos</button>
     </div>
+</div>
+
+<!-- CAPA OVERLAY ANIMACIÓN DEL BOMBO Y BOLAS -->
+<div id="bombo-overlay">
+    <div class="bombo-container">
+        <div class="bola">07</div>
+        <div class="bola">12</div>
+        <div class="bola">45</div>
+        <div class="bola">23</div>
+        <div class="bola">89</div>
+    </div>
+    <div class="bombo-texto">🎰 ¡Mezclando bolas en el bombo...!</div>
 </div>
 
 <!-- VENTANA MODAL CRÉDITOS -->
@@ -1569,14 +1652,30 @@
             }).then(() => alert("¡Sorteo programado con éxito!"));
         } else {
             if (confirm("El sorteo se realizará de inmediato. ¿Continuar?")) {
-                calcularYEjecutarTirada(rawLines, rawBlacklist);
+                mostrarAnimacionBombo(function() {
+                    calcularYEjecutarTirada(rawLines, rawBlacklist);
+                });
             }
         }
     }
 
     function ejecutarTiradaProgramada() {
         if (!programData || programData.status !== 'programado') return;
-        calcularYEjecutarTirada(programData.rawLines, programData.rawBlacklist);
+        mostrarAnimacionBombo(function() {
+            calcularYEjecutarTirada(programData.rawLines, programData.rawBlacklist);
+        });
+    }
+
+    function mostrarAnimacionBombo(callbackTirada) {
+        const overlay = document.getElementById('bombo-overlay');
+        overlay.style.display = 'flex';
+
+        setTimeout(() => {
+            overlay.style.display = 'none';
+            if (typeof callbackTirada === 'function') {
+                callbackTirada();
+            }
+        }, 3500);
     }
 
     function calcularYEjecutarTirada(rawLinesStr, rawBlacklistStr) {
