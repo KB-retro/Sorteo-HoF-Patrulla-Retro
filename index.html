@@ -1,0 +1,2302 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sorteo HoF Patrulla Retro</title>
+
+    <!-- Meta etiquetas Open Graph / Redes Sociales -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Patrulla Retro">
+    <meta property="og:title" content="🏆 Sorteo HoF Patrulla Retro">
+    <meta property="og:description" content="Entra para ver la cuenta atrás en directo y el resultado del sorteo de la Patrulla Retro.">
+    <meta property="og:url" content="https://kb-retro.github.io/Sorteo-HoF-Patrulla-Retro/">
+    <meta property="og:image" content="https://kb-retro.github.io/Sorteo-HoF-Patrulla-Retro/logo.png?v=2">
+    <meta property="og:image:secure_url" content="https://kb-retro.github.io/Sorteo-HoF-Patrulla-Retro/logo.png?v=2">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:width" content="600">
+    <meta property="og:image:height" content="600">
+
+    <!-- Twitter Cards -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="🏆 Sorteo HoF Patrulla Retro">
+    <meta name="twitter:description" content="Entra para ver la cuenta atrás en directo y el resultado del sorteo de la Patrulla Retro.">
+    <meta name="twitter:image" content="https://kb-retro.github.io/Sorteo-HoF-Patrulla-Retro/logo.png?v=2">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="32x32" href="logo.png?v=2">
+    <link rel="icon" type="image/png" sizes="16x16" href="logo.png?v=2">
+    <link rel="apple-touch-icon" sizes="180x180" href="logo.png?v=2">
+
+    <!-- Firebase SDKs (incluyendo Auth) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+
+    <style>
+        /* ===== CSS COMPLETO (el mismo que ya tenías) ===== */
+        :root {
+            --card: rgba(30, 41, 59, 0.92);
+            --accent: #6366f1;
+            --accent-hover: #4f46e5;
+            --text: #f8fafc;
+            --muted: #94a3b8;
+            --danger: #ef4444;
+            --danger-hover: #dc2626;
+            --warning: #f59e0b;
+            --warning-hover: #d97706;
+            --success: #22c55e;
+            --success-hover: #16a34a;
+            --gold: #f59e0b;
+            --telegram: #0088cc;
+            --telegram-hover: #0077b3;
+        }
+
+        * { box-sizing: border-box; }
+
+        html, body {
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: #000;
+            color: var(--text);
+            padding: 20px 10px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            position: relative;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-image: url('fondo.png');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            z-index: -1;
+            transform: translateZ(0);
+        }
+
+        .container {
+            max-width: 650px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin: 0 auto;
+        }
+
+        .header-logo {
+            display: block;
+            margin: 0 auto 5px;
+            max-width: 150px;
+            width: 100%;
+            height: auto;
+            cursor: default;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .card {
+            background-color: var(--card);
+            padding: 18px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
+            word-wrap: break-word;
+            overflow: hidden;
+        }
+
+        h1 { font-size: 1.5rem; margin: 0 0 5px; text-align: center; line-height: 1.2; }
+        h2 { font-size: 1.2rem; margin: 0; text-align: center; }
+        h3 { font-size: 1.05rem; margin: 0; text-align: center; }
+        
+        textarea, input[type="text"], input[type="time"], input[type="date"], input[type="month"], select {
+            width: 100%;
+            background: #0f172a;
+            color: var(--text);
+            border: 1px solid #334155;
+            border-radius: 6px;
+            padding: 10px;
+            font-family: inherit;
+            font-size: 0.95rem;
+        }
+
+        textarea { height: 110px; font-family: monospace; resize: vertical; }
+
+        .datetime-group { display: flex; gap: 10px; flex-wrap: wrap; }
+        .datetime-group input { flex: 1 1 130px; }
+
+        button {
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            padding: 12px 18px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            font-size: 0.95rem;
+            transition: background 0.2s, transform 0.1s;
+        }
+
+        button:active { transform: scale(0.98); }
+
+        button.telegram-btn { background-color: var(--telegram); margin-bottom: 15px; line-height: 1.3; }
+        button.telegram-btn:hover { background-color: var(--telegram-hover); }
+
+        button.admin-btn { background-color: var(--success); font-size: 1.05rem; margin-top: 15px; padding: 12px; }
+        button.admin-btn:hover { background-color: var(--success-hover); }
+
+        button.warning-btn { background-color: var(--warning); margin-top: 10px; }
+        button.warning-btn:hover { background-color: var(--warning-hover); }
+
+        button.clear-btn { background-color: var(--danger); margin-top: 10px; }
+        button.clear-btn:hover { background-color: var(--danger-hover); }
+
+        button.delete-item-btn {
+            background-color: var(--danger);
+            color: white;
+            border: none;
+            padding: 5px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            width: auto;
+            white-space: nowrap;
+        }
+        button.delete-item-btn:hover { background-color: var(--danger-hover); }
+
+        .btn-toggle-view {
+            background-color: #334155 !important;
+            color: var(--text) !important;
+            font-size: 0.85rem !important;
+            padding: 8px 12px !important;
+            margin-top: 10px !important;
+            border-radius: 6px !important;
+            display: block !important;
+            text-align: center;
+        }
+        .btn-toggle-view:hover { background-color: #475569 !important; }
+
+        .footer-buttons-group {
+            display: flex;
+            justify-content: center;
+            margin-top: 10px;
+        }
+
+        .footer-btn {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s, transform 0.1s;
+            width: auto;
+            display: inline-block;
+        }
+        .footer-btn:hover { background: linear-gradient(135deg, #4338ca 0%, #6d28d9 100%); }
+        .footer-btn:active { transform: scale(0.98); }
+
+        .top-prob-btn-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 5px;
+        }
+
+        .top-prob-btn {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+            transition: background 0.2s, transform 0.1s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            width: auto;
+        }
+        .top-prob-btn:hover { background: linear-gradient(135deg, #4338ca 0%, #6d28d9 100%); }
+        .top-prob-btn:active { transform: scale(0.98); }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(6px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 15px;
+        }
+
+        .modal-card {
+            background: rgba(30, 41, 59, 0.98);
+            border: 2px solid var(--gold);
+            border-radius: 12px;
+            max-width: 400px;
+            width: 100%;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+            text-align: center;
+            animation: fadeIn 0.3s ease-out;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .credits-list {
+            list-style: none;
+            padding: 0;
+            margin: 15px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            overflow-y: auto;
+            text-align: left;
+            scrollbar-width: none;
+        }
+        .credits-list::-webkit-scrollbar { width: 0px; background: transparent; }
+
+        .credits-item {
+            background: #0f172a;
+            border: 1px solid #334155;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: bold;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .credits-link {
+            color: #60a5fa;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        .credits-link:hover { color: #93c5fd; text-decoration: underline; }
+
+        .winner-box {
+            display: none;
+            text-align: center;
+            background: linear-gradient(135deg, rgba(30, 27, 75, 0.95) 0%, rgba(49, 16, 66, 0.95) 100%);
+            border: 2px solid var(--gold);
+            padding: 20px 15px;
+            border-radius: 12px;
+            animation: fadeIn 0.5s ease-in;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
+            word-wrap: break-word;
+        }
+
+        .winner-title { color: var(--gold); font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px; }
+        .winner-name { font-size: 2rem; font-weight: bold; margin: 10px 0 5px; color: #fff; word-break: break-word; }
+        .winner-ticket { font-size: 1.05rem; font-weight: bold; color: var(--muted); word-break: break-word; margin-bottom: 5px; }
+
+        .repeat-winner-banner {
+            background: rgba(245, 158, 11, 0.2);
+            border: 2px solid var(--gold);
+            color: #fef08a;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 12px 0;
+            font-size: 0.9rem;
+            font-weight: bold;
+            line-height: 1.4;
+            text-align: center;
+        }
+
+        .arcade-box {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--accent);
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 15px;
+            text-align: left;
+        }
+
+        .arcade-title { font-size: 0.95rem; font-weight: bold; color: var(--gold); margin-bottom: 8px; text-align: center; }
+
+        .search-container {
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid #334155;
+            border-radius: 8px;
+            position: relative;
+        }
+
+        .search-input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .search-input-wrapper input { padding-right: 45px; }
+
+        .mic-btn {
+            position: absolute;
+            right: 5px;
+            background: transparent;
+            border: none;
+            color: var(--muted);
+            cursor: pointer;
+            padding: 6px 10px;
+            font-size: 1.1rem;
+            width: auto;
+            border-radius: 4px;
+            transition: color 0.2s, background 0.2s;
+        }
+        .mic-btn:hover { color: var(--text); background: rgba(255, 255, 255, 0.1); }
+        .mic-btn.listening { color: var(--danger); animation: pulseMic 1.2s infinite; }
+
+        @keyframes pulseMic {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.15); opacity: 0.7; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .custom-suggestions-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #0f172a;
+            border: 1px solid var(--accent);
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 99;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+            display: none;
+            scrollbar-width: none;
+        }
+        .custom-suggestions-dropdown::-webkit-scrollbar { width: 0px; background: transparent; }
+
+        .suggestion-item {
+            padding: 10px 12px;
+            font-size: 0.9rem;
+            border-bottom: 1px solid #1e293b;
+            cursor: pointer;
+            text-align: left;
+            transition: background 0.15s;
+        }
+        .suggestion-item:hover, .suggestion-item:active { background: rgba(99, 102, 241, 0.25); color: #fff; }
+        .suggestion-item .suggestion-date { display: block; font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+
+        .search-result-box {
+            margin-top: 8px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            display: none;
+            text-align: center;
+        }
+        .result-found { background: rgba(239, 68, 68, 0.2); border: 1px solid var(--danger); color: #fca5a5; }
+        .result-not-found { background: rgba(34, 197, 94, 0.2); border: 1px solid var(--success); color: #86efac; }
+
+        .log-box {
+            background: #090d16;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            padding: 10px;
+            max-height: 120px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 0.8rem;
+            color: var(--muted);
+            margin-top: 12px;
+            text-align: left;
+            word-break: break-all;
+            scrollbar-width: none;
+        }
+        .log-box::-webkit-scrollbar { width: 0px; background: transparent; }
+
+        .custom-list { list-style: none; padding: 0; margin: 0; }
+
+        .custom-item {
+            background: #0f172a;
+            border: 1px solid #334155;
+            padding: 8px 12px;
+            border-radius: 6px;
+            margin-bottom: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+        }
+        .custom-item-text { flex: 1 1 auto; min-width: 0; word-break: break-word; font-size: 0.9rem; }
+
+        .item-badge {
+            background: var(--accent);
+            color: white;
+            padding: 3px 7px;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        .admin-section {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid #334155;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+
+        .admin-panel {
+            border-top: 2px dashed #334155;
+            margin-top: 15px;
+            padding-top: 15px;
+        }
+
+        .hidden { display: none !important; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    
+        /* ===== TRAGAPERRAS RETRO 8-BIT ===== */
+        #slotMachineCard {
+            display: none;
+            text-align: center;
+            margin: 20px auto;
+            padding: 18px 14px;
+            max-width: 560px;
+            background: #111827;
+            border: 4px solid #f59e0b;
+            box-shadow: 0 0 0 4px #312e81, 0 8px 30px rgba(0,0,0,.7);
+            image-rendering: pixelated;
+            border-radius: 22px;
+            overflow: hidden;
+        }
+        #slotMachineCard.active { display: block; }
+
+        .slot-marquee {
+            color: #fde68a;
+            font-weight: 900;
+            font-size: 1.15rem;
+            letter-spacing: 2px;
+            text-shadow: 2px 2px 0 #7c2d12;
+            margin-bottom: 14px;
+            border-radius: 12px;
+        }
+
+        .slot-cabinet {
+            background: linear-gradient(#4c1d95, #1e1b4b);
+            border: 4px solid #a78bfa;
+            padding: 14px 10px 12px;
+            box-shadow: inset 0 0 0 4px #171717;
+            border-radius: 18px;
+            overflow: hidden;
+        }
+
+        .slot-display {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px;
+            background: #050505;
+            border: 4px solid #fbbf24;
+            box-shadow: inset 0 0 18px rgba(255,255,255,.08);
+            border-radius: 14px;
+            overflow: hidden;
+        }
+
+        .slot-reel {
+            width: 31%;
+            max-width: 120px;
+            height: 82px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            background: #f8fafc;
+            color: #111827;
+            border: 4px solid #64748b;
+            box-shadow: inset 0 0 0 3px #cbd5e1;
+            font-family: monospace;
+            font-size: 2.5rem;
+            font-weight: 900;
+            border-radius: 10px;
+        }
+        .slot-reel.spinning {
+            animation: slotFlicker .075s steps(2,end) infinite;
+        }
+        @keyframes slotFlicker {
+            0% { transform: translateY(-2px); }
+            50% { transform: translateY(2px); }
+            100% { transform: translateY(-1px); }
+        }
+
+        .slot-status {
+            margin-top: 12px;
+            color: #fbbf24;
+            text-shadow: 0 0 8px rgba(251,191,36,.35);
+            font-family: monospace;
+            font-weight: bold;
+            font-size: .95rem;
+            min-height: 1.25em;
+        }
+
+        .slot-lights {
+            display: flex;
+            justify-content: center;
+            gap: 7px;
+            margin-top: 10px;
+        }
+        .slot-light {
+            width: 10px;
+            height: 10px;
+            background: #fbbf24;
+            box-shadow: 0 0 8px #fbbf24;
+            animation: blink8 .5s steps(2,end) infinite;
+            border-radius: 50%;
+        }
+        .slot-light:nth-child(even) { animation-delay: .25s; }
+        @keyframes blink8 { 50% { opacity: .25; } }
+
+        .slot-win {
+            animation: slotWin .8s steps(2,end) infinite;
+        }
+        @keyframes slotWin {
+            50% { filter: brightness(1.7); transform: scale(1.015); }
+        }
+
+        @media(max-width:480px) {
+            .slot-reel { height: 68px; font-size: 2rem; }
+        }
+
+        /* ===== SELECTOR DE HORA RETRO ===== */
+        .retro-time-picker { position:relative; width:100%; }
+        .retro-time-display {
+            width:100%; min-height:44px; padding:10px 14px;
+            display:flex; align-items:center; justify-content:space-between;
+            box-sizing:border-box; border:1px solid rgba(139,92,246,.55);
+            border-radius:12px; background:rgba(15,23,42,.85); color:#f8fafc;
+            font:inherit; cursor:pointer;
+        }
+        .retro-time-display:hover { border-color:#a78bfa; }
+        .retro-time-chevron { opacity:.7; font-size:1.1rem; }
+        .retro-time-panel {
+            position:absolute; z-index:2000; left:0; right:0; top:calc(100% + 8px);
+            padding:14px; box-sizing:border-box; border:1px solid rgba(139,92,246,.55);
+            border-radius:16px; background:#111827; box-shadow:0 16px 40px rgba(0,0,0,.45);
+        }
+        .retro-time-panel.hidden { display:none; }
+        .retro-time-title { text-align:center; font-weight:800; color:#c4b5fd; margin-bottom:10px; }
+        .retro-time-wheels { display:flex; align-items:center; justify-content:center; gap:8px; }
+        .retro-time-wheel-wrap { width:110px; }
+        .retro-time-wheel-label { text-align:center; font-size:.72rem; opacity:.7; margin-bottom:5px; }
+        .retro-time-wheel {
+            height:174px; overflow-y:auto; scroll-snap-type:y mandatory;
+            border:1px solid rgba(139,92,246,.45); border-radius:12px;
+            background:#020617; scrollbar-width:none;
+        }
+        .retro-time-wheel::-webkit-scrollbar { display:none; }
+        .retro-time-option {
+            height:58px; display:flex; align-items:center; justify-content:center;
+            scroll-snap-align:center; font-size:1.35rem; font-weight:800;
+            color:#64748b; cursor:pointer; user-select:none;
+        }
+        .retro-time-option.selected { color:#f8fafc; background:rgba(139,92,246,.18); }
+        .retro-time-colon { font-size:1.6rem; font-weight:900; padding-top:20px; }
+        .retro-time-help { text-align:center; font-size:.72rem; opacity:.6; margin:9px 0; }
+        .retro-time-confirm {
+            width:100%; border:0; border-radius:10px; padding:9px 12px;
+            background:#7c3aed; color:#fff; font-weight:800; cursor:pointer;
+        }
+        .retro-time-confirm:hover { background:#8b5cf6; }
+        .retro-time-cancel {
+            width:100%; border:0; border-radius:10px; padding:9px 12px;
+            background:#475569; color:#fff; font-weight:800; cursor:pointer;
+            margin-top: 8px;
+        }
+        .retro-time-cancel:hover { background:#334155; }
+        @media (max-width:480px) { .retro-time-wheel-wrap { width:90px; } }
+
+        /* ===== SELECTOR DE FECHA RETRO ===== */
+        .retro-date-picker{position:relative;width:100%}
+        .retro-date-display{width:100%;min-height:44px;padding:10px 14px;box-sizing:border-box;display:flex;align-items:center;gap:10px;border:1px solid rgba(139,92,246,.55);border-radius:12px;background:rgba(15,23,42,.85);color:#f8fafc;font:inherit;cursor:pointer;text-align:left}
+        .retro-date-display span:last-child{margin-left:auto;opacity:.7}
+        .retro-date-panel{position:absolute;z-index:2100;left:0;right:0;top:calc(100% + 8px);padding:14px;border:1px solid rgba(139,92,246,.55);border-radius:16px;background:#111827;box-shadow:0 16px 40px rgba(0,0,0,.45)}
+        .retro-date-panel.hidden{display:none}
+        .retro-date-head{display:grid;grid-template-columns:40px 1fr 40px;gap:6px;align-items:center;margin-bottom:10px}
+        .retro-date-head strong{text-align:center;color:#c4b5fd;text-transform:capitalize}
+        .retro-date-head button{border:1px solid rgba(139,92,246,.35);border-radius:9px;background:#1e293b;color:#fff;cursor:pointer;min-height:34px}
+        .retro-date-weekdays,.retro-date-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+        .retro-date-weekdays{margin-bottom:5px}
+        .retro-date-weekdays span{text-align:center;font-size:.72rem;opacity:.6}
+        .retro-date-cell{min-height:36px;border:0;border-radius:9px;background:transparent;color:#e2e8f0;cursor:pointer;font:inherit;font-weight:700}
+        .retro-date-cell:hover{background:rgba(139,92,246,.22)}
+        .retro-date-cell.other-month{opacity:.25}
+        .retro-date-cell.today{outline:1px solid rgba(167,139,250,.7)}
+        .retro-date-cell.selected{background:#7c3aed;color:#fff}
+        .retro-date-confirm{width:100%;margin-top:7px;padding:9px 12px;border:0;border-radius:10px;background:#7c3aed;color:#fff;font-weight:800;cursor:pointer}
+        .retro-date-confirm:hover{background:#8b5cf6}
+        .retro-date-cancel{width:100%;margin-top:7px;padding:9px 12px;border:0;border-radius:10px;background:#475569;color:#fff;font-weight:800;cursor:pointer}
+        .retro-date-cancel:hover{background:#334155}
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <img src="logo.png?v=2" alt="Logo Patrulla Retro" class="header-logo" onclick="contarClicksAdmin()">
+    <h1 id="mainTitle">🏆 Sorteo HoF Patrulla Retro</h1>
+
+    <!-- BOTÓN SUPERIOR -->
+    <div class="top-prob-btn-container">
+        <button class="top-prob-btn" onclick="abrirProbabilidadesModal()">📊 Lista de Participantes</button>
+    </div>
+
+    <!-- TRAGAPERRAS DEL SORTEO -->
+    <div id="slotMachineCard" aria-live="polite">
+        <div class="slot-marquee">★ 🕹️ SORTEO EN DIRECTO 🕹️ ★</div>
+        <div class="slot-cabinet">
+            <div class="slot-display">
+                <div id="slotReel1" class="slot-reel">0</div>
+                <div id="slotReel2" class="slot-reel">0</div>
+                <div id="slotReel3" class="slot-reel">0</div>
+            </div>
+            <div class="slot-lights">
+                <span class="slot-light"></span><span class="slot-light"></span><span class="slot-light"></span><span class="slot-light"></span>
+                <span class="slot-light"></span><span class="slot-light"></span><span class="slot-light"></span>
+            </div>
+            <div id="slotStatus" class="slot-status">PREPARANDO LA TIRADA...</div>
+        </div>
+    </div>
+
+    <!-- PANTALLA GANADOR -->
+    <div id="winnerCard" class="winner-box">
+        <div class="winner-title">🎉 ¡Tenemos Ganador Oficial! 🎉</div>
+        <div id="winnerName" class="winner-name">Cargando...</div>
+        <div id="winnerTicket" class="winner-ticket"></div>
+
+        <div id="repeatNotice" class="repeat-winner-banner hidden">
+            🚨 <b>¡Campeón!</b> ¡Teniendo ya la camiseta en el armario, es hora de repartir el botín!<br>Elige a un compañero de la lista de este mes para cederle el premio. 🚨
+        </div>
+
+        <div class="arcade-box">
+            <div class="arcade-title">🕹️ Eligen el Arcade del Mes (5 Usuarios):</div>
+            <ul id="arcadeList" class="custom-list"></ul>
+
+            <div class="search-container">
+                <label style="font-size: 0.8rem; color: var(--gold); display: block; margin-bottom: 4px; text-align: center;">
+                    🔍 <b>Comprobar si un juego ya ha sido elegido:</b>
+                </label>
+                <div class="search-input-wrapper">
+                    <input type="text" id="gameSearchInput" placeholder="Escribe al menos 4 caracteres o usa el micro..." oninput="comprobarJuegoEnSheets()" autocomplete="off">
+                    <button type="button" id="micBtn" class="mic-btn" onclick="activarBusquedaVoz()" title="Búsqueda por voz">🎤</button>
+                    <div id="customSuggestions" class="custom-suggestions-dropdown"></div>
+                </div>
+                <div id="searchResult" class="search-result-box"></div>
+                <div style="text-align: center; margin-top: 8px;">
+                    <a href="https://docs.google.com/spreadsheets/d/1JApebwPe9J_fbS_hnQBHHElSlELlWiAjxdvDJQ8yw2E/edit?gid=0#gid=0" target="_blank" rel="noopener noreferrer" style="color: var(--muted); text-decoration: underline; font-size: 0.75rem;">
+                        📄 Abrir hoja de cálculo completa ↗️
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="log-box" id="publicLog"></div>
+    </div>
+
+    <!-- MENSAJE ESPERA -->
+    <div id="waitingCard" class="card hidden" style="text-align: center;">
+        <h2>⏳ El sorteo aún no se ha realizado</h2>
+        <p style="color: var(--muted); font-size: 0.85rem;">El administrador realizará o programará la tirada en breve. Esta página se actualizará automáticamente.</p>
+    </div>
+
+    <!-- LISTA DE PREMIADOS -->
+    <div id="winnersCountCard" class="card hidden">
+        <h3>👾 Hall of Fame 👾</h3>
+        <ul id="winnersCountList" class="custom-list"></ul>
+        <button id="btnToggleWinners" class="btn-toggle-view hidden" onclick="toggleWinnersView()">⬇️ Ver todos los usuarios premiados</button>
+    </div>
+
+    <!-- HISTORIAL DE SORTEOS -->
+    <div id="historyCard" class="card hidden">
+        <h3>📜 Historial de Ganadores Anteriores</h3>
+        <ul id="historyList" class="custom-list"></ul>
+        <button id="btnToggleHistory" class="btn-toggle-view hidden" onclick="toggleHistoryView()">⬇️ Ver todo el historial</button>
+    </div>
+
+    <!-- PANEL ADMIN -->
+    <div id="adminPanel" class="card admin-panel hidden">
+        <h2>🛠️ Panel de Control (Administrador)</h2>
+
+        <div class="admin-section">
+            <label><b>📅 Mes correspondiente al Sorteo:</b></label>
+            <select id="monthSelect" style="margin-top: 8px;">
+                <option value="">-- Selecciona el mes --</option>
+                <option value="Enero">Enero</option>
+                <option value="Febrero">Febrero</option>
+                <option value="Marzo">Marzo</option>
+                <option value="Abril">Abril</option>
+                <option value="Mayo">Mayo</option>
+                <option value="Junio">Junio</option>
+                <option value="Julio">Julio</option>
+                <option value="Agosto">Agosto</option>
+                <option value="Septiembre">Septiembre</option>
+                <option value="Octubre">Octubre</option>
+                <option value="Noviembre">Noviembre</option>
+                <option value="Diciembre">Diciembre</option>
+            </select>
+            <button style="margin-top: 10px; background-color: var(--accent);" onclick="guardarMesSorteo()">💾 GUARDAR MES DEL SORTEO</button>
+        </div>
+
+        <div class="admin-section">
+            <button class="telegram-btn" onclick="importarDesdeTelegram()">📲 CARGAR ÚLTIMA LISTA DE TELEGRAM</button>
+
+            <label><b>1. Participantes:</b></label>
+            <textarea id="listInput" placeholder="1-@M_1_c_h_3_l&#10;2-@cerebrosolido" oninput="calcularYMostrarProbabilidades()"></textarea>
+
+            <br><br>
+            <label><b>2. Excluidos / Lista Negra (1 por línea):</b></label>
+            <textarea id="blacklistInput" placeholder="@usuario_excluido1&#10;@usuario_excluido2"></textarea>
+
+            <br><br>
+            <label><b>3. Fecha y Hora Exacta del Sorteo (Opcional):</b></label>
+            <div class="datetime-group" style="margin-top: 6px;">
+                <input type="hidden" id="drawDateInput" value="">
+                <div class="retro-date-picker" id="retroDatePicker">
+                    <button type="button" class="retro-date-display" id="retroDateDisplay">
+                        <span>📅</span>
+                        <span id="retroDateDisplayValue">--/--/----</span>
+                        <span>▾</span>
+                    </button>
+                    <div class="retro-date-panel hidden" id="retroDatePanel">
+                        <div class="retro-date-head">
+                            <button type="button" id="retroDatePrev">‹</button>
+                            <strong id="retroDateMonthLabel"></strong>
+                            <button type="button" id="retroDateNext">›</button>
+                        </div>
+                        <div class="retro-date-weekdays">
+                            <span>L</span><span>M</span><span>X</span><span>J</span><span>V</span><span>S</span><span>D</span>
+                        </div>
+                        <div class="retro-date-grid" id="retroDateGrid"></div>
+                        <button type="button" class="retro-date-confirm" id="retroDateConfirm">CONFIRMAR FECHA</button>
+                        <button type="button" class="retro-date-cancel" id="retroDateCancel">CANCELAR</button>
+                    </div>
+                </div>
+
+                <input type="hidden" id="drawTimeInput" value="">
+                <div class="retro-time-picker" id="retroTimePicker">
+                    <button type="button" class="retro-time-display" id="retroTimeDisplay" aria-haspopup="dialog" aria-expanded="false">
+                        <span id="retroTimeDisplayValue">--:--</span>
+                        <span class="retro-time-chevron">▾</span>
+                    </button>
+                    <div class="retro-time-panel hidden" id="retroTimePanel">
+                        <div class="retro-time-title">SELECCIONA LA HORA</div>
+                        <div class="retro-time-wheels">
+                            <div class="retro-time-wheel-wrap">
+                                <div class="retro-time-wheel-label">HORA</div>
+                                <div class="retro-time-wheel" id="retroHourWheel" tabindex="0" aria-label="Hora"></div>
+                            </div>
+                            <div class="retro-time-colon">:</div>
+                            <div class="retro-time-wheel-wrap">
+                                <div class="retro-time-wheel-label">MIN</div>
+                                <div class="retro-time-wheel" id="retroMinuteWheel" tabindex="0" aria-label="Minutos"></div>
+                            </div>
+                        </div>
+                        <div class="retro-time-help">Rueda del ratón o ▲ ▼ · 00–23 / 00–59</div>
+                        <button type="button" class="retro-time-confirm" id="retroTimeConfirm">CONFIRMAR HORA</button>
+                        <button type="button" class="retro-time-cancel" id="retroTimeCancel">CANCELAR</button>
+                    </div>
+                </div>
+            </div>
+
+            <button class="admin-btn" onclick="programarOEjecutarSorteo()">🎲 GUARDAR Y PROGRAMAR SORTEO</button>
+        </div>
+
+        <div class="admin-section">
+            <label><b>➕ Añadir Ganador(es) Anterior(es) al Historial:</b></label>
+            <p style="font-size: 0.8rem; color: var(--muted); margin: 4px 0 8px 0;">
+                Introduce los usuarios y selecciona el mes y año en el que obtuvieron el premio.
+            </p>
+            <textarea id="manualUserAdmin" placeholder="@usuario1&#10;@usuario2, @usuario3" style="height: 60px;"></textarea>
+            
+            <label style="margin-top: 8px; display: block; font-size: 0.85rem;"><b>📅 Mes y Año del Premio (opcional):</b></label>
+            <input type="month" id="manualWinnerMonth" style="margin-top: 4px; margin-bottom: 8px;">
+
+            <button style="background-color: #0284c7;" onclick="agregarGanadorManual()">➕ AÑADIR AL HISTORIAL</button>
+        </div>
+
+        <div class="admin-section" style="border: 1px solid var(--accent); background: rgba(99, 102, 241, 0.08);">
+            <label><b>💾 Copias de Seguridad y Restauración:</b></label>
+            <p style="font-size: 0.8rem; color: var(--muted); margin: 4px 0 10px 0;">
+                Puedes guardar un punto de restauración en Firebase antes de hacer sorteos, o descargarte una copia física a tu PC.
+            </p>
+
+            <button style="background-color: #0284c7; margin-bottom: 10px;" onclick="crearBackupManual()">📸 CREAR COPIA DE SEGURIDAD AHORA</button>
+
+            <label style="font-size: 0.85rem; margin-top: 8px; display: block;"><b>📅 Seleccionar Copia para Restaurar o Borrar:</b></label>
+            <select id="backupSelect" style="margin-top: 4px; margin-bottom: 8px;">
+                <option value="">-- Cargando copias disponibles... --</option>
+            </select>
+
+            <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+                <button style="flex: 1; background-color: var(--warning); color: black;" onclick="restaurarBackupSeleccionado()">🔄 RESTAURAR COPIA</button>
+                <button style="flex: 1; background-color: var(--danger); color: white;" onclick="borrarBackupSeleccionado()">🗑️ BORRAR COPIA</button>
+            </div>
+
+            <div style="border-top: 1px dashed #334155; padding-top: 10px; display: flex; gap: 8px; flex-wrap: wrap;">
+                <button style="flex: 1; background: #334155; font-size: 0.8rem; padding: 8px;" onclick="descargarBackupJSON()">📥 Descargar JSON PC</button>
+                <button style="flex: 1; background: #334155; font-size: 0.8rem; padding: 8px;" onclick="document.getElementById('jsonFileInput').click()">📤 Cargar JSON PC</button>
+                <input type="file" id="jsonFileInput" accept=".json" class="hidden" onchange="restaurarDesdeJSON(event)">
+            </div>
+        </div>
+
+        <button class="warning-btn" onclick="borrarUltimoSorteo()">↩️ BORRAR ÚLTIMO SORTEO</button>
+        <button class="clear-btn" onclick="borrarTodo()">🧹 BORRAR TODO</button>
+    </div>
+
+    <div class="footer-buttons-group">
+        <button class="footer-btn" onclick="abrirCreditos()">💳 Créditos</button>
+    </div>
+</div>
+
+<!-- VENTANA MODAL CRÉDITOS -->
+<div id="creditsModal" class="modal-overlay hidden">
+    <div class="modal-card">
+        <h2 style="color: var(--gold); margin-top: 0; margin-bottom: 15px;">Créditos</h2>
+        <ul class="credits-list">
+            <li class="credits-item">
+                <a href="https://elreclamo.es/" target="_blank" rel="noopener noreferrer" class="credits-link">
+                    👕 @elReclamo.es ↗️
+                </a>
+            </li>
+            <li class="credits-item">💻 @M_1_c_h_3_l</li>
+            <li class="credits-item">🕹️ @AlexisToretto</li>
+            <li class="credits-item">🧠 @cerebrosolido</li>
+        </ul>
+        <button onclick="cerrarCreditos()" style="background-color: var(--accent); margin-top: 10px;">Cerrar</button>
+    </div>
+</div>
+
+<!-- VENTANA MODAL PARTICIPANTES -->
+<div id="probabilitiesModal" class="modal-overlay hidden">
+    <div class="modal-card">
+        <h2 style="color: var(--gold); margin-top: 0; margin-bottom: 10px;">📊 Lista de Participantes</h2>
+        <ul id="participantsListModal" class="credits-list" style="margin: 5px 0 15px 0; max-height: 50vh;">
+            <li class="custom-item" style="justify-content: center; color: var(--muted);">Cargando participantes...</li>
+        </ul>
+        <button onclick="cerrarProbabilidadesModal()" style="background-color: var(--accent); margin-top: 5px;">Cerrar</button>
+    </div>
+</div>
+
+<!-- ===== NUEVO MODAL DE LOGIN ===== -->
+<div id="loginModal" class="modal-overlay hidden">
+    <div class="modal-card" style="max-width: 350px;">
+        <h2 style="color: var(--gold); margin-top: 0;">🔐 Acceso Administrador</h2>
+        <p style="color: var(--muted); font-size: 0.85rem;">Introduce tus credenciales de Firebase</p>
+        <input type="email" id="loginEmail" placeholder="Correo electrónico" style="width:100%; margin-bottom:10px; background:#0f172a; color:white; border:1px solid #334155; border-radius:6px; padding:10px;">
+        <input type="password" id="loginPassword" placeholder="Contraseña" style="width:100%; margin-bottom:15px; background:#0f172a; color:white; border:1px solid #334155; border-radius:6px; padding:10px;">
+        <button id="loginBtn" style="background-color: var(--accent);">INICIAR SESIÓN</button>
+        <button id="logoutBtn" style="background-color: var(--danger); margin-top: 10px; display: none;">CERRAR SESIÓN</button>
+        <div id="loginError" style="color: #ef4444; font-size: 0.85rem; margin-top: 8px; display: none;"></div>
+    </div>
+</div>
+
+
+<script>
+    // ============================================================
+    //  CONFIGURACIÓN DE FIREBASE (NO CAMBIES LA URL)
+    // ============================================================
+    const firebaseConfig = {
+        databaseURL: "https://sorteo-hof-default-rtdb.europe-west1.firebasedatabase.app"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const auth = firebase.auth();
+
+    // ============================================================
+    //  VARIABLES GLOBALES
+    // ============================================================
+    let actualGanadorUser = "";
+    let isWinnersExpanded = false;
+    let isHistoryExpanded = false;
+    let rawHistoryItems = [];
+    let rawWinnersCount = [];
+    let isAdminLoggedIn = false;  // se actualiza con onAuthStateChanged
+    let cacheJuegosSheets = null;
+    let ultimaCargaSheets = 0;
+
+    let timerInterval = null;
+    let programData = null;
+    let slotAnimationInterval = null;
+    let slotAnimationActive = false;
+    let slotFinalizing = false;
+    let slotRevealInterval = null;
+    const SLOT_REVEAL_MS = 30000;
+
+    let adminClicks = 0;
+    let adminClickTimer = null;
+    const nombresMeses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+
+    const MI_CLOUDFLARE_WORKER = "https://dawn-band-8bc8.microbiops.workers.dev";
+    const GOOGLE_SHEETS_CSV_URL = "https://docs.google.com/spreadsheets/d/1JApebwPe9J_fbS_hnQBHHElSlELlWiAjxdvDJQ8yw2E/export?format=csv";
+
+    // ============================================================
+    //  FUNCIONES DE FIREBASE Y PARTICIPANTES
+    // ============================================================
+    db.ref('sorteo_participantes_raw').on('value', function(snapshot) {
+        const val = snapshot.val();
+        const textarea = document.getElementById('listInput');
+        if (val !== null && textarea) {
+            textarea.value = val;
+            calcularYMostrarProbabilidades();
+        }
+    });
+
+    function guardarParticipantesFirebase() {
+        const val = document.getElementById('listInput').value;
+        db.ref('sorteo_participantes_raw').set(val);
+    }
+
+    document.getElementById('listInput').addEventListener('input', function() {
+        calcularYMostrarProbabilidades();
+        db.ref('sorteo_participantes_raw').set(this.value);
+    });
+
+    window.addEventListener('DOMContentLoaded', function() {
+        importarDesdeTelegram(false);
+        initRetroDatePicker();
+        initRetroTimePicker();
+        // El estado de autenticación se maneja con onAuthStateChanged
+    });
+
+    // ============================================================
+    //  MODALES (Créditos, Participantes y Login)
+    // ============================================================
+    function abrirCreditos() {
+        document.getElementById('creditsModal').classList.remove('hidden');
+    }
+    function cerrarCreditos() {
+        document.getElementById('creditsModal').classList.add('hidden');
+    }
+    function abrirProbabilidadesModal() {
+        calcularYMostrarProbabilidades();
+        document.getElementById('probabilitiesModal').classList.remove('hidden');
+    }
+    function cerrarProbabilidadesModal() {
+        document.getElementById('probabilitiesModal').classList.add('hidden');
+    }
+
+    window.addEventListener('click', function(event) {
+        const credModal = document.getElementById('creditsModal');
+        const probModal = document.getElementById('probabilitiesModal');
+        const loginModal = document.getElementById('loginModal');
+        if (event.target === credModal) cerrarCreditos();
+        if (event.target === probModal) cerrarProbabilidadesModal();
+        if (event.target === loginModal) loginModal.classList.add('hidden');
+    });
+
+    function calcularYMostrarProbabilidades() {
+        const rawLinesStr = document.getElementById('listInput').value.trim();
+        const modalListEl = document.getElementById('participantsListModal');
+        if (!modalListEl) return;
+        modalListEl.innerHTML = '';
+        if (!rawLinesStr) {
+            modalListEl.innerHTML = '<li class="custom-item" style="justify-content: center; color: var(--muted);">No hay participantes cargados actualmente.</li>';
+            return;
+        }
+        const rawLines = rawLinesStr.split('\n');
+        let boletosPorUsuario = {};
+        let totalBoletosValidos = 0;
+        rawLines.forEach(function(line) {
+            let lineaLimpia = line.trim();
+            if (!lineaLimpia) return;
+            const matchUser = lineaLimpia.match(/@[\w_]+/);
+            if (matchUser) {
+                let user = matchUser[0];
+                let numBoletoMatch = lineaLimpia.match(/^(\d+)/);
+                let numeroBoleto = numBoletoMatch ? numBoletoMatch[1] : (boletosPorUsuario[user] ? boletosPorUsuario[user].length + 1 : 1);
+                if (!boletosPorUsuario[user]) boletosPorUsuario[user] = [];
+                boletosPorUsuario[user].push(numeroBoleto);
+                totalBoletosValidos++;
+            }
+        });
+        if (totalBoletosValidos === 0) {
+            modalListEl.innerHTML = '<li class="custom-item" style="justify-content: center; color: var(--muted);">No se encontraron participantes válidos.</li>';
+            return;
+        }
+        let listaParticipantes = Object.keys(boletosPorUsuario).map(user => {
+            let listaB = boletosPorUsuario[user];
+            let probabilidad = (listaB.length / totalBoletosValidos) * 100;
+            return { user: user, boletos: listaB, count: listaB.length, prob: probabilidad };
+        });
+        listaParticipantes.sort((a, b) => b.count - a.count);
+        listaParticipantes.forEach(p => {
+            const li = document.createElement('li');
+            li.className = 'custom-item';
+            let porcentajeStr = p.prob.toFixed(3) + "%";
+            li.innerHTML = `<div class="custom-item-text">
+                                <strong>${p.user}</strong> <span style="font-size:0.75rem; color:var(--muted);">(${p.count} ${p.count === 1 ? 'boleto' : 'boletos'})</span>
+                                <div style="font-size: 0.75rem; color: #aaa; margin-top: 2px; word-break: break-all;">Números: ${p.boletos.join(', ')}</div>
+                           </div>` +
+                           `<span style="color: var(--gold); font-family: monospace; font-size: 0.9rem; white-space: nowrap;">${porcentajeStr}</span>`;
+            modalListEl.appendChild(li);
+        });
+    }
+
+    function contarClicksAdmin() {
+        adminClicks++;
+        clearTimeout(adminClickTimer);
+        if (adminClicks >= 3) {
+            adminClicks = 0;
+            toggleAdminPanel();
+        } else {
+            adminClickTimer = setTimeout(() => { adminClicks = 0; }, 800);
+        }
+    }
+
+    // ============================================================
+    //  NUEVO: TOGGLE ADMIN CON FIREBASE AUTH
+    // ============================================================
+    function toggleAdminPanel() {
+        if (isAdminLoggedIn) {
+            // Si ya está autenticado, mostrar/ocultar el panel
+            document.getElementById('adminPanel').classList.toggle('hidden');
+        } else {
+            // Si no, mostrar el modal de login
+            document.getElementById('loginModal').classList.remove('hidden');
+            document.getElementById('loginEmail').focus();
+        }
+    }
+
+    // ============================================================
+    //  MANEJAR LOGIN / LOGOUT
+    // ============================================================
+    document.getElementById('loginBtn').addEventListener('click', function() {
+        const email = document.getElementById('loginEmail').value.trim();
+        const password = document.getElementById('loginPassword').value.trim();
+        const errorDiv = document.getElementById('loginError');
+
+        if (!email || !password) {
+            errorDiv.textContent = "Por favor, completa ambos campos.";
+            errorDiv.style.display = 'block';
+            return;
+        }
+
+        errorDiv.style.display = 'none';
+        this.textContent = "⏳ Iniciando sesión...";
+        this.disabled = true;
+
+        auth.signInWithEmailAndPassword(email, password)
+            .then(() => {
+                this.textContent = "INICIAR SESIÓN";
+                this.disabled = false;
+                document.getElementById('loginModal').classList.add('hidden');
+            })
+            .catch((error) => {
+                this.textContent = "INICIAR SESIÓN";
+                this.disabled = false;
+                errorDiv.textContent = "❌ " + error.message;
+                errorDiv.style.display = 'block';
+            });
+    });
+
+    // Observador de autenticación
+    auth.onAuthStateChanged((user) => {
+        const loginModal = document.getElementById('loginModal');
+        const adminPanel = document.getElementById('adminPanel');
+        const logoutBtn = document.getElementById('logoutBtn');
+
+        if (user) {
+            isAdminLoggedIn = true;
+            loginModal.classList.add('hidden');
+            adminPanel.classList.remove('hidden');
+            logoutBtn.style.display = 'block';
+            // Cargar datos de admin
+            importarDesdeTelegram(false);
+            renderHistoryList();
+            cargarListaBackups();
+        } else {
+            isAdminLoggedIn = false;
+            adminPanel.classList.add('hidden');
+            logoutBtn.style.display = 'none';
+        }
+    });
+
+    document.getElementById('logoutBtn').addEventListener('click', function() {
+        auth.signOut().then(() => {
+            document.getElementById('adminPanel').classList.add('hidden');
+            isAdminLoggedIn = false;
+        });
+    });
+
+    // ============================================================
+    //  RESTO DE FUNCIONES (SORTEO, RECREATIVA, GOOGLE SHEETS, BACKUP, etc.)
+    //  Todas ellas están exactamente como en tu versión anterior.
+    //  Solo se ha eliminado la antigua función toggleAdminPanel con btoa.
+    // ============================================================
+
+    // (Aquí pega TODAS las funciones que ya tenías: 
+    //  - obtenerIndiceCriptografico
+    //  - parseCSVLine, normalizarTexto, obtenerJuegosDesdeSheets, comprobarJuegoEnSheets, activarBusquedaVoz, comprobarJuegoInmediato
+    //  - crearBackupManual, realizarCopiaEnFirebase, cargarListaBackups, restaurarBackupSeleccionado, borrarBackupSeleccionado, descargarBackupJSON, restaurarDesdeJSON
+    //  - importarDesdeTelegram
+    //  - guardarMesSorteo, agregarGanadorManual, borrarGanadorEspecifico, verificarRepetidoVisual
+    //  - mostrarRecreativa, detenerRodillos, iniciarRodillos, actualizarEstadoRecreativa, iniciarRelojCuentaAtras, finalizarTragaperras, detenerTragaperras, obtenerDigitosPremiados
+    //  - mostrarGanador, ejecutarTiradaProgramada, calcularYEjecutarTirada
+    //  - renderWinnersList, renderHistoryList, toggleWinnersView, toggleHistoryView
+    //  - borrarUltimoSorteo, borrarTodo
+    //  - programarOEjecutarSorteo
+    //  - initRetroDatePicker, initRetroTimePicker
+    // )
+
+    // Por brevedad, te pongo aquí un enlace simbólico a las funciones que ya tienes en tu código.
+    // Debes copiar y pegar todo el bloque de funciones desde tu versión anterior (sin la antigua toggleAdminPanel).
+
+    // ============================================================
+    //  FUNCIÓN PARA OBTENER ÍNDICE CRIPTOGRÁFICO
+    // ============================================================
+    function obtenerIndiceCriptografico(max) {
+        if (max <= 0) return 0;
+        const arrayBuffer = new Uint32Array(1);
+        const maxUint32 = 0xFFFFFFFF;
+        const limiteEquitativo = maxUint32 - (maxUint32 % max);
+        let valorRandom;
+        do {
+            window.crypto.getRandomValues(arrayBuffer);
+            valorRandom = arrayBuffer[0];
+        } while (valorRandom >= limiteEquitativo);
+        return valorRandom % max;
+    }
+
+    // ============================================================
+    //  FUNCIONES DE GOOGLE SHEETS Y BÚSQUEDA
+    // ============================================================
+    function parseCSVLine(linea) {
+        let resultado = [];
+        let celda = '';
+        let enComillas = false;
+        for (let i = 0; i < linea.length; i++) {
+            let char = linea[i];
+            if (char === '"') enComillas = !enComillas;
+            else if (char === ',' && !enComillas) {
+                resultado.push(celda.trim());
+                celda = '';
+            } else celda += char;
+        }
+        resultado.push(celda.trim());
+        return resultado;
+    }
+
+    function normalizarTexto(txt) {
+        if (!txt) return "";
+        return txt.toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+    }
+
+    async function obtenerJuegosDesdeSheets() {
+        if (cacheJuegosSheets && (Date.now() - ultimaCargaSheets < 30000)) return cacheJuegosSheets;
+        try {
+            const res = await fetch(GOOGLE_SHEETS_CSV_URL + "&t=" + Date.now());
+            if (!res.ok) throw new Error("Error al leer Sheets");
+            const text = await res.text();
+            const lineas = text.split('\n').filter(l => l.trim().length > 0);
+            let juegos = [];
+            lineas.forEach(lineaRaw => {
+                const columnas = parseCSVLine(lineaRaw);
+                const titulo = columnas[0] ? columnas[0].replace(/^"+|"+$/g, '').trim() : '';
+                const fecha = columnas[1] ? columnas[1].replace(/^"+|"+$/g, '').trim() : '';
+                if (titulo) juegos.push({ titulo: titulo, fecha: fecha });
+            });
+            cacheJuegosSheets = juegos;
+            ultimaCargaSheets = Date.now();
+            return cacheJuegosSheets;
+        } catch (e) {
+            console.error("Error leyendo Google Sheets:", e);
+            return cacheJuegosSheets || [];
+        }
+    }
+
+    async function comprobarJuegoEnSheets() {
+        const inputEl = document.getElementById('gameSearchInput');
+        const dropdown = document.getElementById('customSuggestions');
+        const resBox = document.getElementById('searchResult');
+        const query = inputEl.value.trim();
+        const queryNorm = normalizarTexto(query);
+        if (queryNorm.length < 4) {
+            dropdown.innerHTML = '';
+            dropdown.style.display = 'none';
+            resBox.style.display = 'none';
+            return;
+        }
+        const listaJuegos = await obtenerJuegosDesdeSheets();
+        let coincidenciaExacta = listaJuegos.find(j => normalizarTexto(j.titulo) === queryNorm);
+        const juegosFiltrados = listaJuegos.filter(j => normalizarTexto(j.titulo).includes(queryNorm));
+        dropdown.innerHTML = '';
+        if (juegosFiltrados.length > 0 && !coincidenciaExacta) {
+            juegosFiltrados.slice(0, 15).forEach(j => {
+                const divItem = document.createElement('div');
+                divItem.className = 'suggestion-item';
+                divItem.innerHTML = `<div>${j.titulo}</div>` + (j.fecha ? `<span class="suggestion-date">Jugado en: ${j.fecha}</span>` : '');
+                divItem.onmousedown = function(e) {
+                    e.preventDefault();
+                    inputEl.value = j.titulo;
+                    dropdown.style.display = 'none';
+                    comprobarJuegoEnSheets();
+                };
+                dropdown.appendChild(divItem);
+            });
+            dropdown.style.display = 'block';
+        } else {
+            dropdown.style.display = 'none';
+        }
+        resBox.style.display = 'block';
+        resBox.className = 'search-result-box';
+        if (coincidenciaExacta) {
+            resBox.className = 'search-result-box result-found';
+            let txtFecha = coincidenciaExacta.fecha ? ` - Jugado en: ${coincidenciaExacta.fecha}` : '';
+            resBox.innerHTML = `❌ <b>"${coincidenciaExacta.titulo}"</b> ya ha sido seleccionado antes.${txtFecha}`;
+        } else {
+            resBox.className = 'search-result-box result-not-found';
+            resBox.innerHTML = `✅ <b>"${query}"</b> no aparece como jugado exactamente con ese nombre.<br><span style="font-weight:normal; font-size:0.75rem;">(Revisa las opciones del desplegable para confirmar el título completo)</span>`;
+        }
+    }
+
+    document.addEventListener('click', function(e) {
+        const container = document.querySelector('.search-container');
+        if (container && !container.contains(e.target)) {
+            document.getElementById('customSuggestions').style.display = 'none';
+        }
+    });
+
+    function activarBusquedaVoz() {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const micBtn = document.getElementById('micBtn');
+        const inputEl = document.getElementById('gameSearchInput');
+        if (!SpeechRecognition) {
+            alert("Lo siento, tu navegador no soporta la búsqueda por voz.");
+            return;
+        }
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'es-ES';
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+        recognition.onstart = function() {
+            micBtn.classList.add('listening');
+            micBtn.title = "Escuchando voz...";
+        };
+        recognition.onresult = function(event) {
+            const speechResult = event.results[0][0].transcript;
+            inputEl.value = speechResult;
+            comprobarJuegoInmediato(speechResult);
+        };
+        recognition.onerror = function(event) {
+            console.error("Error en reconocimiento de voz:", event.error);
+        };
+        recognition.onend = function() {
+            micBtn.classList.remove('listening');
+            micBtn.title = "Búsqueda por voz";
+        };
+        recognition.start();
+    }
+
+    async function comprobarJuegoInmediato(texto) {
+        const inputEl = document.getElementById('gameSearchInput');
+        inputEl.value = texto;
+        await comprobarJuegoEnSheets();
+    }
+
+    // ============================================================
+    //  FUNCIONES DE BACKUP
+    // ============================================================
+    function crearBackupManual() {
+        const ahora = new Date();
+        const horaTag = `${String(ahora.getHours()).padStart(2,'0')}${String(ahora.getMinutes()).padStart(2,'0')}`;
+        const clave = `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, '0')}-${String(ahora.getDate()).padStart(2, '0')}_${horaTag}`;
+        realizarCopiaEnFirebase(clave, "Copia Manual", true);
+    }
+
+    function realizarCopiaEnFirebase(clave, etiqueta, notificar = false) {
+        Promise.all([
+            db.ref('historial_ganadores').once('value'),
+            db.ref('sorteo_actual').once('value'),
+            db.ref('mes_sorteo').once('value')
+        ]).then(function(results) {
+            const backupPayload = {
+                fechaCopia: new Date().toLocaleString('es-ES'),
+                etiqueta: etiqueta,
+                historial_ganadores: results[0].val() || null,
+                sorteo_actual: results[1].val() || null,
+                mes_sorteo: results[2].val() || null
+            };
+            db.ref('backups/' + clave).set(backupPayload).then(function() {
+                if (notificar) alert("✅ Copia de seguridad guardada con éxito bajo la clave: " + clave);
+            }).catch(function(err) {
+                alert("❌ No se pudo guardar el backup.");
+            });
+        });
+    }
+
+    function cargarListaBackups() {
+        db.ref('backups').on('value', function(snapshot) {
+            const select = document.getElementById('backupSelect');
+            select.innerHTML = '<option value="">-- Selecciona una copia para restaurar o borrar --</option>';
+            const backups = snapshot.val();
+            if (!backups) return;
+            Object.keys(backups).reverse().forEach(function(key) {
+                const item = backups[key];
+                const option = document.createElement('option');
+                option.value = key;
+                option.innerText = `${key} | ${item.etiqueta || 'Sin nombre'} (${item.fechaCopia || 'Fecha desc.'})`;
+                select.appendChild(option);
+            });
+        });
+    }
+
+    function restaurarBackupSeleccionado() {
+        const clave = document.getElementById('backupSelect').value;
+        if (!clave) {
+            alert("Por favor, selecciona una copia de seguridad del desplegable.");
+            return;
+        }
+        if (confirm(`⚠️ ¿Estás seguro de RESTAURAR la copia "${clave}"?\n\nEsto sobrescribirá los datos con los guardados en ese momento.`)) {
+            db.ref('backups/' + clave).once('value', function(snapshot) {
+                const data = snapshot.val();
+                if (!data) {
+                    alert("Error al leer la copia de seguridad.");
+                    return;
+                }
+                db.ref('historial_ganadores').set(data.historial_ganadores || null);
+                db.ref('sorteo_actual').set(data.sorteo_actual || null);
+                db.ref('mes_sorteo').set(data.mes_sorteo || null).then(function() {
+                    alert("🎉 ¡Datos restaurados correctamente desde la copia " + clave + "!");
+                });
+            });
+        }
+    }
+
+    function borrarBackupSeleccionado() {
+        const clave = document.getElementById('backupSelect').value;
+        if (!clave) {
+            alert("Por favor, selecciona primero una copia del desplegable.");
+            return;
+        }
+        const select = document.getElementById('backupSelect');
+        const textoSeleccionado = select.options[select.selectedIndex].text;
+        if (confirm(`⚠️ ¿Estás seguro de que deseas ELIMINAR permanentemente la copia de seguridad?\n\n"${textoSeleccionado}"`)) {
+            db.ref('backups/' + clave).remove().then(function() {
+                alert("🗑️ Copia de seguridad eliminada con éxito.");
+            });
+        }
+    }
+
+    function descargarBackupJSON() {
+        Promise.all([
+            db.ref('historial_ganadores').once('value'),
+            db.ref('sorteo_actual').once('value'),
+            db.ref('mes_sorteo').once('value')
+        ]).then(function(results) {
+            const backupData = {
+                historial_ganadores: results[0].val() || null,
+                sorteo_actual: results[1].val() || null,
+                mes_sorteo: results[2].val() || null,
+                exportadoEl: new Date().toLocaleString('es-ES')
+            };
+            const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `backup_sorteo_patrulla_${Date.now()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+    }
+
+    function restaurarDesdeJSON(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = JSON.parse(e.target.result);
+                if (confirm("⚠️ ¿Deseas restaurar la base de datos desde este archivo JSON local?")) {
+                    if ('historial_ganadores' in data) db.ref('historial_ganadores').set(data.historial_ganadores);
+                    if ('sorteo_actual' in data) db.ref('sorteo_actual').set(data.sorteo_actual);
+                    if ('mes_sorteo' in data) db.ref('mes_sorteo').set(data.mes_sorteo);
+                    alert("✅ ¡Copia de seguridad local restaurada con éxito!");
+                }
+            } catch (err) {
+                alert("❌ El archivo no tiene un formato JSON válido.");
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    const logoImg = document.querySelector('.header-logo');
+    if (logoImg) {
+        logoImg.onerror = function() {
+            if (this.src.includes('logo.png')) this.src = 'logo.jpg?v=2';
+        };
+    }
+
+    // ============================================================
+    //  IMPORTAR DESDE TELEGRAM
+    // ============================================================
+    async function importarDesdeTelegram(esManual = true) {
+        const btn = document.querySelector('.telegram-btn');
+        let originalText = "";
+        if (esManual) {
+            originalText = btn.innerText;
+            btn.innerText = "⏳ Cargando lista en vivo desde Telegram...";
+            btn.disabled = true;
+        }
+        const timestamp = Date.now();
+        const targetUrl = `https://t.me/s/retrojuegodelmes?before=${timestamp}`;
+        const workerUrl = `${MI_CLOUDFLARE_WORKER}?url=${encodeURIComponent(targetUrl)}`;
+        try {
+            const response = await fetch(workerUrl, { cache: "no-store" });
+            if (!response.ok) throw new Error(`Error Cloudflare: ${response.status}`);
+            const htmlContent = await response.text();
+            if (!htmlContent || !htmlContent.includes('tgme_widget_message_text')) throw new Error("Sin resultados.");
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(htmlContent, 'text/html');
+            const messages = doc.querySelectorAll('.tgme_widget_message_text');
+            if (!messages || messages.length === 0) return;
+            let ultimaListaEncontrada = "";
+            const regexPatronLista = /\d+[\s-]*@[\w_]+/i;
+            for (let i = messages.length - 1; i >= 0; i--) {
+                let htmlTemp = messages[i].innerHTML.replace(/<br\s*[\/]?>/gi, "\n");
+                let tempDiv = document.createElement("div");
+                tempDiv.innerHTML = htmlTemp;
+                let plainText = tempDiv.textContent || tempDiv.innerText || "";
+                if (regexPatronLista.test(plainText)) {
+                    const lineas = plainText.split('\n');
+                    const lineasFiltradas = lineas.map(l => l.trim()).filter(l => regexPatronLista.test(l) || /PUNTO\s+EXTRA/i.test(l));
+                    if (lineasFiltradas.length > 0) {
+                        ultimaListaEncontrada = lineasFiltradas.join('\n');
+                        break;
+                    }
+                }
+            }
+            if (ultimaListaEncontrada) {
+                document.getElementById('listInput').value = ultimaListaEncontrada;
+                guardarParticipantesFirebase();
+                const totalCargados = ultimaListaEncontrada.split('\n').filter(l => regexPatronLista.test(l)).length;
+                if (esManual) alert(`¡Éxito! Se ha cargado la última lista con ${totalCargados} participantes.`);
+            } else if (esManual) {
+                alert("No se encontró ningún mensaje reciente que contenga una lista.");
+            }
+        } catch (error) {
+            console.error("Error Telegram:", error);
+            if (esManual) alert("⚠️ No se pudo cargar la lista desde Telegram.");
+        } finally {
+            if (esManual) {
+                btn.innerText = originalText;
+                btn.disabled = false;
+            }
+        }
+    }
+
+    // ============================================================
+    //  MES DEL SORTEO
+    // ============================================================
+    db.ref('mes_sorteo').on('value', function(snapshot) {
+        const mes = snapshot.val();
+        const titleEl = document.getElementById('mainTitle');
+        if (mes) {
+            titleEl.innerText = "🏆 Sorteo HoF Patrulla Retro de " + mes;
+            document.getElementById('monthSelect').value = mes;
+        } else {
+            titleEl.innerText = "🏆 Sorteo HoF Patrulla Retro";
+        }
+    });
+
+    function guardarMesSorteo() {
+        const mes = document.getElementById('monthSelect').value;
+        if (!mes) return alert("Por favor, selecciona un mes del desplegable.");
+        if (confirm("¿Confirmas que deseas cambiar el título del sorteo al mes de " + mes + "?")) {
+            db.ref('mes_sorteo').set(mes).then(() => alert("¡Mes actualizado con éxito!"));
+        }
+    }
+
+    // ============================================================
+    //  AÑADIR GANADOR MANUAL
+    // ============================================================
+    function agregarGanadorManual() {
+        const inputVal = document.getElementById('manualUserAdmin').value.trim();
+        const customMonthVal = document.getElementById('manualWinnerMonth').value;
+        if (!inputVal) return alert("Introduce al menos un usuario.");
+        let fechaTexto = "";
+        let timestampToSave = Date.now();
+        if (customMonthVal) {
+            const parts = customMonthVal.split('-');
+            const year = parseInt(parts[0], 10);
+            const monthIdx = parseInt(parts[1], 10) - 1;
+            fechaTexto = `${nombresMeses[monthIdx]} ${year}`;
+            timestampToSave = new Date(year, monthIdx, 1).getTime();
+        } else {
+            const ahora = new Date();
+            fechaTexto = `${nombresMeses[ahora.getMonth()]} ${ahora.getFullYear()}`;
+        }
+        const usuarios = inputVal.split(/[\n,\s]+/).map(u => u.trim()).filter(u => u.length > 0);
+        let añadidos = 0;
+        usuarios.forEach(function(usr) {
+            let userFinal = usr.startsWith('@') ? usr : '@' + usr;
+            db.ref('historial_ganadores').push({
+                user: userFinal,
+                ticket: "Entrada Manual",
+                fecha: fechaTexto,
+                timestamp: timestampToSave
+            });
+            añadidos++;
+        });
+        alert("¡" + añadidos + " usuario(s) añadido(s) al historial!");
+        document.getElementById('manualUserAdmin').value = '';
+        document.getElementById('manualWinnerMonth').value = '';
+    }
+
+    function borrarGanadorEspecifico(key, usuario, fecha) {
+        if (!isAdminLoggedIn) return;
+        if (confirm(`⚠️ ¿Eliminar del historial a ${usuario} (${fecha})?`)) {
+            db.ref('historial_ganadores/' + key).remove();
+        }
+    }
+
+    function verificarRepetidoVisual() {
+        if (!actualGanadorUser) return;
+        db.ref('historial_ganadores').once('value', function(snapshot) {
+            const data = snapshot.val();
+            let totalVictorias = 0;
+            if (data) {
+                Object.values(data).forEach(function(item) {
+                    if (item.user.toLowerCase() === actualGanadorUser.toLowerCase()) totalVictorias++;
+                });
+            }
+            const noticeEl = document.getElementById('repeatNotice');
+            if (totalVictorias > 1) noticeEl.classList.remove('hidden');
+            else noticeEl.classList.add('hidden');
+        });
+    }
+
+    // ============================================================
+    //  LÓGICA DE LA RECREATIVA
+    // ============================================================
+    function mostrarRecreativa(activa) {
+        const slot = document.getElementById('slotMachineCard');
+        if (activa) slot.classList.add('active');
+        else slot.classList.remove('active');
+    }
+
+    function detenerRodillos() {
+        if (slotAnimationInterval) {
+            clearInterval(slotAnimationInterval);
+            slotAnimationInterval = null;
+        }
+        slotAnimationActive = false;
+        document.querySelectorAll('.slot-reel').forEach(reel => {
+            reel.classList.remove('spinning');
+        });
+    }
+
+    function iniciarRodillos() {
+        if (slotAnimationActive) return;
+        slotAnimationActive = true;
+        const reels = document.querySelectorAll('.slot-reel');
+        reels.forEach(reel => reel.classList.add('spinning'));
+        slotAnimationInterval = setInterval(() => {
+            reels.forEach(reel => {
+                reel.innerText = String(Math.floor(Math.random() * 10));
+            });
+        }, 75);
+    }
+
+    function actualizarEstadoRecreativa(targetTime) {
+        const ahora = Date.now();
+        const diff = targetTime - ahora;
+        const slotStatus = document.getElementById('slotStatus');
+
+        if (diff > 0) {
+            mostrarRecreativa(true);
+            if (diff <= 10 * 60 * 1000) {
+                iniciarRodillos();
+                const seg = Math.ceil(diff / 1000);
+                slotStatus.innerText = '🎰 BUENA SUERTE, LA NECESITARÁS · ' +
+                    String(Math.floor(seg/60)).padStart(2,'0') + ':' + String(seg%60).padStart(2,'0');
+            } else {
+                detenerRodillos();
+                const dias = Math.floor(diff / (1000*60*60*24));
+                const horas = Math.floor((diff % (1000*60*60*24)) / (1000*60*60));
+                const mins = Math.floor((diff % (1000*60*60)) / (1000*60));
+                const segs = Math.floor((diff % (1000*60)) / 1000);
+                let texto = '';
+                if (dias > 0) texto += dias + 'd ';
+                texto += String(horas).padStart(2,'0') + 'h ' +
+                         String(mins).padStart(2,'0') + 'm ' +
+                         String(segs).padStart(2,'0') + 's';
+                slotStatus.innerText = '🎰 PRÓXIMO SORTEO · ' + texto;
+            }
+        } else {
+            detenerRodillos();
+            slotStatus.innerText = '⚡ ¡SORTEO EN MARCHA!';
+            ejecutarTiradaProgramada();
+        }
+    }
+
+    function iniciarRelojCuentaAtras(targetTime) {
+        if (timerInterval) clearInterval(timerInterval);
+        actualizarEstadoRecreativa(targetTime);
+        timerInterval = setInterval(() => {
+            const ahora = Date.now();
+            if (ahora >= targetTime) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+                actualizarEstadoRecreativa(targetTime);
+            } else {
+                actualizarEstadoRecreativa(targetTime);
+            }
+        }, 1000);
+    }
+
+    function finalizarTragaperras(ganador, revealAt) {
+        if (slotFinalizing) return;
+        slotFinalizing = true;
+        detenerRodillos();
+        const reels = document.querySelectorAll('.slot-reel');
+        const digitos = obtenerDigitosPremiados(ganador);
+        reels.forEach((reel, idx) => {
+            reel.innerText = digitos[idx] || '0';
+            reel.classList.add('slot-win');
+        });
+        mostrarRecreativa(true);
+        const slotStatus = document.getElementById('slotStatus');
+        if (slotRevealInterval) clearInterval(slotRevealInterval);
+        const actualizar = () => {
+            const restante = Math.max(0, Math.ceil((revealAt - Date.now()) / 1000));
+            if (restante <= 0) {
+                clearInterval(slotRevealInterval);
+                slotRevealInterval = null;
+                slotStatus.innerText = '🎉 ¡RESULTADO LISTO! MOSTRANDO GANADOR...';
+                return;
+            }
+            slotStatus.innerText = '🎰 NÚMERO PREMIADO · MOSTRANDO GANADOR EN ' +
+                String(restante).padStart(2,'0') + ' s';
+        };
+        actualizar();
+        slotRevealInterval = setInterval(actualizar, 250);
+    }
+
+    function detenerTragaperras() {
+        detenerRodillos();
+        if (slotRevealInterval) {
+            clearInterval(slotRevealInterval);
+            slotRevealInterval = null;
+        }
+        slotFinalizing = false;
+        document.querySelectorAll('.slot-reel').forEach(reel => {
+            reel.classList.remove('slot-win');
+        });
+    }
+
+    function obtenerDigitosPremiados(ganador) {
+        const match = String(ganador.ticket || '').match(/^(\d+)/);
+        const numero = match ? match[1] : '0';
+        const numero3 = numero.slice(-3).padStart(3, '0');
+        return [numero3.charAt(0), numero3.charAt(1), numero3.charAt(2)];
+    }
+
+    // ============================================================
+    //  OBSERVADOR DE SORTEO ACTUAL
+    // ============================================================
+    db.ref('sorteo_actual').on('value', function(snapshot) {
+        const data = snapshot.val();
+        programData = data;
+        if (timerInterval) clearInterval(timerInterval);
+        detenerTragaperras();
+
+        const slot = document.getElementById('slotMachineCard');
+        const winnerCard = document.getElementById('winnerCard');
+        const waitingCard = document.getElementById('waitingCard');
+
+        if (data && data.status === 'programado' && data.targetTime) {
+            winnerCard.style.display = 'none';
+            waitingCard.classList.add('hidden');
+            iniciarRelojCuentaAtras(data.targetTime);
+        } else if (data && data.ganador) {
+            waitingCard.classList.add('hidden');
+            const revealAt = Number(data.revealAt) || 0;
+            const restante = revealAt - Date.now();
+
+            if (restante > 0) {
+                winnerCard.style.display = 'none';
+                finalizarTragaperras(data.ganador, revealAt);
+                setTimeout(() => {
+                    if (document.getElementById('winnerCard').style.display !== 'block') {
+                        detenerTragaperras();
+                        mostrarGanador(data);
+                    }
+                }, restante + 100);
+            } else {
+                detenerTragaperras();
+                mostrarGanador(data);
+            }
+
+            actualGanadorUser = data.ganador.user;
+            document.getElementById('winnerName').innerText = data.ganador.user;
+            let numeroBoleto = data.ganador.ticket;
+            const matchNum = data.ganador.ticket.match(/^(\d+)/);
+            if (matchNum) {
+                numeroBoleto = "Boleto premiado Nº " + matchNum[1];
+            } else {
+                numeroBoleto = "Boleto premiado: " + data.ganador.ticket;
+            }
+            document.getElementById('winnerTicket').innerText = numeroBoleto;
+            verificarRepetidoVisual();
+            const logBox = document.getElementById('publicLog');
+            logBox.innerHTML = "<b>Historial de tiradas:</b><br>" + data.log.join('<br>');
+            const arcadeList = document.getElementById('arcadeList');
+            arcadeList.innerHTML = '';
+            if (data.arcadeGroup && data.arcadeGroup.length > 0) {
+                data.arcadeGroup.forEach(function(item) {
+                    const li = document.createElement('li');
+                    li.className = 'custom-item';
+                    const esGanador = item.user.toLowerCase() === data.ganador.user.toLowerCase();
+                    li.innerHTML = '<div class="custom-item-text"><strong>' + item.user + '</strong> <span style="color: var(--muted); font-size:0.8rem;">(' + item.ticket + ')</span></div>' +
+                        (esGanador ? '<span class="item-badge" style="background: var(--gold); color: black;">¡Ganador Principal!</span>' : '<span class="item-badge" style="background: #334155;">Elección Arcade</span>');
+                    arcadeList.appendChild(li);
+                });
+            }
+        } else {
+            slot.classList.remove('active');
+            winnerCard.style.display = 'none';
+            waitingCard.classList.remove('hidden');
+        }
+    });
+
+    function mostrarGanador(data) {
+        const winnerCard = document.getElementById('winnerCard');
+        winnerCard.style.display = 'block';
+        document.getElementById('slotMachineCard').classList.remove('active');
+    }
+
+    function ejecutarTiradaProgramada() {
+        if (!programData || programData.status !== 'programado') return;
+        calcularYEjecutarTirada(programData.rawLines, programData.rawBlacklist, true);
+    }
+
+    function calcularYEjecutarTirada(rawLinesStr, rawBlacklistStr, animarResultado = true) {
+        const rawLines = rawLinesStr.split('\n');
+        const rawBlacklist = rawBlacklistStr.split('\n');
+
+        let participantesValidos = [];
+        rawLines.forEach(function(line) {
+            let lineaLimpia = line.trim();
+            if (!lineaLimpia) return;
+            const matchUser = lineaLimpia.match(/@[\w_]+/);
+            if (matchUser) {
+                let boletoLimpio = lineaLimpia.replace(/PUNTO\s+EXTRA\s*/gi, '').trim();
+                participantesValidos.push({ ticket: boletoLimpio, user: matchUser[0] });
+            }
+        });
+
+        const total = participantesValidos.length;
+        if (total === 0) return;
+
+        const blacklist = rawBlacklist.map(u => u.trim().toLowerCase()).filter(u => u.length > 0);
+
+        let log = [];
+        let ganadorEncontrado = null;
+        let indexGanador = -1;
+        let listaCopia = participantesValidos.slice();
+
+        while (listaCopia.length > 0) {
+            const indexAleatorio = obtenerIndiceCriptografico(listaCopia.length);
+            const entrada = listaCopia[indexAleatorio];
+            const usuarioMinusculas = entrada.user.toLowerCase();
+
+            if (blacklist.indexOf(usuarioMinusculas) !== -1) {
+                log.push("❌ Descartado: " + entrada.ticket + " (" + entrada.user + " está en la Lista Negra)");
+                listaCopia.splice(indexAleatorio, 1);
+            } else {
+                ganadorEncontrado = entrada;
+                indexGanador = participantesValidos.findIndex(p => p.ticket === entrada.ticket);
+                log.push("✅ ¡TIRADA GANADORA!: " + entrada.ticket);
+                break;
+            }
+        }
+
+        if (!ganadorEncontrado) return;
+
+        let anteriores = [], posteriores = [], usuariosUsados = {};
+        usuariosUsados[ganadorEncontrado.user.toLowerCase()] = true;
+
+        let curr = indexGanador - 1, cntAnt = 0;
+        while (anteriores.length < 2 && cntAnt < total) {
+            if (curr < 0) curr = total - 1;
+            let cand = participantesValidos[curr];
+            if (!usuariosUsados[cand.user.toLowerCase()]) {
+                anteriores.unshift(cand);
+                usuariosUsados[cand.user.toLowerCase()] = true;
+            }
+            curr--; cntAnt++;
+        }
+
+        curr = indexGanador + 1; let cntPost = 0;
+        while (posteriores.length < 2 && cntPost < total) {
+            if (curr >= total) curr = 0;
+            let cand = participantesValidos[curr];
+            if (!usuariosUsados[cand.user.toLowerCase()]) {
+                posteriores.push(cand);
+                usuariosUsados[cand.user.toLowerCase()] = true;
+            }
+            curr++; cntPost++;
+        }
+
+        const arcadeGroup = anteriores.concat([ganadorEncontrado], posteriores);
+        const ahora = new Date();
+        const fechaFormateada = `${nombresMeses[ahora.getMonth()]} ${ahora.getFullYear()}`;
+
+        db.ref('historial_ganadores').push({
+            user: ganadorEncontrado.user,
+            ticket: ganadorEncontrado.ticket,
+            fecha: fechaFormateada,
+            timestamp: Date.now() + Math.random()
+        });
+
+        const resultadoData = {
+            ganador: ganadorEncontrado,
+            arcadeGroup: arcadeGroup,
+            log: log,
+            timestamp: Date.now()
+        };
+
+        if (animarResultado) {
+            resultadoData.revealAt = Date.now() + SLOT_REVEAL_MS;
+        }
+
+        db.ref('sorteo_actual').set(resultadoData);
+    }
+
+    // ============================================================
+    //  HISTORIAL Y LISTAS
+    // ============================================================
+    db.ref('historial_ganadores').on('value', function(snapshot) {
+        const data = snapshot.val();
+        let mapaConteo = {};
+        rawHistoryItems = [];
+        if (data) {
+            Object.keys(data).forEach(function(key) {
+                const item = data[key];
+                item.key = key;
+                rawHistoryItems.push(item);
+                const userKey = item.user;
+                mapaConteo[userKey] = (mapaConteo[userKey] || 0) + 1;
+            });
+            rawHistoryItems.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+        }
+        rawWinnersCount = Object.keys(mapaConteo).map(usr => ({ user: usr, total: mapaConteo[usr] }))
+            .sort((a, b) => b.total - a.total);
+        renderWinnersList();
+        renderHistoryList();
+        verificarRepetidoVisual();
+        document.getElementById('winnersCountCard').classList.remove('hidden');
+        document.getElementById('historyCard').classList.remove('hidden');
+    });
+
+    function renderWinnersList() {
+        const listEl = document.getElementById('winnersCountList');
+        const btn = document.getElementById('btnToggleWinners');
+        listEl.innerHTML = '';
+        if (rawWinnersCount.length === 0) {
+            listEl.innerHTML = '<li style="text-align: center; color: var(--muted);">Sin historial de ganadores guardado.</li>';
+            btn.classList.add('hidden');
+            return;
+        }
+        const visibleItems = isWinnersExpanded ? rawWinnersCount : rawWinnersCount.slice(0, 3);
+        visibleItems.forEach(function(item, index) {
+            const li = document.createElement('li');
+            li.className = 'custom-item';
+            const textoVez = item.total === 1 ? 'vez premiado' : 'veces premiado';
+            let medallaIcono = '';
+            if (index === 0) medallaIcono = '🥇 ';
+            else if (index === 1) medallaIcono = '🥈 ';
+            else if (index === 2) medallaIcono = '🥉 ';
+            li.innerHTML = '<div class="custom-item-text"><strong>' + medallaIcono + item.user + '</strong></div><span class="item-badge">' + item.total + ' ' + textoVez + '</span>';
+            listEl.appendChild(li);
+        });
+        if (rawWinnersCount.length > 3) {
+            btn.classList.remove('hidden');
+            btn.innerText = isWinnersExpanded ? '⬆️ Mostrar solo los 3 principales' : '⬇️ Ver todos los usuarios premiados (' + rawWinnersCount.length + ')';
+        } else {
+            btn.classList.add('hidden');
+        }
+    }
+
+    function renderHistoryList() {
+        const listEl = document.getElementById('historyList');
+        const btn = document.getElementById('btnToggleHistory');
+        listEl.innerHTML = '';
+        if (rawHistoryItems.length === 0) {
+            listEl.innerHTML = '<li style="text-align: center; color: var(--muted);">Sin sorteos registrados.</li>';
+            btn.classList.add('hidden');
+            return;
+        }
+        const visibleItems = isHistoryExpanded ? rawHistoryItems : rawHistoryItems.slice(0, 3);
+        visibleItems.forEach(function(item) {
+            const li = document.createElement('li');
+            li.className = 'custom-item';
+            let deleteBtnHtml = '';
+            if (isAdminLoggedIn) {
+                deleteBtnHtml = `<button class="delete-item-btn" onclick="borrarGanadorEspecifico('${item.key}', '${item.user}', '${item.fecha}')">🗑️ Borrar</button>`;
+            }
+            li.innerHTML = '<div class="custom-item-text"><strong>' + item.user + '</strong> <span style="color: var(--muted); font-size:0.8rem;">(' + item.ticket + ')</span></div>' +
+                           '<div style="display:flex; align-items:center; gap:6px;"><div style="font-size: 0.75rem; color: var(--muted);">' + item.fecha + '</div>' + deleteBtnHtml + '</div>';
+            listEl.appendChild(li);
+        });
+        if (rawHistoryItems.length > 3) {
+            btn.classList.remove('hidden');
+            btn.innerText = isHistoryExpanded ? '⬆️ Mostrar solo los últimos 3 sorteos' : '⬇️ Ver todo el historial (' + rawHistoryItems.length + ')';
+        } else {
+            btn.classList.add('hidden');
+        }
+    }
+
+    function toggleWinnersView() { isWinnersExpanded = !isWinnersExpanded; renderWinnersList(); }
+    function toggleHistoryView() { isHistoryExpanded = !isHistoryExpanded; renderHistoryList(); }
+
+    // ============================================================
+    //  ADMIN - BORRAR ÚLTIMO SORTEO Y TODO
+    // ============================================================
+    function borrarUltimoSorteo() {
+        if (confirm("⚠️ ¿Deseas borrar la tirada actual o la programación activa?")) {
+            db.ref('sorteo_actual').remove();
+            db.ref('historial_ganadores').limitToLast(1).once('value', function(snapshot) {
+                const data = snapshot.val();
+                if (data) {
+                    const keyBorrar = Object.keys(data)[0];
+                    db.ref('historial_ganadores/' + keyBorrar).remove();
+                    alert("Último sorteo borrado.");
+                } else {
+                    alert("Estado actual borrado.");
+                }
+            });
+        }
+    }
+
+    function borrarTodo() {
+        if (confirm("⚠️ ¿BORRAR TODO el historial de la web?")) {
+            document.getElementById('listInput').value = '';
+            document.getElementById('blacklistInput').value = '';
+            document.getElementById('drawDateInput').value = '';
+            document.getElementById('drawTimeInput').value = '';
+            db.ref('sorteo_actual').remove();
+            db.ref('historial_ganadores').remove();
+            db.ref('sorteo_participantes_raw').remove();
+            alert("Todo borrado correctamente.");
+        }
+    }
+
+    // ============================================================
+    //  FUNCIÓN PRINCIPAL DE PROGRAMACIÓN
+    // ============================================================
+    function programarOEjecutarSorteo() {
+        const dateVal = document.getElementById('drawDateInput').value;
+        const timeVal = document.getElementById('drawTimeInput').value;
+        const rawLines = document.getElementById('listInput').value.trim();
+        const rawBlacklist = document.getElementById('blacklistInput').value.trim();
+
+        console.log("Fecha seleccionada:", dateVal);
+        console.log("Hora seleccionada:", timeVal);
+
+        if (!rawLines) return alert("Pega o importa la lista de participantes.");
+
+        // Si NO hay hora seleccionada (cadena vacía o "--:--") → SORTEO INMEDIATO
+        if (!timeVal || timeVal === "--:--" || timeVal.trim() === "") {
+            if (confirm("El sorteo se realizará de inmediato. ¿Continuar?")) {
+                detenerTragaperras();
+                mostrarRecreativa(true);
+                document.getElementById('slotStatus').innerText = '🎰 SORTEO INMEDIATO...';
+                calcularYEjecutarTirada(rawLines, rawBlacklist, true);
+            }
+            return;
+        }
+
+        // Si hay hora, se programa
+        const timeParts = timeVal.split(':');
+        let targetDate = new Date();
+
+        if (dateVal) {
+            const dateParts = dateVal.split('-');
+            targetDate.setFullYear(parseInt(dateParts[0], 10), parseInt(dateParts[1], 10) - 1, parseInt(dateParts[2], 10));
+        }
+
+        targetDate.setHours(parseInt(timeParts[0], 10), parseInt(timeParts[1], 10), 0, 0);
+
+        // Si no hay fecha y la hora ya pasó, se programa para mañana
+        if (!dateVal && targetDate.getTime() <= Date.now()) {
+            targetDate.setDate(targetDate.getDate() + 1);
+        }
+
+        db.ref('sorteo_actual').set({
+            status: 'programado',
+            targetTime: targetDate.getTime(),
+            rawLines: rawLines,
+            rawBlacklist: rawBlacklist
+        }).then(() => alert("¡Sorteo programado con éxito!"));
+    }
+
+    // ============================================================
+    //  INICIALIZADORES DE SELECTORES (FECHA Y HORA)
+    // ============================================================
+    function initRetroDatePicker() {
+        const input = document.getElementById("drawDateInput");
+        const picker = document.getElementById("retroDatePicker");
+        const display = document.getElementById("retroDateDisplay");
+        const text = document.getElementById("retroDateDisplayValue");
+        const panel = document.getElementById("retroDatePanel");
+        const grid = document.getElementById("retroDateGrid");
+        const label = document.getElementById("retroDateMonthLabel");
+        const prev = document.getElementById("retroDatePrev");
+        const next = document.getElementById("retroDateNext");
+        const confirmBtn = document.getElementById("retroDateConfirm");
+        const cancelBtn = document.getElementById("retroDateCancel");
+        if (!input || !picker) return;
+
+        const pad = n => String(n).padStart(2, "0");
+        const iso = d => d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+        const now = new Date();
+        let selected = null;
+        let view = new Date(now.getFullYear(), now.getMonth(), 1);
+        let previousValue = input.value || "";
+
+        function parse(s) {
+            const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || "");
+            return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null;
+        }
+
+        function render() {
+            label.textContent = view.toLocaleDateString("es-ES", { month: "long", year: "numeric" });
+            grid.innerHTML = "";
+            const first = new Date(view.getFullYear(), view.getMonth(), 1);
+            const start = (first.getDay() + 6) % 7;
+            for (let i = 0; i < 42; i++) {
+                const d = new Date(view.getFullYear(), view.getMonth(), i - start + 1);
+                const b = document.createElement("button");
+                b.type = "button";
+                b.className = "retro-date-cell";
+                if (d.getMonth() !== view.getMonth()) b.classList.add("other-month");
+                if (iso(d) === iso(now)) b.classList.add("today");
+                if (selected && iso(d) === iso(selected)) b.classList.add("selected");
+                b.textContent = d.getDate();
+                b.onclick = () => {
+                    selected = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+                    render();
+                };
+                grid.appendChild(b);
+            }
+        }
+
+        display.onclick = e => {
+            e.stopPropagation();
+            previousValue = input.value || "";
+            if (!selected) {
+                selected = parse(input.value) || new Date();
+                view = new Date(selected.getFullYear(), selected.getMonth(), 1);
+            } else {
+                view = new Date(selected.getFullYear(), selected.getMonth(), 1);
+            }
+            render();
+            panel.classList.remove("hidden");
+        };
+
+        prev.onclick = () => { view.setMonth(view.getMonth() - 1); render(); };
+        next.onclick = () => { view.setMonth(view.getMonth() + 1); render(); };
+
+        confirmBtn.onclick = () => {
+            if (selected) {
+                const val = iso(selected);
+                input.value = val;
+                text.textContent = pad(selected.getDate()) + "/" + pad(selected.getMonth() + 1) + "/" + selected.getFullYear();
+                panel.classList.add("hidden");
+            }
+        };
+
+        cancelBtn.onclick = () => {
+            input.value = "";
+            text.textContent = "--/--/----";
+            selected = null;
+            panel.classList.add("hidden");
+        };
+
+        document.addEventListener("click", e => {
+            if (!picker.contains(e.target) && !panel.classList.contains("hidden")) {
+                if (selected) {
+                    const val = iso(selected);
+                    input.value = val;
+                    text.textContent = pad(selected.getDate()) + "/" + pad(selected.getMonth() + 1) + "/" + selected.getFullYear();
+                }
+                panel.classList.add("hidden");
+            }
+        });
+
+        const old = parse(input.value);
+        if (old) text.textContent = pad(old.getDate()) + "/" + pad(old.getMonth() + 1) + "/" + old.getFullYear();
+        else text.textContent = "--/--/----";
+    }
+
+    function initRetroTimePicker() {
+        const valueInput = document.getElementById("drawTimeInput");
+        const display = document.getElementById("retroTimeDisplay");
+        const displayValue = document.getElementById("retroTimeDisplayValue");
+        const panel = document.getElementById("retroTimePanel");
+        const hourWheel = document.getElementById("retroHourWheel");
+        const minuteWheel = document.getElementById("retroMinuteWheel");
+        const confirmBtn = document.getElementById("retroTimeConfirm");
+        const cancelBtn = document.getElementById("retroTimeCancel");
+        const picker = document.getElementById("retroTimePicker");
+        if (!valueInput || !display || !displayValue || !panel || !hourWheel || !minuteWheel || !confirmBtn || !picker) return;
+
+        let hour = 0, minute = 0;
+        let hasSelected = false;
+        let previousValue = valueInput.value || "";
+        const pad = n => String(n).padStart(2, "0");
+
+        function renderWheel(element, max, selectedVal, onSelect) {
+            element.innerHTML = "";
+            for (let n = 0; n <= max; n++) {
+                const item = document.createElement("div");
+                item.className = "retro-time-option" + (n === selectedVal ? " selected" : "");
+                item.dataset.value = String(n);
+                item.textContent = pad(n);
+                item.addEventListener("click", () => {
+                    onSelect(n);
+                    render();
+                });
+                element.appendChild(item);
+            }
+            requestAnimationFrame(() => {
+                const selectedItem = element.querySelector(".selected");
+                if (selectedItem) {
+                    element.scrollTop = selectedItem.offsetTop - (element.clientHeight - selectedItem.offsetHeight) / 2;
+                }
+            });
+        }
+
+        function render() {
+            renderWheel(hourWheel, 23, hour, n => hour = n);
+            renderWheel(minuteWheel, 59, minute, n => minute = n);
+            if (hasSelected) {
+                const value = pad(hour) + ":" + pad(minute);
+                displayValue.textContent = value;
+                valueInput.value = value;
+            }
+        }
+
+        function setFromCurrentTime() {
+            const now = new Date();
+            hour = now.getHours();
+            minute = now.getMinutes();
+            hasSelected = true;
+        }
+
+        display.addEventListener("click", event => {
+            event.stopPropagation();
+            previousValue = valueInput.value || "";
+            if (!hasSelected) setFromCurrentTime();
+            else {
+                const match = /^(\d{2}):(\d{2})$/.exec(valueInput.value || "");
+                if (match) {
+                    hour = Number(match[1]);
+                    minute = Number(match[2]);
+                    hasSelected = true;
+                } else {
+                    setFromCurrentTime();
+                }
+            }
+            render();
+            panel.classList.remove("hidden");
+            display.setAttribute("aria-expanded", "true");
+        });
+
+        confirmBtn.addEventListener("click", () => {
+            if (!hasSelected) setFromCurrentTime();
+            const value = pad(hour) + ":" + pad(minute);
+            displayValue.textContent = value;
+            valueInput.value = value;
+            valueInput.dataset.userSelected = "true";
+            panel.classList.add("hidden");
+            display.setAttribute("aria-expanded", "false");
+        });
+
+        cancelBtn.addEventListener("click", () => {
+            valueInput.value = "";
+            displayValue.textContent = "--:--";
+            hasSelected = false;
+            panel.classList.add("hidden");
+            display.setAttribute("aria-expanded", "false");
+        });
+
+        hourWheel.addEventListener("wheel", e => {
+            e.preventDefault();
+            if (!hasSelected) setFromCurrentTime();
+            hour = (hour + (e.deltaY > 0 ? 1 : -1) + 24) % 24;
+            render();
+        }, { passive: false });
+
+        minuteWheel.addEventListener("wheel", e => {
+            e.preventDefault();
+            if (!hasSelected) setFromCurrentTime();
+            minute = (minute + (e.deltaY > 0 ? 1 : -1) + 60) % 60;
+            render();
+        }, { passive: false });
+
+        hourWheel.addEventListener("keydown", e => {
+            if (e.key === "ArrowDown") { e.preventDefault(); if (!hasSelected) setFromCurrentTime(); hour = (hour + 1) % 24; render(); }
+            if (e.key === "ArrowUp") { e.preventDefault(); if (!hasSelected) setFromCurrentTime(); hour = (hour - 1 + 24) % 24; render(); }
+        });
+
+        minuteWheel.addEventListener("keydown", e => {
+            if (e.key === "ArrowDown") { e.preventDefault(); if (!hasSelected) setFromCurrentTime(); minute = (minute + 1) % 60; render(); }
+            if (e.key === "ArrowUp") { e.preventDefault(); if (!hasSelected) setFromCurrentTime(); minute = (minute - 1 + 60) % 60; render(); }
+        });
+
+        document.addEventListener("click", e => {
+            if (!picker.contains(e.target)) {
+                panel.classList.add("hidden");
+                display.setAttribute("aria-expanded", "false");
+            }
+        });
+
+        displayValue.textContent = "--:--";
+        valueInput.value = "";
+    }
+
+    console.log("✅ Web cargada con Firebase Auth integrado. Acceso admin protegido.");
+</script>
+
+</body>
+</html>
