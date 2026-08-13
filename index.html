@@ -596,6 +596,15 @@
 .retro-time-confirm:hover { background:#8b5cf6; }
 @media (max-width:480px) { .retro-time-wheel-wrap { width:90px; } }
 
+
+/* Estado programado: la recreativa también funciona como contador visual */
+#slotMachineCard.active { animation: slotCardIn .35s ease-out; }
+@keyframes slotCardIn {
+    from { opacity:0; transform:translateY(8px) scale(.985); }
+    to { opacity:1; transform:translateY(0) scale(1); }
+}
+
+.retro-date-picker{position:relative;width:100%}.retro-date-display{width:100%;min-height:44px;padding:10px 14px;box-sizing:border-box;display:flex;align-items:center;gap:10px;border:1px solid rgba(139,92,246,.55);border-radius:12px;background:rgba(15,23,42,.85);color:#f8fafc;font:inherit;cursor:pointer;text-align:left}.retro-date-display span:last-child{margin-left:auto;opacity:.7}.retro-date-panel{position:absolute;z-index:2100;left:0;right:0;top:calc(100% + 8px);padding:14px;border:1px solid rgba(139,92,246,.55);border-radius:16px;background:#111827;box-shadow:0 16px 40px rgba(0,0,0,.45)}.retro-date-panel.hidden{display:none}.retro-date-head{display:grid;grid-template-columns:40px 1fr 40px;gap:6px;align-items:center;margin-bottom:10px}.retro-date-head strong{text-align:center;color:#c4b5fd;text-transform:capitalize}.retro-date-head button,.retro-date-today{border:1px solid rgba(139,92,246,.35);border-radius:9px;background:#1e293b;color:#fff;cursor:pointer;min-height:34px}.retro-date-weekdays,.retro-date-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}.retro-date-weekdays{margin-bottom:5px}.retro-date-weekdays span{text-align:center;font-size:.72rem;opacity:.6}.retro-date-cell{min-height:36px;border:0;border-radius:9px;background:transparent;color:#e2e8f0;cursor:pointer;font:inherit;font-weight:700}.retro-date-cell:hover{background:rgba(139,92,246,.22)}.retro-date-cell.other-month{opacity:.25}.retro-date-cell.today{outline:1px solid rgba(167,139,250,.7)}.retro-date-cell.selected{background:#7c3aed;color:#fff}.retro-date-today{width:100%;margin-top:10px}.retro-date-confirm{width:100%;margin-top:7px;padding:9px 12px;border:0;border-radius:10px;background:#7c3aed;color:#fff;font-weight:800;cursor:pointer}
 </style>
 </head>
 <body>
@@ -731,7 +740,16 @@
             <br><br>
             <label><b>3. Fecha y Hora Exacta del Sorteo (Opcional):</b></label>
             <div class="datetime-group" style="margin-top: 6px;">
-                <input type="date" id="drawDateInput">
+                <input type="hidden" id="drawDateInput" value="">
+<div class="retro-date-picker" id="retroDatePicker">
+<button type="button" class="retro-date-display" id="retroDateDisplay"><span>📅</span><span id="retroDateDisplayValue">--/--/----</span><span>▾</span></button>
+<div class="retro-date-panel hidden" id="retroDatePanel">
+<div class="retro-date-head"><button type="button" id="retroDatePrev">‹</button><strong id="retroDateMonthLabel"></strong><button type="button" id="retroDateNext">›</button></div>
+<div class="retro-date-weekdays"><span>L</span><span>M</span><span>X</span><span>J</span><span>V</span><span>S</span><span>D</span></div>
+<div class="retro-date-grid" id="retroDateGrid"></div>
+<button type="button" class="retro-date-today" id="retroDateToday">HOY</button>
+<button type="button" class="retro-date-confirm" id="retroDateConfirm">CONFIRMAR FECHA</button>
+</div></div>
                 
 <input type="hidden" id="drawTimeInput" value="00:00">
 <div class="retro-time-picker" id="retroTimePicker">
@@ -1548,28 +1566,31 @@
     }
 
     function actualizarEstadoVisualSorteo(targetTime) {
-        const diferencia = targetTime - Date.now();
-        const slot = document.getElementById('slotMachineCard');
-        const countdown = document.getElementById('countdownCard');
+    const diferencia = targetTime - Date.now();
+    const slot = document.getElementById('slotMachineCard');
+    const countdown = document.getElementById('countdownCard');
 
-        if (diferencia > 0 && diferencia <= 10 * 60 * 1000) {
-            countdown.classList.add('hidden');
-            slot.classList.add('active');
+    if (countdown) countdown.classList.add('hidden');
+    slot.classList.add('active');
+
+    if (diferencia > 0) {
+        document.getElementById('winnerCard').style.display = 'none';
+
+        if (diferencia <= 10 * 60 * 1000) {
             iniciarTragaperras();
-
-            // El texto se actualiza cada segundo con el tiempo real que falta
-            // para que termine la cuenta atrás y se realice la tirada.
             if (!slotFinalizing) {
                 document.getElementById('slotStatus').innerText =
-                    '🎰 "Buena suerte, la necesitarás"   ' + formatearCuentaAtras(diferencia);
+                    'Buena suerte, la necesitarás · ' + formatearCuentaAtras(diferencia);
             }
-        } else if (diferencia > 0) {
-            slot.classList.remove('active');
+        } else {
             detenerTragaperras();
-            document.getElementById('winnerCard').style.display = 'none';
-            countdown.classList.remove('hidden');
+            if (!slotFinalizing) {
+                document.getElementById('slotStatus').innerText =
+                    '🎰 PRÓXIMO SORTEO · ' + formatearCuentaAtras(diferencia);
+            }
         }
     }
+}
 
     function iniciarTragaperras() {
         if (slotAnimationActive || slotFinalizing) return;
@@ -1697,7 +1718,7 @@
 
                 if (slotAnimationActive) {
                     document.getElementById('slotStatus').innerText =
-                        '🎰 ¡REALIZANDO LA TIRADA!';
+                        'Buena suerte, la necesitarás';
                 }
 
                 ejecutarTiradaProgramada();
@@ -2003,8 +2024,7 @@
 </script>
 
 <script>
-
-/* Selector de hora cíclico. No modifica el algoritmo ni la programación existente. */
+/* Selector de hora retro dinámico */
 (function initRetroTimePicker() {
   const valueInput = document.getElementById("drawTimeInput");
   const display = document.getElementById("retroTimeDisplay");
@@ -2018,17 +2038,29 @@
 
   let hour = 0, minute = 0;
 
-  function pad(n) { return String(n).padStart(2, "0"); }
+  const pad = n => String(n).padStart(2, "0");
+
+  function setFromCurrentTime() {
+    const now = new Date();
+    hour = now.getHours();
+    // Redondeamos al siguiente minuto para que la primera opción sea realmente
+    // una hora válida a partir del instante en que se abre el selector.
+    minute = now.getMinutes();
+  }
 
   function readValue() {
     const match = /^(\d{2}):(\d{2})$/.exec(valueInput.value || "");
     if (match) {
       hour = Math.max(0, Math.min(23, Number(match[1])));
       minute = Math.max(0, Math.min(59, Number(match[2])));
+      return true;
     }
+    return false;
   }
 
   function renderWheel(element, max, selected, onSelect) {
+    // Cinco filas visibles, pero todos los valores son reales: nunca hay
+    // separadores vacíos. El desplazamiento se centra en el valor seleccionado.
     element.innerHTML = "";
     for (let n = 0; n <= max; n++) {
       const item = document.createElement("div");
@@ -2041,6 +2073,7 @@
       });
       element.appendChild(item);
     }
+
     requestAnimationFrame(() => {
       const selectedItem = element.querySelector(".selected");
       if (selectedItem) {
@@ -2052,6 +2085,7 @@
   function render() {
     renderWheel(hourWheel, 23, hour, n => hour = n);
     renderWheel(minuteWheel, 59, minute, n => minute = n);
+
     const value = pad(hour) + ":" + pad(minute);
     displayValue.textContent = value;
     valueInput.value = value;
@@ -2065,50 +2099,81 @@
 
   display.addEventListener("click", event => {
     event.stopPropagation();
-    readValue();
+
+    // Si todavía no se ha elegido una hora, arrancamos en la hora/minuto real.
+    // Si ya existe una elección, la respetamos al volver a abrir.
+    if (!valueInput.dataset.userSelected) {
+      setFromCurrentTime();
+    } else {
+      readValue();
+    }
+
     render();
-    const open = panel.classList.toggle("hidden") === false;
-    display.setAttribute("aria-expanded", String(open));
+    panel.classList.remove("hidden");
+    display.setAttribute("aria-expanded", "true");
   });
 
   confirm.addEventListener("click", () => {
+    valueInput.dataset.userSelected = "true";
     valueInput.dispatchEvent(new Event("input", { bubbles:true }));
     valueInput.dispatchEvent(new Event("change", { bubbles:true }));
     panel.classList.add("hidden");
     display.setAttribute("aria-expanded", "false");
   });
 
-  hourWheel.addEventListener("wheel", event => {
-    event.preventDefault();
-    step("hour", event.deltaY > 0 ? 1 : -1);
-  }, { passive:false });
+  hourWheel.addEventListener("wheel", e => {
+    e.preventDefault();
+    step("hour", e.deltaY > 0 ? 1 : -1);
+  }, {passive:false});
 
-  minuteWheel.addEventListener("wheel", event => {
-    event.preventDefault();
-    step("minute", event.deltaY > 0 ? 1 : -1);
-  }, { passive:false });
+  minuteWheel.addEventListener("wheel", e => {
+    e.preventDefault();
+    step("minute", e.deltaY > 0 ? 1 : -1);
+  }, {passive:false});
 
-  hourWheel.addEventListener("keydown", event => {
-    if (event.key === "ArrowDown") { event.preventDefault(); step("hour", 1); }
-    if (event.key === "ArrowUp") { event.preventDefault(); step("hour", -1); }
+  hourWheel.addEventListener("keydown", e => {
+    if (e.key === "ArrowDown") { e.preventDefault(); step("hour", 1); }
+    if (e.key === "ArrowUp") { e.preventDefault(); step("hour", -1); }
   });
 
-  minuteWheel.addEventListener("keydown", event => {
-    if (event.key === "ArrowDown") { event.preventDefault(); step("minute", 1); }
-    if (event.key === "ArrowUp") { event.preventDefault(); step("minute", -1); }
+  minuteWheel.addEventListener("keydown", e => {
+    if (e.key === "ArrowDown") { e.preventDefault(); step("minute", 1); }
+    if (e.key === "ArrowUp") { e.preventDefault(); step("minute", -1); }
   });
 
-  document.addEventListener("click", event => {
-    if (!picker.contains(event.target)) {
+  document.addEventListener("click", e => {
+    if (!picker.contains(e.target)) {
       panel.classList.add("hidden");
       display.setAttribute("aria-expanded", "false");
     }
   });
 
-  readValue();
-  render();
+  // No ponemos 00:00 al cargar: la primera apertura parte de la hora real.
+  valueInput.value = "";
+  displayValue.textContent = "--:--";
 })();
-
+</script>
+<script>
+(function(){
+ const input=document.getElementById("drawDateInput"), picker=document.getElementById("retroDatePicker"), display=document.getElementById("retroDateDisplay"), text=document.getElementById("retroDateDisplayValue"), panel=document.getElementById("retroDatePanel"), grid=document.getElementById("retroDateGrid"), label=document.getElementById("retroDateMonthLabel");
+ const prev=document.getElementById("retroDatePrev"), next=document.getElementById("retroDateNext"), todayBtn=document.getElementById("retroDateToday"), confirm=document.getElementById("retroDateConfirm");
+ if(!input||!picker)return;
+ const pad=n=>String(n).padStart(2,"0"), iso=d=>d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+ const now=new Date(); let selected=null, view=new Date(now.getFullYear(),now.getMonth(),1);
+ function parse(s){const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(s||"");return m?new Date(+m[1],+m[2]-1,+m[3]):null}
+ function render(){
+   label.textContent=view.toLocaleDateString("es-ES",{month:"long",year:"numeric"});
+   grid.innerHTML="";
+   const first=new Date(view.getFullYear(),view.getMonth(),1), start=(first.getDay()+6)%7, total=new Date(view.getFullYear(),view.getMonth()+1,0).getDate();
+   for(let i=0;i<42;i++){const d=new Date(view.getFullYear(),view.getMonth(),i-start+1),b=document.createElement("button");b.type="button";b.className="retro-date-cell";if(d.getMonth()!==view.getMonth())b.classList.add("other-month");if(iso(d)===iso(now))b.classList.add("today");if(selected&&iso(d)===iso(selected))b.classList.add("selected");b.textContent=d.getDate();b.onclick=()=>{selected=new Date(d.getFullYear(),d.getMonth(),d.getDate());render()};grid.appendChild(b)}
+ }
+ display.onclick=e=>{e.stopPropagation();selected=parse(input.value)||new Date();view=new Date(selected.getFullYear(),selected.getMonth(),1);render();panel.classList.remove("hidden")};
+ prev.onclick=()=>{view.setMonth(view.getMonth()-1);render()};next.onclick=()=>{view.setMonth(view.getMonth()+1);render()};
+ todayBtn.onclick=()=>{selected=new Date();view=new Date(selected.getFullYear(),selected.getMonth(),1);render()};
+ confirm.onclick=()=>{selected=selected||new Date();input.value=iso(selected);text.textContent=pad(selected.getDate())+"/"+pad(selected.getMonth()+1)+"/"+selected.getFullYear();input.dispatchEvent(new Event("change",{bubbles:true}));panel.classList.add("hidden")};
+ document.addEventListener("click",e=>{if(!picker.contains(e.target))panel.classList.add("hidden")});
+ const old=parse(input.value); if(old)text.textContent=pad(old.getDate())+"/"+pad(old.getMonth()+1)+"/"+old.getFullYear();
+})();
 </script>
 </body>
 </html>
