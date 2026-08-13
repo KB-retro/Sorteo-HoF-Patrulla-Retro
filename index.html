@@ -636,10 +636,35 @@
             background:#7c3aed; color:#fff; font-weight:800; cursor:pointer;
         }
         .retro-time-confirm:hover { background:#8b5cf6; }
+        .retro-time-cancel {
+            width:100%; border:0; border-radius:10px; padding:9px 12px;
+            background:#475569; color:#fff; font-weight:800; cursor:pointer;
+            margin-top: 8px;
+        }
+        .retro-time-cancel:hover { background:#334155; }
         @media (max-width:480px) { .retro-time-wheel-wrap { width:90px; } }
 
-        /* ===== SELECTOR DE FECHA RETRO ===== */
-        .retro-date-picker{position:relative;width:100%}.retro-date-display{width:100%;min-height:44px;padding:10px 14px;box-sizing:border-box;display:flex;align-items:center;gap:10px;border:1px solid rgba(139,92,246,.55);border-radius:12px;background:rgba(15,23,42,.85);color:#f8fafc;font:inherit;cursor:pointer;text-align:left}.retro-date-display span:last-child{margin-left:auto;opacity:.7}.retro-date-panel{position:absolute;z-index:2100;left:0;right:0;top:calc(100% + 8px);padding:14px;border:1px solid rgba(139,92,246,.55);border-radius:16px;background:#111827;box-shadow:0 16px 40px rgba(0,0,0,.45)}.retro-date-panel.hidden{display:none}.retro-date-head{display:grid;grid-template-columns:40px 1fr 40px;gap:6px;align-items:center;margin-bottom:10px}.retro-date-head strong{text-align:center;color:#c4b5fd;text-transform:capitalize}.retro-date-head button,.retro-date-today{border:1px solid rgba(139,92,246,.35);border-radius:9px;background:#1e293b;color:#fff;cursor:pointer;min-height:34px}.retro-date-weekdays,.retro-date-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}.retro-date-weekdays{margin-bottom:5px}.retro-date-weekdays span{text-align:center;font-size:.72rem;opacity:.6}.retro-date-cell{min-height:36px;border:0;border-radius:9px;background:transparent;color:#e2e8f0;cursor:pointer;font:inherit;font-weight:700}.retro-date-cell:hover{background:rgba(139,92,246,.22)}.retro-date-cell.other-month{opacity:.25}.retro-date-cell.today{outline:1px solid rgba(167,139,250,.7)}.retro-date-cell.selected{background:#7c3aed;color:#fff}.retro-date-today{width:100%;margin-top:10px}.retro-date-confirm{width:100%;margin-top:7px;padding:9px 12px;border:0;border-radius:10px;background:#7c3aed;color:#fff;font-weight:800;cursor:pointer}
+        /* ===== SELECTOR DE FECHA RETRO (actualizado) ===== */
+        .retro-date-picker{position:relative;width:100%}
+        .retro-date-display{width:100%;min-height:44px;padding:10px 14px;box-sizing:border-box;display:flex;align-items:center;gap:10px;border:1px solid rgba(139,92,246,.55);border-radius:12px;background:rgba(15,23,42,.85);color:#f8fafc;font:inherit;cursor:pointer;text-align:left}
+        .retro-date-display span:last-child{margin-left:auto;opacity:.7}
+        .retro-date-panel{position:absolute;z-index:2100;left:0;right:0;top:calc(100% + 8px);padding:14px;border:1px solid rgba(139,92,246,.55);border-radius:16px;background:#111827;box-shadow:0 16px 40px rgba(0,0,0,.45)}
+        .retro-date-panel.hidden{display:none}
+        .retro-date-head{display:grid;grid-template-columns:40px 1fr 40px;gap:6px;align-items:center;margin-bottom:10px}
+        .retro-date-head strong{text-align:center;color:#c4b5fd;text-transform:capitalize}
+        .retro-date-head button{border:1px solid rgba(139,92,246,.35);border-radius:9px;background:#1e293b;color:#fff;cursor:pointer;min-height:34px}
+        .retro-date-weekdays,.retro-date-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+        .retro-date-weekdays{margin-bottom:5px}
+        .retro-date-weekdays span{text-align:center;font-size:.72rem;opacity:.6}
+        .retro-date-cell{min-height:36px;border:0;border-radius:9px;background:transparent;color:#e2e8f0;cursor:pointer;font:inherit;font-weight:700}
+        .retro-date-cell:hover{background:rgba(139,92,246,.22)}
+        .retro-date-cell.other-month{opacity:.25}
+        .retro-date-cell.today{outline:1px solid rgba(167,139,250,.7)}
+        .retro-date-cell.selected{background:#7c3aed;color:#fff}
+        .retro-date-confirm{width:100%;margin-top:7px;padding:9px 12px;border:0;border-radius:10px;background:#7c3aed;color:#fff;font-weight:800;cursor:pointer}
+        .retro-date-confirm:hover{background:#8b5cf6}
+        .retro-date-cancel{width:100%;margin-top:7px;padding:9px 12px;border:0;border-radius:10px;background:#475569;color:#fff;font-weight:800;cursor:pointer}
+        .retro-date-cancel:hover{background:#334155}
     </style>
 </head>
 <body>
@@ -779,8 +804,8 @@
                             <span>L</span><span>M</span><span>X</span><span>J</span><span>V</span><span>S</span><span>D</span>
                         </div>
                         <div class="retro-date-grid" id="retroDateGrid"></div>
-                        <button type="button" class="retro-date-today" id="retroDateToday">HOY</button>
                         <button type="button" class="retro-date-confirm" id="retroDateConfirm">CONFIRMAR FECHA</button>
+                        <button type="button" class="retro-date-cancel" id="retroDateCancel">CANCELAR</button>
                     </div>
                 </div>
 
@@ -805,7 +830,7 @@
                         </div>
                         <div class="retro-time-help">Rueda del ratón o ▲ ▼ · 00–23 / 00–59</div>
                         <button type="button" class="retro-time-confirm" id="retroTimeConfirm">CONFIRMAR HORA</button>
-                        <button type="button" class="retro-time-confirm" id="retroTimeCancel" style="background:#475569; margin-top: 8px;">CANCELAR</button>
+                        <button type="button" class="retro-time-cancel" id="retroTimeCancel">CANCELAR</button>
                     </div>
                 </div>
             </div>
@@ -1921,8 +1946,8 @@
         const label = document.getElementById("retroDateMonthLabel");
         const prev = document.getElementById("retroDatePrev");
         const next = document.getElementById("retroDateNext");
-        const todayBtn = document.getElementById("retroDateToday");
         const confirmBtn = document.getElementById("retroDateConfirm");
+        const cancelBtn = document.getElementById("retroDateCancel");
         if (!input || !picker) return;
 
         const pad = n => String(n).padStart(2, "0");
@@ -1930,6 +1955,8 @@
         const now = new Date();
         let selected = null;
         let view = new Date(now.getFullYear(), now.getMonth(), 1);
+        // Guardar el valor anterior para cancelar
+        let previousValue = input.value || "";
 
         function parse(s) {
             const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || "");
@@ -1953,12 +1980,8 @@
                 b.textContent = d.getDate();
                 b.onclick = () => {
                     selected = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-                    // Al hacer clic en un día, se selecciona y se actualiza el input
-                    input.value = iso(selected);
-                    text.textContent = pad(selected.getDate()) + "/" + pad(selected.getMonth() + 1) + "/" + selected.getFullYear();
+                    // Marcar visualmente, pero no guardamos aún
                     render();
-                    // Cerrar panel automáticamente
-                    panel.classList.add("hidden");
                 };
                 grid.appendChild(b);
             }
@@ -1966,34 +1989,59 @@
 
         display.onclick = e => {
             e.stopPropagation();
-            selected = parse(input.value) || new Date();
-            view = new Date(selected.getFullYear(), selected.getMonth(), 1);
+            // Al abrir, guardamos el valor actual para posible cancelación
+            previousValue = input.value || "";
+            // Si no hay selección, usamos la fecha actual como sugerencia
+            if (!selected) {
+                selected = parse(input.value) || new Date();
+                view = new Date(selected.getFullYear(), selected.getMonth(), 1);
+            } else {
+                view = new Date(selected.getFullYear(), selected.getMonth(), 1);
+            }
             render();
             panel.classList.remove("hidden");
         };
 
         prev.onclick = () => { view.setMonth(view.getMonth() - 1); render(); };
         next.onclick = () => { view.setMonth(view.getMonth() + 1); render(); };
-        todayBtn.onclick = () => {
-            selected = new Date();
-            view = new Date(selected.getFullYear(), selected.getMonth(), 1);
-            render();
-        };
+
         confirmBtn.onclick = () => {
             if (selected) {
-                input.value = iso(selected);
+                const val = iso(selected);
+                input.value = val;
                 text.textContent = pad(selected.getDate()) + "/" + pad(selected.getMonth() + 1) + "/" + selected.getFullYear();
                 panel.classList.add("hidden");
             }
         };
 
+        cancelBtn.onclick = () => {
+            // Restaurar el valor anterior (vacío o el que había)
+            input.value = previousValue;
+            if (previousValue) {
+                const d = parse(previousValue);
+                if (d) {
+                    text.textContent = pad(d.getDate()) + "/" + pad(d.getMonth() + 1) + "/" + d.getFullYear();
+                } else {
+                    text.textContent = "--/--/----";
+                }
+            } else {
+                text.textContent = "--/--/----";
+            }
+            selected = parse(previousValue) || null;
+            panel.classList.add("hidden");
+        };
+
         document.addEventListener("click", e => {
-            if (!picker.contains(e.target)) panel.classList.add("hidden");
+            if (!picker.contains(e.target)) {
+                // Si se cierra sin confirmar, no hacemos nada (se mantiene el valor actual)
+                panel.classList.add("hidden");
+            }
         });
 
-        // Si ya había un valor, mostrarlo
+        // Inicializar display con el valor actual (vacío por defecto)
         const old = parse(input.value);
         if (old) text.textContent = pad(old.getDate()) + "/" + pad(old.getMonth() + 1) + "/" + old.getFullYear();
+        else text.textContent = "--/--/----";
     }
 
     function initRetroTimePicker() {
@@ -2010,6 +2058,7 @@
 
         let hour = 0, minute = 0;
         let hasSelected = false;
+        let previousValue = valueInput.value || "";
         const pad = n => String(n).padStart(2, "0");
 
         function renderWheel(element, max, selectedVal, onSelect) {
@@ -2052,8 +2101,20 @@
 
         display.addEventListener("click", event => {
             event.stopPropagation();
+            previousValue = valueInput.value || "";
             // Si no se ha seleccionado nada, tomamos la hora actual como sugerencia
             if (!hasSelected) setFromCurrentTime();
+            else {
+                // Si ya había selección, la restauramos
+                const match = /^(\d{2}):(\d{2})$/.exec(valueInput.value || "");
+                if (match) {
+                    hour = Number(match[1]);
+                    minute = Number(match[2]);
+                    hasSelected = true;
+                } else {
+                    setFromCurrentTime();
+                }
+            }
             render();
             panel.classList.remove("hidden");
             display.setAttribute("aria-expanded", "true");
@@ -2071,10 +2132,22 @@
         });
 
         cancelBtn.addEventListener("click", () => {
-            // Cancelar: no se guarda la hora, se mantiene vacío
-            hasSelected = false;
-            displayValue.textContent = "--:--";
-            valueInput.value = "";
+            // Restaurar el valor anterior
+            valueInput.value = previousValue;
+            if (previousValue) {
+                displayValue.textContent = previousValue;
+                const match = /^(\d{2}):(\d{2})$/.exec(previousValue);
+                if (match) {
+                    hour = Number(match[1]);
+                    minute = Number(match[2]);
+                    hasSelected = true;
+                } else {
+                    hasSelected = false;
+                }
+            } else {
+                displayValue.textContent = "--:--";
+                hasSelected = false;
+            }
             panel.classList.add("hidden");
             display.setAttribute("aria-expanded", "false");
         });
