@@ -56,7 +56,6 @@
 
         * { 
             box-sizing: border-box; 
-            cursor: none !important; /* CURSOR OCULTO EN TODA LA WEB */
         }
 
         html, body {
@@ -109,6 +108,7 @@
             user-select: none;
             -webkit-user-select: none;
             -webkit-tap-highlight-color: transparent;
+            cursor: default; /* Cursor por defecto, sin mano */
         }
 
         .card {
@@ -902,10 +902,11 @@
 
         let pos1 = 0, pos2 = 0, pos3 = 0;
 
+        // Misma velocidad exacta para los 3 rodillos (reducido a 20ms y saltos idénticos)
         slotInterval = setInterval(() => {
             pos1 = (pos1 - 30) % 900;
-            pos2 = (pos2 - 45) % 900;
-            pos3 = (pos3 - 60) % 900;
+            pos2 = (pos2 - 30) % 900;
+            pos3 = (pos3 - 30) % 900;
 
             const r1 = document.getElementById('reel1');
             const r2 = document.getElementById('reel2');
@@ -914,7 +915,7 @@
             if (r1) r1.style.top = `${pos1}px`;
             if (r2) r2.style.top = `${pos2}px`;
             if (r3) r3.style.top = `${pos3}px`;
-        }, 30);
+        }, 20);
     }
 
     function detenerRodillosEnNumero(numeroTargetStr) {
