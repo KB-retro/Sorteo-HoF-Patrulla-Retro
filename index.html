@@ -493,20 +493,81 @@
             to { opacity: 1; transform: translateY(0); }
         }
     
-/* Selector de hora retro: ciclos reales 23→00 y 59→00, sin huecos */
+        /* ===== TRAGAPERRAS RETRO 8-BIT ===== */
+        #slotMachineCard {
+            display:none; text-align:center; margin:20px auto; padding:18px 14px;
+            max-width:560px; background:#111827; border:4px solid #f59e0b;
+            box-shadow:0 0 0 4px #312e81, 0 8px 30px rgba(0,0,0,.7);
+            image-rendering:pixelated;
+        }
+        #slotMachineCard.active { display:block; }
+        .slot-marquee { color:#fde68a; font-weight:900; font-size:1.15rem; letter-spacing:2px; text-shadow:2px 2px 0 #7c2d12; margin-bottom:14px; }
+        .slot-cabinet { background:linear-gradient(#4c1d95,#1e1b4b); border:4px solid #a78bfa; padding:14px 10px 12px; box-shadow:inset 0 0 0 4px #171717; }
+        .slot-display { display:flex; justify-content:center; gap:8px; padding:12px; background:#050505; border:4px solid #fbbf24; box-shadow:inset 0 0 18px rgba(255,255,255,.08); }
+        .slot-reel { width:31%; max-width:120px; height:82px; display:flex; align-items:center; justify-content:center; overflow:hidden; background:#f8fafc; color:#111827; border:4px solid #64748b; box-shadow:inset 0 0 0 3px #cbd5e1; font-family:monospace; font-size:2.5rem; font-weight:900; }
+        .slot-reel.spinning { animation:slotFlicker .075s steps(2,end) infinite; }
+        @keyframes slotFlicker { 0%{transform:translateY(-2px)} 50%{transform:translateY(2px)} 100%{transform:translateY(-1px)} }
+        .slot-status { margin-top:12px; color:#fbbf24; text-shadow:0 0 8px rgba(251,191,36,.35); font-family:monospace; font-weight:bold; font-size:.95rem; min-height:1.25em; }
+        .slot-lights { display:flex; justify-content:center; gap:7px; margin-top:10px; }
+        .slot-light { width:10px; height:10px; background:#fbbf24; box-shadow:0 0 8px #fbbf24; animation:blink8 .5s steps(2,end) infinite; }
+        .slot-light:nth-child(even){animation-delay:.25s}
+        @keyframes blink8 { 50%{opacity:.25} }
+        .slot-win { animation:slotWin .8s steps(2,end) infinite; }
+        @keyframes slotWin { 50%{filter:brightness(1.7); transform:scale(1.015)} }
+        @media(max-width:480px){ .slot-reel{height:68px;font-size:2rem} }
+
+/* Redondeado visible de la recreativa */
+.slot-machine-card,
+.slot-machine {
+    border-radius: 22px !important;
+    overflow: hidden !important;
+}
+.slot-display {
+    border-radius: 14px !important;
+    overflow: hidden !important;
+}
+
+
+/* ===== REDONDEADO COMPLETO DE LA TRAGAPERRAS ===== */
+#slotMachineCard {
+    border-radius: 22px !important;
+    overflow: hidden !important;
+}
+#slotMachineCard .slot-cabinet {
+    border-radius: 18px !important;
+    overflow: hidden !important;
+}
+#slotMachineCard .slot-display {
+    border-radius: 14px !important;
+    overflow: hidden !important;
+}
+#slotMachineCard .slot-reel {
+    border-radius: 10px !important;
+    overflow: hidden !important;
+}
+#slotMachineCard .slot-marquee {
+    border-radius: 12px !important;
+}
+#slotMachineCard .slot-light,
+#slotMachineCard .slot-lights {
+    border-radius: 50% !important;
+}
+
+
+/* Selector de hora: ciclo real, sin filas vacías en 23→00 ni 59→00 */
 .retro-time-picker { position:relative; width:100%; }
 .retro-time-display {
   width:100%; min-height:44px; padding:10px 14px;
   display:flex; align-items:center; justify-content:space-between;
-  border:1px solid rgba(139,92,246,.55); border-radius:12px;
-  background:rgba(15,23,42,.85); color:#f8fafc; font:inherit;
-  cursor:pointer; box-sizing:border-box;
+  box-sizing:border-box; border:1px solid rgba(139,92,246,.55);
+  border-radius:12px; background:rgba(15,23,42,.85); color:#f8fafc;
+  font:inherit; cursor:pointer;
 }
 .retro-time-display:hover { border-color:#a78bfa; }
-.retro-time-chevron { opacity:.75; font-size:1.1rem; }
+.retro-time-chevron { opacity:.7; font-size:1.1rem; }
 .retro-time-panel {
-  position:absolute; z-index:1000; left:0; right:0; top:calc(100% + 8px);
-  padding:14px; border:1px solid rgba(139,92,246,.55);
+  position:absolute; z-index:2000; left:0; right:0; top:calc(100% + 8px);
+  padding:14px; box-sizing:border-box; border:1px solid rgba(139,92,246,.55);
   border-radius:16px; background:#111827; box-shadow:0 16px 40px rgba(0,0,0,.45);
 }
 .retro-time-panel.hidden { display:none; }
@@ -530,12 +591,10 @@
 .retro-time-help { text-align:center; font-size:.72rem; opacity:.6; margin:9px 0; }
 .retro-time-confirm {
   width:100%; border:0; border-radius:10px; padding:9px 12px;
-  background:#7c3aed; color:white; font-weight:800; cursor:pointer;
+  background:#7c3aed; color:#fff; font-weight:800; cursor:pointer;
 }
 .retro-time-confirm:hover { background:#8b5cf6; }
-@media (max-width:480px) {
-  .retro-time-wheel-wrap { width:90px; }
-}
+@media (max-width:480px) { .retro-time-wheel-wrap { width:90px; } }
 
 </style>
 </head>
@@ -548,6 +607,23 @@
     <!-- BOTÓN SUPERIOR -->
     <div class="top-prob-btn-container">
         <button class="top-prob-btn" onclick="abrirProbabilidadesModal()">📊 Lista de Participantes</button>
+    </div>
+
+    <!-- TRAGAPERRAS DEL SORTEO: solo aparece durante los 10 minutos previos a un sorteo programado -->
+    <div id="slotMachineCard" aria-live="polite">
+        <div class="slot-marquee">★ 🕹️ SORTEO EN DIRECTO 🕹️ ★</div>
+        <div class="slot-cabinet">
+            <div class="slot-display">
+                <div id="slotReel1" class="slot-reel">0</div>
+                <div id="slotReel2" class="slot-reel">0</div>
+                <div id="slotReel3" class="slot-reel">0</div>
+            </div>
+            <div class="slot-lights">
+                <span class="slot-light"></span><span class="slot-light"></span><span class="slot-light"></span><span class="slot-light"></span>
+                <span class="slot-light"></span><span class="slot-light"></span><span class="slot-light"></span>
+            </div>
+            <div id="slotStatus" class="slot-status">PREPARANDO LA TIRADA...</div>
+        </div>
     </div>
 
     <!-- PANTALLA GANADOR -->
@@ -657,11 +733,10 @@
             <div class="datetime-group" style="margin-top: 6px;">
                 <input type="date" id="drawDateInput">
                 
-<input type="hidden" id="drawTimeInput" value="">
+<input type="hidden" id="drawTimeInput" value="00:00">
 <div class="retro-time-picker" id="retroTimePicker">
   <button type="button" class="retro-time-display" id="retroTimeDisplay" aria-haspopup="dialog" aria-expanded="false">
-    <span id="retroTimeDisplayValue">00:00</span>
-    <span class="retro-time-chevron">▾</span>
+    <span id="retroTimeDisplayValue">00:00</span><span class="retro-time-chevron">▾</span>
   </button>
   <div class="retro-time-panel hidden" id="retroTimePanel">
     <div class="retro-time-title">SELECCIONA LA HORA</div>
@@ -676,7 +751,7 @@
         <div class="retro-time-wheel" id="retroMinuteWheel" tabindex="0" aria-label="Minutos"></div>
       </div>
     </div>
-    <div class="retro-time-help">▲ ▼ / rueda del ratón · 00–23 / 00–59</div>
+    <div class="retro-time-help">Rueda del ratón o ▲ ▼ · 00–23 / 00–59</div>
     <button type="button" class="retro-time-confirm" id="retroTimeConfirm">CONFIRMAR</button>
   </div>
 </div>
@@ -792,6 +867,11 @@
 
     let timerInterval = null;
     let programData = null;
+    let slotAnimationInterval = null;
+    let slotAnimationActive = false;
+    let slotFinalizing = false;
+    let slotRevealInterval = null;
+    const SLOT_REVEAL_MS = 30000;
 
     let adminClicks = 0;
     let adminClickTimer = null;
@@ -1395,12 +1475,23 @@
         if (data && data.status === 'programado') {
             document.getElementById('winnerCard').style.display = 'none';
             document.getElementById('waitingCard').classList.add('hidden');
-            document.getElementById('countdownCard').classList.remove('hidden');
+            actualizarEstadoVisualSorteo(data.targetTime);
             iniciarRelojCuentaAtras(data.targetTime);
         } else if (data && data.ganador) {
+            const tieneRevelacionProgramada = Number(data.revealAt) > 0;
+            const revealAt = tieneRevelacionProgramada ? Number(data.revealAt) : 0;
+            const restanteRevelacion = revealAt ? revealAt - Date.now() : 0;
+
+            if (tieneRevelacionProgramada && restanteRevelacion > 0) {
+                finalizarTragaperras(data.ganador, revealAt);
+            } else {
+                detenerTragaperras();
+            }
+
             document.getElementById('countdownCard').classList.add('hidden');
             document.getElementById('waitingCard').classList.add('hidden');
-            document.getElementById('winnerCard').style.display = 'block';
+            document.getElementById('winnerCard').style.display =
+                (tieneRevelacionProgramada && restanteRevelacion > 0) ? 'none' : 'block';
             
             actualGanadorUser = data.ganador.user;
             document.getElementById('winnerName').innerText = data.ganador.user;
@@ -1431,6 +1522,17 @@
                     arcadeList.appendChild(li);
                 });
             }
+
+            if (tieneRevelacionProgramada && restanteRevelacion > 0) {
+                const mostrarGanador = () => {
+                    if (revealAt - Date.now() <= 0) {
+                        detenerTragaperras();
+                        document.getElementById('winnerCard').style.display = 'block';
+                    }
+                };
+
+                setTimeout(mostrarGanador, Math.max(0, restanteRevelacion));
+            }
         } else {
             document.getElementById('winnerCard').style.display = 'none';
             document.getElementById('countdownCard').classList.add('hidden');
@@ -1438,29 +1540,186 @@
         }
     });
 
+    function formatearCuentaAtras(ms) {
+        const segundosTotales = Math.max(0, Math.ceil(ms / 1000));
+        const minutos = Math.floor(segundosTotales / 60);
+        const segundos = segundosTotales % 60;
+        return String(minutos).padStart(2, '0') + ':' + String(segundos).padStart(2, '0');
+    }
+
+    function actualizarEstadoVisualSorteo(targetTime) {
+        const diferencia = targetTime - Date.now();
+        const slot = document.getElementById('slotMachineCard');
+        const countdown = document.getElementById('countdownCard');
+
+        if (diferencia > 0 && diferencia <= 10 * 60 * 1000) {
+            countdown.classList.add('hidden');
+            slot.classList.add('active');
+            iniciarTragaperras();
+
+            // El texto se actualiza cada segundo con el tiempo real que falta
+            // para que termine la cuenta atrás y se realice la tirada.
+            if (!slotFinalizing) {
+                document.getElementById('slotStatus').innerText =
+                    '🎰 "Buena suerte, la necesitarás"   ' + formatearCuentaAtras(diferencia);
+            }
+        } else if (diferencia > 0) {
+            slot.classList.remove('active');
+            detenerTragaperras();
+            document.getElementById('winnerCard').style.display = 'none';
+            countdown.classList.remove('hidden');
+        }
+    }
+
+    function iniciarTragaperras() {
+        if (slotAnimationActive || slotFinalizing) return;
+
+        slotAnimationActive = true;
+        const reels = [
+            document.getElementById('slotReel1'),
+            document.getElementById('slotReel2'),
+            document.getElementById('slotReel3')
+        ];
+
+        reels.forEach(reel => reel.classList.add('spinning'));
+
+        slotAnimationInterval = setInterval(() => {
+            reels.forEach(reel => {
+                reel.innerText = String(Math.floor(Math.random() * 10));
+            });
+        }, 75);
+    }
+
+    function detenerTragaperras() {
+        if (slotAnimationInterval) {
+            clearInterval(slotAnimationInterval);
+            slotAnimationInterval = null;
+        }
+
+        if (slotRevealInterval) {
+            clearInterval(slotRevealInterval);
+            slotRevealInterval = null;
+        }
+
+        slotAnimationActive = false;
+        slotFinalizing = false;
+
+        const slot = document.getElementById('slotMachineCard');
+        slot.classList.remove('active');
+
+        [
+            document.getElementById('slotReel1'),
+            document.getElementById('slotReel2'),
+            document.getElementById('slotReel3')
+        ].forEach(reel => {
+            reel.classList.remove('spinning', 'slot-win');
+        });
+    }
+
+    function obtenerDigitosPremiados(ganador) {
+        const match = String(ganador.ticket || '').match(/^(\d+)/);
+        const numero = match ? match[1] : '0';
+
+        // La recreativa tiene tres rodillos, por lo que muestra los tres
+        // últimos dígitos del número de boleto, conservando ceros a la izquierda.
+        const numero3 = numero.slice(-3).padStart(3, '0');
+
+        return [
+            numero3.charAt(0),
+            numero3.charAt(1),
+            numero3.charAt(2)
+        ];
+    }
+
+    function actualizarCuentaResultado(restanteMs) {
+        const restante = Math.max(0, Math.ceil(restanteMs / 1000));
+        document.getElementById('slotStatus').innerText =
+            '🎰 NÚMERO PREMIADO · MOSTRANDO GANADOR EN ' +
+            String(restante).padStart(2, '0') + ' s';
+    }
+
+    function finalizarTragaperras(ganador, revealAt) {
+        if (!slotAnimationActive && !slotFinalizing) return;
+
+        slotFinalizing = true;
+
+        if (slotAnimationInterval) {
+            clearInterval(slotAnimationInterval);
+            slotAnimationInterval = null;
+        }
+
+        const reels = [
+            document.getElementById('slotReel1'),
+            document.getElementById('slotReel2'),
+            document.getElementById('slotReel3')
+        ];
+
+        const digitos = obtenerDigitosPremiados(ganador);
+
+        reels.forEach((reel, index) => {
+            reel.classList.remove('spinning');
+            reel.innerText = digitos[index];
+            reel.classList.add('slot-win');
+        });
+
+        document.getElementById('slotMachineCard').classList.add('active');
+
+        // El instante de revelación se guarda en Firebase para que, si alguien
+        // recarga la página, siga viendo el resultado durante el tiempo restante.
+        const fin = revealAt || (Date.now() + SLOT_REVEAL_MS);
+
+        if (slotRevealInterval) clearInterval(slotRevealInterval);
+
+        const actualizar = () => {
+            const restante = fin - Date.now();
+
+            if (restante <= 0) {
+                clearInterval(slotRevealInterval);
+                slotRevealInterval = null;
+                document.getElementById('slotStatus').innerText =
+                    '🎉 ¡RESULTADO LISTO! MOSTRANDO GANADOR...';
+                return;
+            }
+
+            actualizarCuentaResultado(restante);
+        };
+
+        actualizar();
+        slotRevealInterval = setInterval(actualizar, 250);
+    }
+
     function iniciarRelojCuentaAtras(targetTime) {
         function actualizar() {
             const diferencia = targetTime - Date.now();
 
             if (diferencia <= 0) {
                 clearInterval(timerInterval);
-                document.getElementById('timerDisplay').innerText = "¡Sorteando...";
+
+                if (slotAnimationActive) {
+                    document.getElementById('slotStatus').innerText =
+                        '🎰 ¡REALIZANDO LA TIRADA!';
+                }
+
                 ejecutarTiradaProgramada();
                 return;
             }
+
+            actualizarEstadoVisualSorteo(targetTime);
 
             const dias = Math.floor(diferencia / (1000 * 60 * 60 * 24));
             const horas = Math.floor((diferencia % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
             const minutos = Math.floor((diferencia % (1000 * 60 * 60)) / (1000 * 60));
             const segundos = Math.floor((diferencia % (1000 * 60)) / 1000);
 
-            let textoReloj = "";
-            if (dias > 0) textoReloj += dias + "d ";
-            textoReloj += String(horas).padStart(2, '0') + "h " + 
-                         String(minutos).padStart(2, '0') + "m " + 
-                         String(segundos).padStart(2, '0') + "s";
+            let textoReloj = '';
+            if (dias > 0) textoReloj += dias + 'd ';
+            textoReloj += String(horas).padStart(2, '0') + 'h ' +
+                         String(minutos).padStart(2, '0') + 'm ' +
+                         String(segundos).padStart(2, '0') + 's';
 
-            document.getElementById('timerDisplay').innerText = textoReloj;
+            if (diferencia > 10 * 60 * 1000) {
+                document.getElementById('timerDisplay').innerText = textoReloj;
+            }
         }
 
         actualizar();
@@ -1638,6 +1897,7 @@
             }).then(() => alert("¡Sorteo programado con éxito!"));
         } else {
             if (confirm("El sorteo se realizará de inmediato. ¿Continuar?")) {
+                detenerTragaperras();
                 calcularYEjecutarTirada(rawLines, rawBlacklist);
             }
         }
@@ -1645,10 +1905,10 @@
 
     function ejecutarTiradaProgramada() {
         if (!programData || programData.status !== 'programado') return;
-        calcularYEjecutarTirada(programData.rawLines, programData.rawBlacklist);
+        calcularYEjecutarTirada(programData.rawLines, programData.rawBlacklist, true);
     }
 
-    function calcularYEjecutarTirada(rawLinesStr, rawBlacklistStr) {
+    function calcularYEjecutarTirada(rawLinesStr, rawBlacklistStr, animarResultado = false) {
         const rawLines = rawLinesStr.split('\n');
         const rawBlacklist = rawBlacklistStr.split('\n');
 
@@ -1727,116 +1987,128 @@
             timestamp: Date.now() + Math.random()
         });
 
-        db.ref('sorteo_actual').set({
+        const resultadoData = {
             ganador: ganadorEncontrado,
             arcadeGroup: arcadeGroup,
             log: log,
             timestamp: Date.now()
-        });
-    }
+        };
 
-/* Selector de hora cíclico. No usa elementos vacíos: los valores son 0..23 y 0..59. */
+        if (animarResultado) {
+            resultadoData.revealAt = Date.now() + SLOT_REVEAL_MS;
+        }
+
+        db.ref('sorteo_actual').set(resultadoData);
+    }
+</script>
+
+<script>
+
+/* Selector de hora cíclico. No modifica el algoritmo ni la programación existente. */
 (function initRetroTimePicker() {
-  const valueInput = document.getElementById( + input_id + r);
-  const display = document.getElementById('retroTimeDisplay');
-  const displayValue = document.getElementById('retroTimeDisplayValue');
-  const panel = document.getElementById('retroTimePanel');
-  const hourWheel = document.getElementById('retroHourWheel');
-  const minuteWheel = document.getElementById('retroMinuteWheel');
-  const confirm = document.getElementById('retroTimeConfirm');
-  if (!valueInput || !display || !panel || !hourWheel || !minuteWheel) return;
+  const valueInput = document.getElementById("drawTimeInput");
+  const display = document.getElementById("retroTimeDisplay");
+  const displayValue = document.getElementById("retroTimeDisplayValue");
+  const panel = document.getElementById("retroTimePanel");
+  const hourWheel = document.getElementById("retroHourWheel");
+  const minuteWheel = document.getElementById("retroMinuteWheel");
+  const confirm = document.getElementById("retroTimeConfirm");
+  const picker = document.getElementById("retroTimePicker");
+  if (!valueInput || !display || !displayValue || !panel || !hourWheel || !minuteWheel || !confirm || !picker) return;
 
   let hour = 0, minute = 0;
 
-  function pad(n) { return String(n).padStart(2, '0'); }
-  function readExisting() {
-    const v = valueInput.value;
-    const m = /^(\d{2}):(\d{2})$/.exec(v || '');
-    if (m) {
-      hour = Math.min(23, Number(m[1]));
-      minute = Math.min(59, Number(m[2]));
+  function pad(n) { return String(n).padStart(2, "0"); }
+
+  function readValue() {
+    const match = /^(\d{2}):(\d{2})$/.exec(valueInput.value || "");
+    if (match) {
+      hour = Math.max(0, Math.min(23, Number(match[1])));
+      minute = Math.max(0, Math.min(59, Number(match[2])));
     }
   }
 
-  function renderWheel(el, max, selected) {
-    // Exactamente un item por valor: no hay separadores/spacers vacíos.
-    el.innerHTML = '';
+  function renderWheel(element, max, selected, onSelect) {
+    element.innerHTML = "";
     for (let n = 0; n <= max; n++) {
-      const item = document.createElement('div');
-      item.className = 'retro-time-option' + (n === selected ? ' selected' : '');
+      const item = document.createElement("div");
+      item.className = "retro-time-option" + (n === selected ? " selected" : "");
       item.dataset.value = String(n);
       item.textContent = pad(n);
-      item.addEventListener('click', () => {
-        if (el === hourWheel) hour = n;
-        else minute = n;
+      item.addEventListener("click", () => {
+        onSelect(n);
         render();
       });
-      el.appendChild(item);
+      element.appendChild(item);
     }
     requestAnimationFrame(() => {
-      const selectedEl = el.querySelector('.selected');
-      if (selectedEl) {
-        el.scrollTop = selectedEl.offsetTop - (el.clientHeight - selectedEl.offsetHeight) / 2;
+      const selectedItem = element.querySelector(".selected");
+      if (selectedItem) {
+        element.scrollTop = selectedItem.offsetTop - (element.clientHeight - selectedItem.offsetHeight) / 2;
       }
     });
   }
 
   function render() {
-    renderWheel(hourWheel, 23, hour);
-    renderWheel(minuteWheel, 59, minute);
-    displayValue.textContent = pad(hour) + ':' + pad(minute);
-    valueInput.value = pad(hour) + ':' + pad(minute);
+    renderWheel(hourWheel, 23, hour, n => hour = n);
+    renderWheel(minuteWheel, 59, minute, n => minute = n);
+    const value = pad(hour) + ":" + pad(minute);
+    displayValue.textContent = value;
+    valueInput.value = value;
   }
 
-  function step(which, delta) {
-    if (which === 'hour') hour = (hour + delta + 24) % 24;
-    else minute = (minute + delta + 60) % 60;
+  function step(type, amount) {
+    if (type === "hour") hour = (hour + amount + 24) % 24;
+    else minute = (minute + amount + 60) % 60;
     render();
   }
 
-  display.addEventListener('click', () => {
-    readExisting();
+  display.addEventListener("click", event => {
+    event.stopPropagation();
+    readValue();
     render();
-    panel.classList.toggle('hidden');
-    display.setAttribute('aria-expanded', String(!panel.classList.contains('hidden')));
+    const open = panel.classList.toggle("hidden") === false;
+    display.setAttribute("aria-expanded", String(open));
   });
 
-  confirm.addEventListener('click', () => {
-    valueInput.dispatchEvent(new Event('change', { bubbles:true }));
-    panel.classList.add('hidden');
-    display.setAttribute('aria-expanded', 'false');
+  confirm.addEventListener("click", () => {
+    valueInput.dispatchEvent(new Event("input", { bubbles:true }));
+    valueInput.dispatchEvent(new Event("change", { bubbles:true }));
+    panel.classList.add("hidden");
+    display.setAttribute("aria-expanded", "false");
   });
 
-  hourWheel.addEventListener('wheel', e => {
-    e.preventDefault();
-    step('hour', e.deltaY > 0 ? 1 : -1);
-  }, {passive:false});
-  minuteWheel.addEventListener('wheel', e => {
-    e.preventDefault();
-    step('minute', e.deltaY > 0 ? 1 : -1);
-  }, {passive:false});
+  hourWheel.addEventListener("wheel", event => {
+    event.preventDefault();
+    step("hour", event.deltaY > 0 ? 1 : -1);
+  }, { passive:false });
 
-  hourWheel.addEventListener('keydown', e => {
-    if (e.key === 'ArrowDown') { e.preventDefault(); step('hour', 1); }
-    if (e.key === 'ArrowUp') { e.preventDefault(); step('hour', -1); }
-  });
-  minuteWheel.addEventListener('keydown', e => {
-    if (e.key === 'ArrowDown') { e.preventDefault(); step('minute', 1); }
-    if (e.key === 'ArrowUp') { e.preventDefault(); step('minute', -1); }
+  minuteWheel.addEventListener("wheel", event => {
+    event.preventDefault();
+    step("minute", event.deltaY > 0 ? 1 : -1);
+  }, { passive:false });
+
+  hourWheel.addEventListener("keydown", event => {
+    if (event.key === "ArrowDown") { event.preventDefault(); step("hour", 1); }
+    if (event.key === "ArrowUp") { event.preventDefault(); step("hour", -1); }
   });
 
-  document.addEventListener('click', e => {
-    if (!document.getElementById('retroTimePicker').contains(e.target)) {
-      panel.classList.add('hidden');
-      display.setAttribute('aria-expanded', 'false');
+  minuteWheel.addEventListener("keydown", event => {
+    if (event.key === "ArrowDown") { event.preventDefault(); step("minute", 1); }
+    if (event.key === "ArrowUp") { event.preventDefault(); step("minute", -1); }
+  });
+
+  document.addEventListener("click", event => {
+    if (!picker.contains(event.target)) {
+      panel.classList.add("hidden");
+      display.setAttribute("aria-expanded", "false");
     }
   });
 
-  readExisting();
+  readValue();
   render();
 })();
 
 </script>
-
 </body>
 </html>
