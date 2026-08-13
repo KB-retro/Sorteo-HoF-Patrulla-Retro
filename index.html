@@ -285,6 +285,133 @@
         }
         .credits-link:hover { color: #93c5fd; text-decoration: underline; }
 
+        /* --- RECREATIVA ARCADE PIXEL ART CON SLOT MACHINE --- */
+        .arcade-cabinet {
+            display: none;
+            background: #111827;
+            border: 4px solid #f59e0b;
+            border-radius: 16px;
+            padding: 20px 15px;
+            text-align: center;
+            box-shadow: inset 0 0 0 4px #000, 0 0 30px rgba(245, 158, 11, 0.5);
+            animation: fadeIn 0.4s ease-out;
+            position: relative;
+        }
+
+        .marquee-title {
+            font-family: 'Press Start 2P', monospace;
+            background: #000;
+            color: #f59e0b;
+            border: 3px solid #f59e0b;
+            padding: 10px 5px;
+            font-size: 0.75rem;
+            letter-spacing: 1px;
+            text-shadow: 2px 2px 0 #ef4444, -2px -2px 0 #3b82f6;
+            margin-bottom: 15px;
+            border-radius: 6px;
+            animation: marqueeGlow 1.5s infinite alternate;
+        }
+
+        @keyframes marqueeGlow {
+            0% { box-shadow: 0 0 5px #f59e0b; }
+            100% { box-shadow: 0 0 18px #f59e0b, inset 0 0 8px #f59e0b; }
+        }
+
+        /* Pantalla CRT de la recreativa */
+        .crt-screen {
+            background: #050b14;
+            border: 4px solid #334155;
+            border-radius: 12px;
+            padding: 20px 10px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.9);
+        }
+
+        /* Efecto Scanlines de pantalla CRT */
+        .crt-screen::after {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.3) 50%);
+            background-size: 100% 4px;
+            pointer-events: none;
+            opacity: 0.6;
+        }
+
+        /* Rodillos Tragaperras (Slot Machine) */
+        .slots-container {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin: 15px 0;
+        }
+
+        .slot-reel {
+            width: 70px;
+            height: 90px;
+            background: #000;
+            border: 3px solid #22c55e;
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: inset 0 0 10px rgba(34, 197, 94, 0.5);
+        }
+
+        .slot-reel-strip {
+            display: flex;
+            flex-direction: column;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            transition: top 0.1s linear;
+        }
+
+        .slot-digit {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 2.2rem;
+            color: #22c55e;
+            height: 90px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-shadow: 0 0 8px #22c55e;
+        }
+
+        .arcade-controls {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin-top: 15px;
+            padding-top: 10px;
+            border-top: 2px dashed #334155;
+        }
+
+        .arcade-btn-pixel {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            box-shadow: inset -2px -2px 0 rgba(0,0,0,0.6);
+            display: inline-block;
+        }
+        .btn-red { background: #ef4444; border: 2px solid #b91c1c; }
+        .btn-yellow { background: #f59e0b; border: 2px solid #d97706; }
+        .btn-blue { background: #3b82f6; border: 2px solid #1d4ed8; }
+
+        .arcade-countdown-pixel {
+            margin-top: 15px;
+            display: inline-block;
+            background: #000;
+            border: 2px solid #f59e0b;
+            padding: 8px 16px;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 0.85rem;
+            color: #f59e0b;
+            text-shadow: 1px 1px 0 #000;
+            box-shadow: inset 0 0 6px rgba(245, 158, 11, 0.4);
+        }
+
         .winner-box {
             display: none;
             text-align: center;
@@ -322,47 +449,6 @@
             letter-spacing: 1px;
             margin: 10px 0;
             font-family: monospace;
-        }
-
-        /* --- BOMBO CANVAS RETRO CIRCULAR --- */
-        .bombo-card-box {
-            display: none;
-            background: #090c15;
-            border: 4px solid #f59e0b;
-            box-shadow: inset 0 0 0 2px #000, 0 0 25px rgba(245, 158, 11, 0.4);
-            border-radius: 12px;
-            padding: 20px 10px;
-            text-align: center;
-            animation: fadeIn 0.4s ease-out;
-        }
-
-        .bombo-title-pixel {
-            font-family: 'Press Start 2P', monospace;
-            color: #f59e0b;
-            font-size: 0.75rem;
-            line-height: 1.5;
-            margin-bottom: 15px;
-            text-transform: uppercase;
-            text-shadow: 2px 2px 0 #000;
-        }
-
-        #bomboCanvas {
-            display: block;
-            margin: 0 auto;
-            background: transparent;
-        }
-
-        .bombo-countdown-pixel {
-            margin-top: 15px;
-            display: inline-block;
-            background: #000;
-            border: 2px solid #22c55e;
-            padding: 8px 16px;
-            font-family: 'Press Start 2P', monospace;
-            font-size: 0.9rem;
-            color: #22c55e;
-            text-shadow: 1px 1px 0 #000;
-            box-shadow: inset 0 0 6px rgba(34, 197, 94, 0.4);
         }
 
         .arcade-box {
@@ -529,11 +615,35 @@
         <button class="top-prob-btn" onclick="abrirProbabilidadesModal()">📊 Lista de Participantes</button>
     </div>
 
-    <!-- TARJETA BOMBO CANVAS REDONDO -->
-    <div id="bomboCard" class="card bombo-card-box">
-        <div class="bombo-title-pixel">MEZCLANDO BOLAS EN EL BOMBO...</div>
-        <canvas id="bomboCanvas" width="260" height="220"></canvas>
-        <div id="bomboCountdownText" class="bombo-countdown-pixel">10:00</div>
+    <!-- TARJETA MÁQUINA RECREATIVA ARCADE (SLOT MACHINE) -->
+    <div id="arcadeCard" class="arcade-cabinet">
+        <div class="marquee-title">🕹️ PATRULLA SLOTS 🕹️</div>
+        
+        <div class="crt-screen">
+            <div style="font-family: 'Press Start 2P', monospace; font-size: 0.65rem; color: #94a3b8; margin-bottom: 8px;">
+                MEZCLANDO BOLETOS...
+            </div>
+
+            <div class="slots-container">
+                <div class="slot-reel">
+                    <div id="reel1" class="slot-reel-strip"></div>
+                </div>
+                <div class="slot-reel">
+                    <div id="reel2" class="slot-reel-strip"></div>
+                </div>
+                <div class="slot-reel">
+                    <div id="reel3" class="slot-reel-strip"></div>
+                </div>
+            </div>
+
+            <div id="arcadeCountdownText" class="arcade-countdown-pixel">10:00</div>
+        </div>
+
+        <div class="arcade-controls">
+            <div class="arcade-btn-pixel btn-red"></div>
+            <div class="arcade-btn-pixel btn-yellow"></div>
+            <div class="arcade-btn-pixel btn-blue"></div>
+        </div>
     </div>
 
     <!-- PANTALLA GANADOR -->
@@ -761,153 +871,74 @@
     const nombresMeses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
     // =======================================================
-    // ANIMACIÓN BOMBO CANVAS 2D - FÍSICA Y REMOLINO MEJORADO
+    // MÁQUINA RECREATIVA SLOTS (GIRADOR DE NUMEROS 0 AL 9)
     // =======================================================
-    let animFrameId = null;
-    const canvas = document.getElementById("bomboCanvas");
-    const ctx = canvas.getContext("2d");
+    let slotInterval = null;
+    let isReelsSpinning = false;
 
-    const BOMBO = {
-        x: canvas.width / 2,
-        y: canvas.height / 2,
-        radius: 92
-    };
-
-    const ballColors = ["#e74c3c", "#f39c12", "#f1c40f", "#2ecc71", "#3498db", "#9b59b6", "#1abc9c"];
-    
-    let bomboBalls = [];
-
-    function inicializarBolasBombo() {
-        bomboBalls = Array.from({ length: 45 }, (_, i) => {
-            const r = Math.random() * (BOMBO.radius - 25);
-            const theta = Math.random() * Math.PI * 2;
-            return {
-                number: String(i + 1).padStart(2, '0'),
-                x: BOMBO.x + r * Math.cos(theta),
-                y: BOMBO.y + r * Math.sin(theta),
-                vx: (Math.random() - 0.5) * 4,
-                vy: (Math.random() - 0.5) * 4,
-                radius: 8.5,
-                color: ballColors[i % ballColors.length]
-            };
+    function inicializarRodillosSlot() {
+        [1, 2, 3].forEach(id => {
+            const reel = document.getElementById(`reel${id}`);
+            if (!reel) return;
+            reel.innerHTML = '';
+            
+            // Creamos 2 secuencias completas del 0 al 9 para el scroll continuo
+            for (let loop = 0; loop < 2; loop++) {
+                for (let i = 0; i <= 9; i++) {
+                    const digit = document.createElement('div');
+                    digit.className = 'slot-digit';
+                    digit.innerText = i;
+                    reel.appendChild(digit);
+                }
+            }
+            reel.style.top = '0px';
         });
     }
 
-    inicializarBolasBombo();
+    inicializarRodillosSlot();
 
-    function animateBomboCanvas() {
-        if (!ctx) return;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    function animarRodillos() {
+        if (isReelsSpinning) return;
+        isReelsSpinning = true;
 
-        // 1. DIBUJAR MARCO Y BORDE DORADO DEL BOMBO CIRCULAR
-        ctx.save();
-        ctx.shadowColor = "#ff9900";
-        ctx.shadowBlur = 12;
+        let pos1 = 0, pos2 = 0, pos3 = 0;
 
-        const ringGradient = ctx.createRadialGradient(
-            BOMBO.x, BOMBO.y, BOMBO.radius - 6,
-            BOMBO.x, BOMBO.y, BOMBO.radius + 6
-        );
-        ringGradient.addColorStop(0, "#d4af37");
-        ringGradient.addColorStop(0.5, "#fff2a3");
-        ringGradient.addColorStop(1, "#8a6d3b");
+        slotInterval = setInterval(() => {
+            pos1 = (pos1 - 30) % 900;
+            pos2 = (pos2 - 45) % 900;
+            pos3 = (pos3 - 60) % 900;
 
-        ctx.beginPath();
-        ctx.arc(BOMBO.x, BOMBO.y, BOMBO.radius, 0, Math.PI * 2);
-        ctx.lineWidth = 8;
-        ctx.strokeStyle = ringGradient;
-        ctx.stroke();
+            const r1 = document.getElementById('reel1');
+            const r2 = document.getElementById('reel2');
+            const r3 = document.getElementById('reel3');
 
-        ctx.shadowBlur = 0;
-        ctx.fillStyle = "rgba(10, 15, 25, 0.92)";
-        ctx.fill();
-        ctx.restore();
+            if (r1) r1.style.top = `${pos1}px`;
+            if (r2) r2.style.top = `${pos2}px`;
+            if (r3) r3.style.top = `${pos3}px`;
+        }, 30);
+    }
 
-        // 2. FÍSICA Y MOVIMIENTO DE BOLAS
-        bomboBalls.forEach((ball, idx) => {
-            const dx = ball.x - BOMBO.x;
-            const dy = ball.y - BOMBO.y;
+    function detenerRodillosEnNumero(numeroTargetStr) {
+        if (slotInterval) {
+            clearInterval(slotInterval);
+            slotInterval = null;
+        }
+        isReelsSpinning = false;
 
-            // Fuerza circular tipo turbulencia
-            ball.vx += -dy * 0.005 + (Math.random() - 0.5) * 0.4;
-            ball.vy +=  dx * 0.005 + (Math.random() - 0.5) * 0.4 + 0.1; // pequeña gravedad constante
+        // Aseguramos 3 dígitos (ej: "7" -> "007")
+        const numPadded = String(numeroTargetStr).padStart(3, '0');
+        const d1 = parseInt(numPadded[0], 10);
+        const d2 = parseInt(numPadded[1], 10);
+        const d3 = parseInt(numPadded[2], 10);
 
-            // Fricción ligera
-            ball.vx *= 0.985;
-            ball.vy *= 0.985;
+        // Ajustamos la posición exacta de cada número
+        const r1 = document.getElementById('reel1');
+        const r2 = document.getElementById('reel2');
+        const r3 = document.getElementById('reel3');
 
-            ball.x += ball.vx;
-            ball.y += ball.vy;
-
-            // Rebotar entre bolas
-            for (let j = idx + 1; j < bomboBalls.length; j++) {
-                const b2 = bomboBalls[j];
-                const bdx = b2.x - ball.x;
-                const bdy = b2.y - ball.y;
-                const distBolas = Math.sqrt(bdx * bdx + bdy * bdy);
-                const minDist = ball.radius + b2.radius;
-
-                if (distBolas < minDist && distBolas > 0) {
-                    const nx = bdx / distBolas;
-                    const ny = bdy / distBolas;
-                    const overlap = minDist - distBolas;
-
-                    ball.x -= nx * overlap * 0.5;
-                    ball.y -= ny * overlap * 0.5;
-                    b2.x += nx * overlap * 0.5;
-                    b2.y += ny * overlap * 0.5;
-
-                    const kx = ball.vx - b2.vx;
-                    const ky = ball.vy - b2.vy;
-                    const p = 2 * (nx * kx + ny * ky) / 2;
-
-                    ball.vx -= p * nx * 0.8;
-                    ball.vy -= p * ny * 0.8;
-                    b2.vx += p * nx * 0.8;
-                    b2.vy += p * ny * 0.8;
-                }
-            }
-
-            // Rebote exacto sobre el borde del bombo circular
-            const distCentro = Math.sqrt(dx * dx + dy * dy);
-            const maxDist = BOMBO.radius - ball.radius - 2;
-
-            if (distCentro > maxDist) {
-                const nx = dx / distCentro;
-                const ny = dy / distCentro;
-
-                // Reposicionar bola justo dentro del límite
-                ball.x = BOMBO.x + nx * maxDist;
-                ball.y = BOMBO.y + ny * maxDist;
-
-                // Reflejar velocidad sobre la normal del círculo
-                const dot = ball.vx * nx + ball.vy * ny;
-                if (dot > 0) {
-                    ball.vx -= 1.6 * dot * nx;
-                    ball.vy -= 1.6 * dot * ny;
-                }
-            }
-
-            // Dibujar bola
-            ctx.save();
-            ctx.beginPath();
-            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
-            ctx.fillStyle = ball.color;
-            ctx.fill();
-
-            ctx.lineWidth = 1;
-            ctx.strokeStyle = "#ffffff";
-            ctx.stroke();
-
-            ctx.fillStyle = "#ffffff";
-            ctx.font = "bold 7px monospace";
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.fillText(ball.number, ball.x, ball.y + 0.5);
-            ctx.restore();
-        });
-
-        animFrameId = requestAnimationFrame(animateBomboCanvas);
+        if (r1) r1.style.top = `-${d1 * 90}px`;
+        if (r2) r2.style.top = `-${d2 * 90}px`;
+        if (r3) r3.style.top = `-${d3 * 90}px`;
     }
 
     db.ref('sorteo_participantes_raw').on('value', function(snapshot) {
@@ -1509,8 +1540,9 @@
             document.getElementById('waitingCard').classList.add('hidden');
             iniciarRelojCuentaAtras(data.targetTime);
         } else if (data && data.ganador) {
-            if (animFrameId) { cancelAnimationFrame(animFrameId); animFrameId = null; }
-            document.getElementById('bomboCard').style.display = 'none';
+            if (slotInterval) { clearInterval(slotInterval); slotInterval = null; }
+            
+            document.getElementById('arcadeCard').style.display = 'none';
             document.getElementById('countdownCard').classList.add('hidden');
             document.getElementById('waitingCard').classList.add('hidden');
             document.getElementById('winnerCard').style.display = 'block';
@@ -1522,6 +1554,7 @@
             const matchNum = data.ganador.ticket.match(/^(\d+)/);
             if (matchNum) {
                 numeroBoleto = "Boleto premiado Nº " + matchNum[1];
+                detenerRodillosEnNumero(matchNum[1]);
             } else {
                 numeroBoleto = "Boleto premiado: " + data.ganador.ticket;
             }
@@ -1545,8 +1578,8 @@
                 });
             }
         } else {
-            if (animFrameId) { cancelAnimationFrame(animFrameId); animFrameId = null; }
-            document.getElementById('bomboCard').style.display = 'none';
+            if (slotInterval) { clearInterval(slotInterval); slotInterval = null; }
+            document.getElementById('arcadeCard').style.display = 'none';
             document.getElementById('winnerCard').style.display = 'none';
             document.getElementById('countdownCard').classList.add('hidden');
             document.getElementById('waitingCard').classList.remove('hidden');
@@ -1554,9 +1587,9 @@
     });
 
     // =======================================================
-    // CONTROL CUENTA ATRÁS Y ACTIVACIÓN A LOS 10 MINUTOS
+    // CONTROL CUENTA ATRÁS Y ACTIVACIÓN DE LA RECREATIVA (10 MIN)
     // =======================================================
-    const TIEMPO_BOMBO_MS = 10 * 60 * 1000; // 10 minutos exactos (600.000 ms)
+    const TIEMPO_ARCADE_MS = 10 * 60 * 1000; // 10 minutos (600.000 ms)
 
     function iniciarRelojCuentaAtras(targetTime) {
         function actualizar() {
@@ -1564,29 +1597,24 @@
 
             if (diferencia <= 0) {
                 clearInterval(timerInterval);
-                if (animFrameId) { cancelAnimationFrame(animFrameId); animFrameId = null; }
                 document.getElementById('timerDisplay').innerText = "00h 00m 00s";
-                document.getElementById('bomboCard').style.display = 'none';
                 ejecutarTiradaProgramada();
                 return;
             }
 
-            // ACTIVACIÓN DE LA ANIMACIÓN SI QUEDAN 10 MINUTOS O MENOS
-            if (diferencia <= TIEMPO_BOMBO_MS) {
+            // ACTIVACIÓN DE LA RECREATIVA ARCADE Y SUS RODILLOS EN LOS ÚLTIMOS 10 MINUTOS
+            if (diferencia <= TIEMPO_ARCADE_MS) {
                 document.getElementById('countdownCard').classList.add('hidden');
-                document.getElementById('bomboCard').style.display = 'block';
+                document.getElementById('arcadeCard').style.display = 'block';
 
-                if (!animFrameId) {
-                    inicializarBolasBombo();
-                    animateBomboCanvas();
-                }
+                animarRodillos();
 
                 const mins = Math.floor(diferencia / 60000);
                 const segs = Math.floor((diferencia % 60000) / 1000);
-                document.getElementById('bomboCountdownText').innerText = 
+                document.getElementById('arcadeCountdownText').innerText = 
                     `${String(mins).padStart(2, '0')}:${String(segs).padStart(2, '0')}`;
             } else {
-                document.getElementById('bomboCard').style.display = 'none';
+                document.getElementById('arcadeCard').style.display = 'none';
                 document.getElementById('countdownCard').classList.remove('hidden');
 
                 const dias = Math.floor(diferencia / (1000 * 60 * 60 * 24));
@@ -1778,7 +1806,7 @@
                 rawBlacklist: rawBlacklist
             }).then(() => alert("¡Sorteo programado con éxito!"));
         } else {
-            if (confirm("El sorteo se realizará de inmediato sin animación previa. ¿Continuar?")) {
+            if (confirm("El sorteo se realizará de inmediato. ¿Continuar?")) {
                 calcularYEjecutarTirada(rawLines, rawBlacklist);
             }
         }
