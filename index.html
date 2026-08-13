@@ -33,6 +33,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
     <style>
+        /* ===== CSS COMPLETO (igual que antes) ===== */
         :root {
             --card: rgba(30, 41, 59, 0.92);
             --accent: #6366f1;
@@ -484,7 +485,7 @@
             to { opacity: 1; transform: translateY(0); }
         }
     
-        /* ===== TRAGAPERRAS RETRO 8-BIT (única definición) ===== */
+        /* ===== TRAGAPERRAS RETRO 8-BIT ===== */
         #slotMachineCard {
             display: none;
             text-align: center;
@@ -595,7 +596,7 @@
             .slot-reel { height: 68px; font-size: 2rem; }
         }
 
-        /* Selector de hora retro */
+        /* ===== SELECTOR DE HORA RETRO ===== */
         .retro-time-picker { position:relative; width:100%; }
         .retro-time-display {
             width:100%; min-height:44px; padding:10px 14px;
@@ -637,6 +638,7 @@
         .retro-time-confirm:hover { background:#8b5cf6; }
         @media (max-width:480px) { .retro-time-wheel-wrap { width:90px; } }
 
+        /* ===== SELECTOR DE FECHA RETRO ===== */
         .retro-date-picker{position:relative;width:100%}.retro-date-display{width:100%;min-height:44px;padding:10px 14px;box-sizing:border-box;display:flex;align-items:center;gap:10px;border:1px solid rgba(139,92,246,.55);border-radius:12px;background:rgba(15,23,42,.85);color:#f8fafc;font:inherit;cursor:pointer;text-align:left}.retro-date-display span:last-child{margin-left:auto;opacity:.7}.retro-date-panel{position:absolute;z-index:2100;left:0;right:0;top:calc(100% + 8px);padding:14px;border:1px solid rgba(139,92,246,.55);border-radius:16px;background:#111827;box-shadow:0 16px 40px rgba(0,0,0,.45)}.retro-date-panel.hidden{display:none}.retro-date-head{display:grid;grid-template-columns:40px 1fr 40px;gap:6px;align-items:center;margin-bottom:10px}.retro-date-head strong{text-align:center;color:#c4b5fd;text-transform:capitalize}.retro-date-head button,.retro-date-today{border:1px solid rgba(139,92,246,.35);border-radius:9px;background:#1e293b;color:#fff;cursor:pointer;min-height:34px}.retro-date-weekdays,.retro-date-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}.retro-date-weekdays{margin-bottom:5px}.retro-date-weekdays span{text-align:center;font-size:.72rem;opacity:.6}.retro-date-cell{min-height:36px;border:0;border-radius:9px;background:transparent;color:#e2e8f0;cursor:pointer;font:inherit;font-weight:700}.retro-date-cell:hover{background:rgba(139,92,246,.22)}.retro-date-cell.other-month{opacity:.25}.retro-date-cell.today{outline:1px solid rgba(167,139,250,.7)}.retro-date-cell.selected{background:#7c3aed;color:#fff}.retro-date-today{width:100%;margin-top:10px}.retro-date-confirm{width:100%;margin-top:7px;padding:9px 12px;border:0;border-radius:10px;background:#7c3aed;color:#fff;font-weight:800;cursor:pointer}
     </style>
 </head>
@@ -651,7 +653,7 @@
         <button class="top-prob-btn" onclick="abrirProbabilidadesModal()">📊 Lista de Participantes</button>
     </div>
 
-    <!-- TRAGAPERRAS DEL SORTEO: siempre visible cuando hay un sorteo programado o en curso -->
+    <!-- TRAGAPERRAS DEL SORTEO -->
     <div id="slotMachineCard" aria-live="polite">
         <div class="slot-marquee">★ 🕹️ SORTEO EN DIRECTO 🕹️ ★</div>
         <div class="slot-cabinet">
@@ -682,20 +684,16 @@
             <div class="arcade-title">🕹️ Eligen el Arcade del Mes (5 Usuarios):</div>
             <ul id="arcadeList" class="custom-list"></ul>
 
-            <!-- BUSCADOR CON DESPLEGABLE PERSONALIZADO Y MICRÓFONO -->
             <div class="search-container">
                 <label style="font-size: 0.8rem; color: var(--gold); display: block; margin-bottom: 4px; text-align: center;">
                     🔍 <b>Comprobar si un juego ya ha sido elegido:</b>
                 </label>
-                
                 <div class="search-input-wrapper">
                     <input type="text" id="gameSearchInput" placeholder="Escribe al menos 4 caracteres o usa el micro..." oninput="comprobarJuegoEnSheets()" autocomplete="off">
                     <button type="button" id="micBtn" class="mic-btn" onclick="activarBusquedaVoz()" title="Búsqueda por voz">🎤</button>
                     <div id="customSuggestions" class="custom-suggestions-dropdown"></div>
                 </div>
-                
                 <div id="searchResult" class="search-result-box"></div>
-                
                 <div style="text-align: center; margin-top: 8px;">
                     <a href="https://docs.google.com/spreadsheets/d/1JApebwPe9J_fbS_hnQBHHElSlELlWiAjxdvDJQ8yw2E/edit?gid=0#gid=0" target="_blank" rel="noopener noreferrer" style="color: var(--muted); text-decoration: underline; font-size: 0.75rem;">
                         📄 Abrir hoja de cálculo completa ↗️
@@ -707,7 +705,7 @@
         <div class="log-box" id="publicLog"></div>
     </div>
 
-    <!-- MENSAJE ESPERA (cuando no hay sorteo activo) -->
+    <!-- MENSAJE ESPERA -->
     <div id="waitingCard" class="card hidden" style="text-align: center;">
         <h2>⏳ El sorteo aún no se ha realizado</h2>
         <p style="color: var(--muted); font-size: 0.85rem;">El administrador realizará o programará la tirada en breve. Esta página se actualizará automáticamente.</p>
@@ -727,11 +725,10 @@
         <button id="btnToggleHistory" class="btn-toggle-view hidden" onclick="toggleHistoryView()">⬇️ Ver todo el historial</button>
     </div>
 
-    <!-- PANEL ADMIN (OCULTO) -->
+    <!-- PANEL ADMIN -->
     <div id="adminPanel" class="card admin-panel hidden">
         <h2>🛠️ Panel de Control (Administrador)</h2>
 
-        <!-- SECCIÓN 1: MES CORRESPONDIENTE AL SORTEO -->
         <div class="admin-section">
             <label><b>📅 Mes correspondiente al Sorteo:</b></label>
             <select id="monthSelect" style="margin-top: 8px;">
@@ -752,7 +749,6 @@
             <button style="margin-top: 10px; background-color: var(--accent);" onclick="guardarMesSorteo()">💾 GUARDAR MES DEL SORTEO</button>
         </div>
 
-        <!-- SECCIÓN 2: DATOS Y FECHA DEL SORTEO -->
         <div class="admin-section">
             <button class="telegram-btn" onclick="importarDesdeTelegram()">📲 CARGAR ÚLTIMA LISTA DE TELEGRAM</button>
 
@@ -767,45 +763,55 @@
             <label><b>3. Fecha y Hora Exacta del Sorteo (Opcional):</b></label>
             <div class="datetime-group" style="margin-top: 6px;">
                 <input type="hidden" id="drawDateInput" value="">
-<div class="retro-date-picker" id="retroDatePicker">
-<button type="button" class="retro-date-display" id="retroDateDisplay"><span>📅</span><span id="retroDateDisplayValue">--/--/----</span><span>▾</span></button>
-<div class="retro-date-panel hidden" id="retroDatePanel">
-<div class="retro-date-head"><button type="button" id="retroDatePrev">‹</button><strong id="retroDateMonthLabel"></strong><button type="button" id="retroDateNext">›</button></div>
-<div class="retro-date-weekdays"><span>L</span><span>M</span><span>X</span><span>J</span><span>V</span><span>S</span><span>D</span></div>
-<div class="retro-date-grid" id="retroDateGrid"></div>
-<button type="button" class="retro-date-today" id="retroDateToday">HOY</button>
-<button type="button" class="retro-date-confirm" id="retroDateConfirm">CONFIRMAR FECHA</button>
-</div></div>
-                
-<input type="hidden" id="drawTimeInput" value="00:00">
-<div class="retro-time-picker" id="retroTimePicker">
-  <button type="button" class="retro-time-display" id="retroTimeDisplay" aria-haspopup="dialog" aria-expanded="false">
-    <span id="retroTimeDisplayValue">00:00</span><span class="retro-time-chevron">▾</span>
-  </button>
-  <div class="retro-time-panel hidden" id="retroTimePanel">
-    <div class="retro-time-title">SELECCIONA LA HORA</div>
-    <div class="retro-time-wheels">
-      <div class="retro-time-wheel-wrap">
-        <div class="retro-time-wheel-label">HORA</div>
-        <div class="retro-time-wheel" id="retroHourWheel" tabindex="0" aria-label="Hora"></div>
-      </div>
-      <div class="retro-time-colon">:</div>
-      <div class="retro-time-wheel-wrap">
-        <div class="retro-time-wheel-label">MIN</div>
-        <div class="retro-time-wheel" id="retroMinuteWheel" tabindex="0" aria-label="Minutos"></div>
-      </div>
-    </div>
-    <div class="retro-time-help">Rueda del ratón o ▲ ▼ · 00–23 / 00–59</div>
-    <button type="button" class="retro-time-confirm" id="retroTimeConfirm">CONFIRMAR</button>
-  </div>
-</div>
+                <div class="retro-date-picker" id="retroDatePicker">
+                    <button type="button" class="retro-date-display" id="retroDateDisplay">
+                        <span>📅</span>
+                        <span id="retroDateDisplayValue">--/--/----</span>
+                        <span>▾</span>
+                    </button>
+                    <div class="retro-date-panel hidden" id="retroDatePanel">
+                        <div class="retro-date-head">
+                            <button type="button" id="retroDatePrev">‹</button>
+                            <strong id="retroDateMonthLabel"></strong>
+                            <button type="button" id="retroDateNext">›</button>
+                        </div>
+                        <div class="retro-date-weekdays">
+                            <span>L</span><span>M</span><span>X</span><span>J</span><span>V</span><span>S</span><span>D</span>
+                        </div>
+                        <div class="retro-date-grid" id="retroDateGrid"></div>
+                        <button type="button" class="retro-date-today" id="retroDateToday">HOY</button>
+                        <button type="button" class="retro-date-confirm" id="retroDateConfirm">CONFIRMAR FECHA</button>
+                    </div>
+                </div>
 
+                <input type="hidden" id="drawTimeInput" value="00:00">
+                <div class="retro-time-picker" id="retroTimePicker">
+                    <button type="button" class="retro-time-display" id="retroTimeDisplay" aria-haspopup="dialog" aria-expanded="false">
+                        <span id="retroTimeDisplayValue">00:00</span>
+                        <span class="retro-time-chevron">▾</span>
+                    </button>
+                    <div class="retro-time-panel hidden" id="retroTimePanel">
+                        <div class="retro-time-title">SELECCIONA LA HORA</div>
+                        <div class="retro-time-wheels">
+                            <div class="retro-time-wheel-wrap">
+                                <div class="retro-time-wheel-label">HORA</div>
+                                <div class="retro-time-wheel" id="retroHourWheel" tabindex="0" aria-label="Hora"></div>
+                            </div>
+                            <div class="retro-time-colon">:</div>
+                            <div class="retro-time-wheel-wrap">
+                                <div class="retro-time-wheel-label">MIN</div>
+                                <div class="retro-time-wheel" id="retroMinuteWheel" tabindex="0" aria-label="Minutos"></div>
+                            </div>
+                        </div>
+                        <div class="retro-time-help">Rueda del ratón o ▲ ▼ · 00–23 / 00–59</div>
+                        <button type="button" class="retro-time-confirm" id="retroTimeConfirm">CONFIRMAR</button>
+                    </div>
+                </div>
             </div>
 
             <button class="admin-btn" onclick="programarOEjecutarSorteo()">🎲 GUARDAR Y PROGRAMAR SORTEO</button>
         </div>
 
-        <!-- SECCIÓN 3: AÑADIR GANADOR(ES) MANUALMENTE -->
         <div class="admin-section">
             <label><b>➕ Añadir Ganador(es) Anterior(es) al Historial:</b></label>
             <p style="font-size: 0.8rem; color: var(--muted); margin: 4px 0 8px 0;">
@@ -819,7 +825,6 @@
             <button style="background-color: #0284c7;" onclick="agregarGanadorManual()">➕ AÑADIR AL HISTORIAL</button>
         </div>
 
-        <!-- SECCIÓN 4: COPIAS DE SEGURIDAD Y RESTAURACIÓN -->
         <div class="admin-section" style="border: 1px solid var(--accent); background: rgba(99, 102, 241, 0.08);">
             <label><b>💾 Copias de Seguridad y Restauración:</b></label>
             <p style="font-size: 0.8rem; color: var(--muted); margin: 4px 0 10px 0;">
@@ -849,7 +854,6 @@
         <button class="clear-btn" onclick="borrarTodo()">🧹 BORRAR TODO</button>
     </div>
 
-    <!-- FILA DE BOTONES INFERIORES -->
     <div class="footer-buttons-group">
         <button class="footer-btn" onclick="abrirCreditos()">💳 Créditos</button>
     </div>
@@ -859,7 +863,6 @@
 <div id="creditsModal" class="modal-overlay hidden">
     <div class="modal-card">
         <h2 style="color: var(--gold); margin-top: 0; margin-bottom: 15px;">Créditos</h2>
-        
         <ul class="credits-list">
             <li class="credits-item">
                 <a href="https://elreclamo.es/" target="_blank" rel="noopener noreferrer" class="credits-link">
@@ -870,7 +873,6 @@
             <li class="credits-item">🕹️ @AlexisToretto</li>
             <li class="credits-item">🧠 @cerebrosolido</li>
         </ul>
-
         <button onclick="cerrarCreditos()" style="background-color: var(--accent); margin-top: 10px;">Cerrar</button>
     </div>
 </div>
@@ -879,20 +881,18 @@
 <div id="probabilitiesModal" class="modal-overlay hidden">
     <div class="modal-card">
         <h2 style="color: var(--gold); margin-top: 0; margin-bottom: 10px;">📊 Lista de Participantes</h2>
-        
         <ul id="participantsListModal" class="credits-list" style="margin: 5px 0 15px 0; max-height: 50vh;">
             <li class="custom-item" style="justify-content: center; color: var(--muted);">Cargando participantes...</li>
         </ul>
-
         <button onclick="cerrarProbabilidadesModal()" style="background-color: var(--accent); margin-top: 5px;">Cerrar</button>
     </div>
 </div>
 
 <script>
+    // ===== CONFIGURACIÓN DE FIREBASE =====
     const firebaseConfig = {
         databaseURL: "https://sorteo-hof-default-rtdb.europe-west1.firebasedatabase.app"
     };
-    
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
@@ -919,9 +919,9 @@
 
     let adminClicks = 0;
     let adminClickTimer = null;
-
     const nombresMeses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
+    // ===== FUNCIONES DE FIREBASE Y PARTICIPANTES =====
     db.ref('sorteo_participantes_raw').on('value', function(snapshot) {
         const val = snapshot.val();
         const textarea = document.getElementById('listInput');
@@ -943,21 +943,22 @@
 
     window.addEventListener('DOMContentLoaded', function() {
         importarDesdeTelegram(false);
+        // Inicializar selectores de fecha/hora después de cargar el DOM
+        initRetroDatePicker();
+        initRetroTimePicker();
     });
 
+    // ===== FUNCIONES DE MODALES =====
     function abrirCreditos() {
         document.getElementById('creditsModal').classList.remove('hidden');
     }
-
     function cerrarCreditos() {
         document.getElementById('creditsModal').classList.add('hidden');
     }
-
     function abrirProbabilidadesModal() {
         calcularYMostrarProbabilidades();
         document.getElementById('probabilitiesModal').classList.remove('hidden');
     }
-
     function cerrarProbabilidadesModal() {
         document.getElementById('probabilitiesModal').classList.add('hidden');
     }
@@ -973,18 +974,14 @@
         const rawLinesStr = document.getElementById('listInput').value.trim();
         const modalListEl = document.getElementById('participantsListModal');
         if (!modalListEl) return;
-        
         modalListEl.innerHTML = '';
-
         if (!rawLinesStr) {
             modalListEl.innerHTML = '<li class="custom-item" style="justify-content: center; color: var(--muted);">No hay participantes cargados actualmente.</li>';
             return;
         }
-
         const rawLines = rawLinesStr.split('\n');
         let boletosPorUsuario = {};
         let totalBoletosValidos = 0;
-
         rawLines.forEach(function(line) {
             let lineaLimpia = line.trim();
             if (!lineaLimpia) return;
@@ -993,33 +990,25 @@
                 let user = matchUser[0];
                 let numBoletoMatch = lineaLimpia.match(/^(\d+)/);
                 let numeroBoleto = numBoletoMatch ? numBoletoMatch[1] : (boletosPorUsuario[user] ? boletosPorUsuario[user].length + 1 : 1);
-
-                if (!boletosPorUsuario[user]) {
-                    boletosPorUsuario[user] = [];
-                }
+                if (!boletosPorUsuario[user]) boletosPorUsuario[user] = [];
                 boletosPorUsuario[user].push(numeroBoleto);
                 totalBoletosValidos++;
             }
         });
-
         if (totalBoletosValidos === 0) {
             modalListEl.innerHTML = '<li class="custom-item" style="justify-content: center; color: var(--muted);">No se encontraron participantes válidos.</li>';
             return;
         }
-
         let listaParticipantes = Object.keys(boletosPorUsuario).map(user => {
             let listaB = boletosPorUsuario[user];
             let probabilidad = (listaB.length / totalBoletosValidos) * 100;
             return { user: user, boletos: listaB, count: listaB.length, prob: probabilidad };
         });
-
         listaParticipantes.sort((a, b) => b.count - a.count);
-
         listaParticipantes.forEach(p => {
             const li = document.createElement('li');
             li.className = 'custom-item';
             let porcentajeStr = p.prob.toFixed(3) + "%";
-
             li.innerHTML = `<div class="custom-item-text">
                                 <strong>${p.user}</strong> <span style="font-size:0.75rem; color:var(--muted);">(${p.count} ${p.count === 1 ? 'boleto' : 'boletos'})</span>
                                 <div style="font-size: 0.75rem; color: #aaa; margin-top: 2px; word-break: break-all;">Números: ${p.boletos.join(', ')}</div>
@@ -1032,7 +1021,6 @@
     function contarClicksAdmin() {
         adminClicks++;
         clearTimeout(adminClickTimer);
-        
         if (adminClicks >= 3) {
             adminClicks = 0;
             toggleAdminPanel();
@@ -1046,31 +1034,26 @@
         const arrayBuffer = new Uint32Array(1);
         const maxUint32 = 0xFFFFFFFF;
         const limiteEquitativo = maxUint32 - (maxUint32 % max);
-        
         let valorRandom;
         do {
             window.crypto.getRandomValues(arrayBuffer);
             valorRandom = arrayBuffer[0];
         } while (valorRandom >= limiteEquitativo);
-
         return valorRandom % max;
     }
 
+    // ===== FUNCIONES DE GOOGLE SHEETS Y BÚSQUEDA =====
     function parseCSVLine(linea) {
         let resultado = [];
         let celda = '';
         let enComillas = false;
-
         for (let i = 0; i < linea.length; i++) {
             let char = linea[i];
-            if (char === '"') {
-                enComillas = !enComillas;
-            } else if (char === ',' && !enComillas) {
+            if (char === '"') enComillas = !enComillas;
+            else if (char === ',' && !enComillas) {
                 resultado.push(celda.trim());
                 celda = '';
-            } else {
-                celda += char;
-            }
+            } else celda += char;
         }
         resultado.push(celda.trim());
         return resultado;
@@ -1078,36 +1061,23 @@
 
     function normalizarTexto(txt) {
         if (!txt) return "";
-        return txt.toString()
-                  .normalize("NFD")
-                  .replace(/[\u0300-\u036f]/g, "")
-                  .toLowerCase()
-                  .trim();
+        return txt.toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
     }
 
     async function obtenerJuegosDesdeSheets() {
-        if (cacheJuegosSheets && (Date.now() - ultimaCargaSheets < 30000)) {
-            return cacheJuegosSheets;
-        }
-
+        if (cacheJuegosSheets && (Date.now() - ultimaCargaSheets < 30000)) return cacheJuegosSheets;
         try {
             const res = await fetch(GOOGLE_SHEETS_CSV_URL + "&t=" + Date.now());
             if (!res.ok) throw new Error("Error al leer Sheets");
-            
             const text = await res.text();
             const lineas = text.split('\n').filter(l => l.trim().length > 0);
             let juegos = [];
-            
             lineas.forEach(lineaRaw => {
                 const columnas = parseCSVLine(lineaRaw);
                 const titulo = columnas[0] ? columnas[0].replace(/^"+|"+$/g, '').trim() : '';
                 const fecha = columnas[1] ? columnas[1].replace(/^"+|"+$/g, '').trim() : '';
-
-                if (titulo) {
-                    juegos.push({ titulo: titulo, fecha: fecha });
-                }
+                if (titulo) juegos.push({ titulo: titulo, fecha: fecha });
             });
-
             cacheJuegosSheets = juegos;
             ultimaCargaSheets = Date.now();
             return cacheJuegosSheets;
@@ -1123,42 +1093,35 @@
         const resBox = document.getElementById('searchResult');
         const query = inputEl.value.trim();
         const queryNorm = normalizarTexto(query);
-
         if (queryNorm.length < 4) {
             dropdown.innerHTML = '';
             dropdown.style.display = 'none';
             resBox.style.display = 'none';
             return;
         }
-
         const listaJuegos = await obtenerJuegosDesdeSheets();
         let coincidenciaExacta = listaJuegos.find(j => normalizarTexto(j.titulo) === queryNorm);
         const juegosFiltrados = listaJuegos.filter(j => normalizarTexto(j.titulo).includes(queryNorm));
-
         dropdown.innerHTML = '';
         if (juegosFiltrados.length > 0 && !coincidenciaExacta) {
             juegosFiltrados.slice(0, 15).forEach(j => {
                 const divItem = document.createElement('div');
                 divItem.className = 'suggestion-item';
                 divItem.innerHTML = `<div>${j.titulo}</div>` + (j.fecha ? `<span class="suggestion-date">Jugado en: ${j.fecha}</span>` : '');
-                
                 divItem.onmousedown = function(e) {
                     e.preventDefault();
                     inputEl.value = j.titulo;
                     dropdown.style.display = 'none';
                     comprobarJuegoEnSheets();
                 };
-                
                 dropdown.appendChild(divItem);
             });
             dropdown.style.display = 'block';
         } else {
             dropdown.style.display = 'none';
         }
-
         resBox.style.display = 'block';
         resBox.className = 'search-result-box';
-
         if (coincidenciaExacta) {
             resBox.className = 'search-result-box result-found';
             let txtFecha = coincidenciaExacta.fecha ? ` - Jugado en: ${coincidenciaExacta.fecha}` : '';
@@ -1180,37 +1143,30 @@
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         const micBtn = document.getElementById('micBtn');
         const inputEl = document.getElementById('gameSearchInput');
-
         if (!SpeechRecognition) {
             alert("Lo siento, tu navegador no soporta la búsqueda por voz.");
             return;
         }
-
         const recognition = new SpeechRecognition();
         recognition.lang = 'es-ES';
         recognition.interimResults = false;
         recognition.maxAlternatives = 1;
-
         recognition.onstart = function() {
             micBtn.classList.add('listening');
             micBtn.title = "Escuchando voz...";
         };
-
         recognition.onresult = function(event) {
             const speechResult = event.results[0][0].transcript;
             inputEl.value = speechResult;
             comprobarJuegoInmediato(speechResult);
         };
-
         recognition.onerror = function(event) {
             console.error("Error en reconocimiento de voz:", event.error);
         };
-
         recognition.onend = function() {
             micBtn.classList.remove('listening');
             micBtn.title = "Búsqueda por voz";
         };
-
         recognition.start();
     }
 
@@ -1220,6 +1176,7 @@
         await comprobarJuegoEnSheets();
     }
 
+    // ===== FUNCIONES DE BACKUP =====
     function crearBackupManual() {
         const ahora = new Date();
         const horaTag = `${String(ahora.getHours()).padStart(2,'0')}${String(ahora.getMinutes()).padStart(2,'0')}`;
@@ -1240,7 +1197,6 @@
                 sorteo_actual: results[1].val() || null,
                 mes_sorteo: results[2].val() || null
             };
-
             db.ref('backups/' + clave).set(backupPayload).then(function() {
                 if (notificar) alert("✅ Copia de seguridad guardada con éxito bajo la clave: " + clave);
             }).catch(function(err) {
@@ -1253,10 +1209,8 @@
         db.ref('backups').on('value', function(snapshot) {
             const select = document.getElementById('backupSelect');
             select.innerHTML = '<option value="">-- Selecciona una copia para restaurar o borrar --</option>';
-
             const backups = snapshot.val();
             if (!backups) return;
-
             Object.keys(backups).reverse().forEach(function(key) {
                 const item = backups[key];
                 const option = document.createElement('option');
@@ -1273,7 +1227,6 @@
             alert("Por favor, selecciona una copia de seguridad del desplegable.");
             return;
         }
-
         if (confirm(`⚠️ ¿Estás seguro de RESTAURAR la copia "${clave}"?\n\nEsto sobrescribirá los datos con los guardados en ese momento.`)) {
             db.ref('backups/' + clave).once('value', function(snapshot) {
                 const data = snapshot.val();
@@ -1281,7 +1234,6 @@
                     alert("Error al leer la copia de seguridad.");
                     return;
                 }
-
                 db.ref('historial_ganadores').set(data.historial_ganadores || null);
                 db.ref('sorteo_actual').set(data.sorteo_actual || null);
                 db.ref('mes_sorteo').set(data.mes_sorteo || null).then(function() {
@@ -1297,10 +1249,8 @@
             alert("Por favor, selecciona primero una copia del desplegable.");
             return;
         }
-
         const select = document.getElementById('backupSelect');
         const textoSeleccionado = select.options[select.selectedIndex].text;
-
         if (confirm(`⚠️ ¿Estás seguro de que deseas ELIMINAR permanentemente la copia de seguridad?\n\n"${textoSeleccionado}"`)) {
             db.ref('backups/' + clave).remove().then(function() {
                 alert("🗑️ Copia de seguridad eliminada con éxito.");
@@ -1320,7 +1270,6 @@
                 mes_sorteo: results[2].val() || null,
                 exportadoEl: new Date().toLocaleString('es-ES')
             };
-
             const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -1334,7 +1283,6 @@
     function restaurarDesdeJSON(event) {
         const file = event.target.files[0];
         if (!file) return;
-
         const reader = new FileReader();
         reader.onload = function(e) {
             try {
@@ -1359,53 +1307,43 @@
         };
     }
 
+    // ===== IMPORTAR DESDE TELEGRAM =====
     async function importarDesdeTelegram(esManual = true) {
         const btn = document.querySelector('.telegram-btn');
         let originalText = "";
-        
         if (esManual) {
             originalText = btn.innerText;
             btn.innerText = "⏳ Cargando lista en vivo desde Telegram...";
             btn.disabled = true;
         }
-
         const timestamp = Date.now();
         const targetUrl = `https://t.me/s/retrojuegodelmes?before=${timestamp}`;
         const workerUrl = `${MI_CLOUDFLARE_WORKER}?url=${encodeURIComponent(targetUrl)}`;
-
         try {
             const response = await fetch(workerUrl, { cache: "no-store" });
             if (!response.ok) throw new Error(`Error Cloudflare: ${response.status}`);
-
             const htmlContent = await response.text();
             if (!htmlContent || !htmlContent.includes('tgme_widget_message_text')) throw new Error("Sin resultados.");
-
             const parser = new DOMParser();
             const doc = parser.parseFromString(htmlContent, 'text/html');
             const messages = doc.querySelectorAll('.tgme_widget_message_text');
-
             if (!messages || messages.length === 0) return;
-
             let ultimaListaEncontrada = "";
             const regexPatronLista = /\d+[\s-]*@[\w_]+/i;
-
             for (let i = messages.length - 1; i >= 0; i--) {
                 let htmlTemp = messages[i].innerHTML.replace(/<br\s*[\/]?>/gi, "\n");
                 let tempDiv = document.createElement("div");
                 tempDiv.innerHTML = htmlTemp;
                 let plainText = tempDiv.textContent || tempDiv.innerText || "";
-
                 if (regexPatronLista.test(plainText)) {
                     const lineas = plainText.split('\n');
                     const lineasFiltradas = lineas.map(l => l.trim()).filter(l => regexPatronLista.test(l) || /PUNTO\s+EXTRA/i.test(l));
-
                     if (lineasFiltradas.length > 0) {
                         ultimaListaEncontrada = lineasFiltradas.join('\n');
                         break;
                     }
                 }
             }
-
             if (ultimaListaEncontrada) {
                 document.getElementById('listInput').value = ultimaListaEncontrada;
                 guardarParticipantesFirebase();
@@ -1425,6 +1363,7 @@
         }
     }
 
+    // ===== MES DEL SORTEO =====
     db.ref('mes_sorteo').on('value', function(snapshot) {
         const mes = snapshot.val();
         const titleEl = document.getElementById('mainTitle');
@@ -1439,21 +1378,18 @@
     function guardarMesSorteo() {
         const mes = document.getElementById('monthSelect').value;
         if (!mes) return alert("Por favor, selecciona un mes del desplegable.");
-
         if (confirm("¿Confirmas que deseas cambiar el título del sorteo al mes de " + mes + "?")) {
             db.ref('mes_sorteo').set(mes).then(() => alert("¡Mes actualizado con éxito!"));
         }
     }
 
+    // ===== AÑADIR GANADOR MANUAL =====
     function agregarGanadorManual() {
         const inputVal = document.getElementById('manualUserAdmin').value.trim();
         const customMonthVal = document.getElementById('manualWinnerMonth').value;
-
         if (!inputVal) return alert("Introduce al menos un usuario.");
-
         let fechaTexto = "";
         let timestampToSave = Date.now();
-
         if (customMonthVal) {
             const parts = customMonthVal.split('-');
             const year = parseInt(parts[0], 10);
@@ -1464,10 +1400,8 @@
             const ahora = new Date();
             fechaTexto = `${nombresMeses[ahora.getMonth()]} ${ahora.getFullYear()}`;
         }
-
         const usuarios = inputVal.split(/[\n,\s]+/).map(u => u.trim()).filter(u => u.length > 0);
         let añadidos = 0;
-
         usuarios.forEach(function(usr) {
             let userFinal = usr.startsWith('@') ? usr : '@' + usr;
             db.ref('historial_ganadores').push({
@@ -1478,7 +1412,6 @@
             });
             añadidos++;
         });
-
         alert("¡" + añadidos + " usuario(s) añadido(s) al historial!");
         document.getElementById('manualUserAdmin').value = '';
         document.getElementById('manualWinnerMonth').value = '';
@@ -1493,24 +1426,21 @@
 
     function verificarRepetidoVisual() {
         if (!actualGanadorUser) return;
-        
         db.ref('historial_ganadores').once('value', function(snapshot) {
             const data = snapshot.val();
             let totalVictorias = 0;
-
             if (data) {
                 Object.values(data).forEach(function(item) {
                     if (item.user.toLowerCase() === actualGanadorUser.toLowerCase()) totalVictorias++;
                 });
             }
-
             const noticeEl = document.getElementById('repeatNotice');
             if (totalVictorias > 1) noticeEl.classList.remove('hidden');
             else noticeEl.classList.add('hidden');
         });
     }
 
-    // --- NUEVA LÓGICA DE LA RECREATIVA (V9) ---
+    // ===== LÓGICA DE LA RECREATIVA (V9 MEJORADA) =====
     function mostrarRecreativa(activa) {
         const slot = document.getElementById('slotMachineCard');
         if (activa) slot.classList.add('active');
@@ -1533,7 +1463,6 @@
         slotAnimationActive = true;
         const reels = document.querySelectorAll('.slot-reel');
         reels.forEach(reel => reel.classList.add('spinning'));
-
         slotAnimationInterval = setInterval(() => {
             reels.forEach(reel => {
                 reel.innerText = String(Math.floor(Math.random() * 10));
@@ -1547,16 +1476,13 @@
         const slotStatus = document.getElementById('slotStatus');
 
         if (diff > 0) {
-            // Sorteo programado en el futuro
             mostrarRecreativa(true);
             if (diff <= 10 * 60 * 1000) {
-                // Últimos 10 minutos: rodillos girando
                 iniciarRodillos();
                 const seg = Math.ceil(diff / 1000);
                 slotStatus.innerText = '🎰 BUENA SUERTE, LA NECESITARÁS · ' +
                     String(Math.floor(seg/60)).padStart(2,'0') + ':' + String(seg%60).padStart(2,'0');
             } else {
-                // Más de 10 min: rodillos parados, cuenta atrás larga
                 detenerRodillos();
                 const dias = Math.floor(diff / (1000*60*60*24));
                 const horas = Math.floor((diff % (1000*60*60*24)) / (1000*60*60));
@@ -1570,7 +1496,6 @@
                 slotStatus.innerText = '🎰 PRÓXIMO SORTEO · ' + texto;
             }
         } else {
-            // El tiempo ha llegado: se debe ejecutar la tirada
             detenerRodillos();
             slotStatus.innerText = '⚡ ¡SORTEO EN MARCHA!';
             ejecutarTiradaProgramada();
@@ -1579,14 +1504,12 @@
 
     function iniciarRelojCuentaAtras(targetTime) {
         if (timerInterval) clearInterval(timerInterval);
-        // Actualización inmediata y luego cada segundo
         actualizarEstadoRecreativa(targetTime);
         timerInterval = setInterval(() => {
             const ahora = Date.now();
             if (ahora >= targetTime) {
                 clearInterval(timerInterval);
                 timerInterval = null;
-                // Ya se llamará a ejecutarTiradaProgramada desde actualizarEstadoRecreativa
                 actualizarEstadoRecreativa(targetTime);
             } else {
                 actualizarEstadoRecreativa(targetTime);
@@ -1595,11 +1518,8 @@
     }
 
     function finalizarTragaperras(ganador, revealAt) {
-        // Esta función se llama cuando ya hay un resultado con revealAt pendiente.
-        // Muestra el número premiado y una cuenta atrás de 30s.
         if (slotFinalizing) return;
         slotFinalizing = true;
-
         detenerRodillos();
         const reels = document.querySelectorAll('.slot-reel');
         const digitos = obtenerDigitosPremiados(ganador);
@@ -1607,32 +1527,25 @@
             reel.innerText = digitos[idx] || '0';
             reel.classList.add('slot-win');
         });
-
         mostrarRecreativa(true);
         const slotStatus = document.getElementById('slotStatus');
-
         if (slotRevealInterval) clearInterval(slotRevealInterval);
-
         const actualizar = () => {
             const restante = Math.max(0, Math.ceil((revealAt - Date.now()) / 1000));
             if (restante <= 0) {
                 clearInterval(slotRevealInterval);
                 slotRevealInterval = null;
                 slotStatus.innerText = '🎉 ¡RESULTADO LISTO! MOSTRANDO GANADOR...';
-                // La tarjeta de ganador se mostrará en el listener de Firebase
-                // cuando el valor de revealAt haya expirado.
                 return;
             }
             slotStatus.innerText = '🎰 NÚMERO PREMIADO · MOSTRANDO GANADOR EN ' +
                 String(restante).padStart(2,'0') + ' s';
         };
-
         actualizar();
         slotRevealInterval = setInterval(actualizar, 250);
     }
 
     function detenerTragaperras() {
-        // Versión ligera: solo detiene animaciones, no oculta la recreativa.
         detenerRodillos();
         if (slotRevealInterval) {
             clearInterval(slotRevealInterval);
@@ -1651,49 +1564,40 @@
         return [numero3.charAt(0), numero3.charAt(1), numero3.charAt(2)];
     }
 
-    // --- FIN LÓGICA RECREATIVA ---
-
+    // ===== OBSERVADOR DE SORTEO ACTUAL =====
     db.ref('sorteo_actual').on('value', function(snapshot) {
         const data = snapshot.val();
         programData = data;
-        
         if (timerInterval) clearInterval(timerInterval);
-        detenerTragaperras(); // Limpia cualquier animación anterior
+        detenerTragaperras();
 
         const slot = document.getElementById('slotMachineCard');
         const winnerCard = document.getElementById('winnerCard');
         const waitingCard = document.getElementById('waitingCard');
 
         if (data && data.status === 'programado' && data.targetTime) {
-            // Sorteo programado
             winnerCard.style.display = 'none';
             waitingCard.classList.add('hidden');
             iniciarRelojCuentaAtras(data.targetTime);
         } else if (data && data.ganador) {
-            // Ya hay resultado
             waitingCard.classList.add('hidden');
             const revealAt = Number(data.revealAt) || 0;
             const restante = revealAt - Date.now();
 
             if (restante > 0) {
-                // Estamos en el periodo de revelación (30s)
                 winnerCard.style.display = 'none';
                 finalizarTragaperras(data.ganador, revealAt);
-                // Programar la aparición de la tarjeta cuando termine
                 setTimeout(() => {
-                    // Verificar que aún no se haya mostrado
                     if (document.getElementById('winnerCard').style.display !== 'block') {
                         detenerTragaperras();
                         mostrarGanador(data);
                     }
                 }, restante + 100);
             } else {
-                // Ya pasó el tiempo de revelación, mostrar ganador directamente
                 detenerTragaperras();
                 mostrarGanador(data);
             }
 
-            // Actualizar la tarjeta de ganador con los datos (aunque esté oculta)
             actualGanadorUser = data.ganador.user;
             document.getElementById('winnerName').innerText = data.ganador.user;
             let numeroBoleto = data.ganador.ticket;
@@ -1704,12 +1608,9 @@
                 numeroBoleto = "Boleto premiado: " + data.ganador.ticket;
             }
             document.getElementById('winnerTicket').innerText = numeroBoleto;
-
             verificarRepetidoVisual();
-            
             const logBox = document.getElementById('publicLog');
             logBox.innerHTML = "<b>Historial de tiradas:</b><br>" + data.log.join('<br>');
-
             const arcadeList = document.getElementById('arcadeList');
             arcadeList.innerHTML = '';
             if (data.arcadeGroup && data.arcadeGroup.length > 0) {
@@ -1723,7 +1624,6 @@
                 });
             }
         } else {
-            // No hay sorteo activo
             slot.classList.remove('active');
             winnerCard.style.display = 'none';
             waitingCard.classList.remove('hidden');
@@ -1733,13 +1633,11 @@
     function mostrarGanador(data) {
         const winnerCard = document.getElementById('winnerCard');
         winnerCard.style.display = 'block';
-        // Asegurarse de que la recreativa se oculte o se ponga en segundo plano
         document.getElementById('slotMachineCard').classList.remove('active');
     }
 
     function ejecutarTiradaProgramada() {
         if (!programData || programData.status !== 'programado') return;
-        // Siempre queremos animar el resultado (revealAt)
         calcularYEjecutarTirada(programData.rawLines, programData.rawBlacklist, true);
     }
 
@@ -1836,13 +1734,11 @@
         db.ref('sorteo_actual').set(resultadoData);
     }
 
-    // ---- Funciones existentes de administración, historial, etc. (no modificadas) ----
-
+    // ===== HISTORIAL Y LISTAS =====
     db.ref('historial_ganadores').on('value', function(snapshot) {
         const data = snapshot.val();
         let mapaConteo = {};
         rawHistoryItems = [];
-
         if (data) {
             Object.keys(data).forEach(function(key) {
                 const item = data[key];
@@ -1851,17 +1747,13 @@
                 const userKey = item.user;
                 mapaConteo[userKey] = (mapaConteo[userKey] || 0) + 1;
             });
-
             rawHistoryItems.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
         }
-
         rawWinnersCount = Object.keys(mapaConteo).map(usr => ({ user: usr, total: mapaConteo[usr] }))
             .sort((a, b) => b.total - a.total);
-
         renderWinnersList();
         renderHistoryList();
         verificarRepetidoVisual();
-
         document.getElementById('winnersCountCard').classList.remove('hidden');
         document.getElementById('historyCard').classList.remove('hidden');
     });
@@ -1875,22 +1767,18 @@
             btn.classList.add('hidden');
             return;
         }
-
         const visibleItems = isWinnersExpanded ? rawWinnersCount : rawWinnersCount.slice(0, 3);
         visibleItems.forEach(function(item, index) {
             const li = document.createElement('li');
             li.className = 'custom-item';
             const textoVez = item.total === 1 ? 'vez premiado' : 'veces premiado';
-            
             let medallaIcono = '';
             if (index === 0) medallaIcono = '🥇 ';
             else if (index === 1) medallaIcono = '🥈 ';
             else if (index === 2) medallaIcono = '🥉 ';
-
             li.innerHTML = '<div class="custom-item-text"><strong>' + medallaIcono + item.user + '</strong></div><span class="item-badge">' + item.total + ' ' + textoVez + '</span>';
             listEl.appendChild(li);
         });
-
         if (rawWinnersCount.length > 3) {
             btn.classList.remove('hidden');
             btn.innerText = isWinnersExpanded ? '⬆️ Mostrar solo los 3 principales' : '⬇️ Ver todos los usuarios premiados (' + rawWinnersCount.length + ')';
@@ -1903,28 +1791,23 @@
         const listEl = document.getElementById('historyList');
         const btn = document.getElementById('btnToggleHistory');
         listEl.innerHTML = '';
-        
         if (rawHistoryItems.length === 0) {
             listEl.innerHTML = '<li style="text-align: center; color: var(--muted);">Sin sorteos registrados.</li>';
             btn.classList.add('hidden');
             return;
         }
-
         const visibleItems = isHistoryExpanded ? rawHistoryItems : rawHistoryItems.slice(0, 3);
         visibleItems.forEach(function(item) {
             const li = document.createElement('li');
             li.className = 'custom-item';
-            
             let deleteBtnHtml = '';
             if (isAdminLoggedIn) {
                 deleteBtnHtml = `<button class="delete-item-btn" onclick="borrarGanadorEspecifico('${item.key}', '${item.user}', '${item.fecha}')">🗑️ Borrar</button>`;
             }
-
             li.innerHTML = '<div class="custom-item-text"><strong>' + item.user + '</strong> <span style="color: var(--muted); font-size:0.8rem;">(' + item.ticket + ')</span></div>' +
                            '<div style="display:flex; align-items:center; gap:6px;"><div style="font-size: 0.75rem; color: var(--muted);">' + item.fecha + '</div>' + deleteBtnHtml + '</div>';
             listEl.appendChild(li);
         });
-
         if (rawHistoryItems.length > 3) {
             btn.classList.remove('hidden');
             btn.innerText = isHistoryExpanded ? '⬆️ Mostrar solo los últimos 3 sorteos' : '⬇️ Ver todo el historial (' + rawHistoryItems.length + ')';
@@ -1936,6 +1819,7 @@
     function toggleWinnersView() { isWinnersExpanded = !isWinnersExpanded; renderWinnersList(); }
     function toggleHistoryView() { isHistoryExpanded = !isHistoryExpanded; renderHistoryList(); }
 
+    // ===== ADMIN =====
     function toggleAdminPanel() {
         const pass = prompt("Introduce la clave de administrador:");
         if (pass && btoa(pass) === "cGF0cnVsbGExMjM=") {
@@ -1984,6 +1868,9 @@
         const rawLines = document.getElementById('listInput').value.trim();
         const rawBlacklist = document.getElementById('blacklistInput').value.trim();
 
+        console.log("Fecha seleccionada:", dateVal);
+        console.log("Hora seleccionada:", timeVal);
+
         if (!rawLines) return alert("Pega o importa la lista de participantes.");
 
         if (timeVal) {
@@ -2009,9 +1896,7 @@
             }).then(() => alert("¡Sorteo programado con éxito!"));
         } else {
             if (confirm("El sorteo se realizará de inmediato. ¿Continuar?")) {
-                // Sorteo inmediato: usamos la misma lógica pero con animación de 30s
-                detenerTragaperras(); // limpia estado previo
-                // Mostramos la recreativa de inmediato
+                detenerTragaperras();
                 mostrarRecreativa(true);
                 document.getElementById('slotStatus').innerText = '🎰 SORTEO INMEDIATO...';
                 calcularYEjecutarTirada(rawLines, rawBlacklist, true);
@@ -2019,156 +1904,214 @@
         }
     }
 
-    // Inicializar los selectores de fecha y hora (ya están en el HTML)
-    // El código de los selectores retro se incluye al final del body.
-</script>
+    // ===== INICIALIZADORES DE SELECTORES (se llaman desde DOMContentLoaded) =====
+    function initRetroDatePicker() {
+        const input = document.getElementById("drawDateInput");
+        const picker = document.getElementById("retroDatePicker");
+        const display = document.getElementById("retroDateDisplay");
+        const text = document.getElementById("retroDateDisplayValue");
+        const panel = document.getElementById("retroDatePanel");
+        const grid = document.getElementById("retroDateGrid");
+        const label = document.getElementById("retroDateMonthLabel");
+        const prev = document.getElementById("retroDatePrev");
+        const next = document.getElementById("retroDateNext");
+        const todayBtn = document.getElementById("retroDateToday");
+        const confirmBtn = document.getElementById("retroDateConfirm");
+        if (!input || !picker) return;
 
-<script>
-/* Selector de hora retro dinámico (sin cambios) */
-(function initRetroTimePicker() {
-  const valueInput = document.getElementById("drawTimeInput");
-  const display = document.getElementById("retroTimeDisplay");
-  const displayValue = document.getElementById("retroTimeDisplayValue");
-  const panel = document.getElementById("retroTimePanel");
-  const hourWheel = document.getElementById("retroHourWheel");
-  const minuteWheel = document.getElementById("retroMinuteWheel");
-  const confirm = document.getElementById("retroTimeConfirm");
-  const picker = document.getElementById("retroTimePicker");
-  if (!valueInput || !display || !displayValue || !panel || !hourWheel || !minuteWheel || !confirm || !picker) return;
+        const pad = n => String(n).padStart(2, "0");
+        const iso = d => d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+        const now = new Date();
+        let selected = null;
+        let view = new Date(now.getFullYear(), now.getMonth(), 1);
 
-  let hour = 0, minute = 0;
+        function parse(s) {
+            const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || "");
+            return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null;
+        }
 
-  const pad = n => String(n).padStart(2, "0");
+        function render() {
+            label.textContent = view.toLocaleDateString("es-ES", { month: "long", year: "numeric" });
+            grid.innerHTML = "";
+            const first = new Date(view.getFullYear(), view.getMonth(), 1);
+            const start = (first.getDay() + 6) % 7;
+            const total = new Date(view.getFullYear(), view.getMonth() + 1, 0).getDate();
+            for (let i = 0; i < 42; i++) {
+                const d = new Date(view.getFullYear(), view.getMonth(), i - start + 1);
+                const b = document.createElement("button");
+                b.type = "button";
+                b.className = "retro-date-cell";
+                if (d.getMonth() !== view.getMonth()) b.classList.add("other-month");
+                if (iso(d) === iso(now)) b.classList.add("today");
+                if (selected && iso(d) === iso(selected)) b.classList.add("selected");
+                b.textContent = d.getDate();
+                b.onclick = () => {
+                    selected = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+                    render();
+                };
+                grid.appendChild(b);
+            }
+        }
 
-  function setFromCurrentTime() {
-    const now = new Date();
-    hour = now.getHours();
-    minute = now.getMinutes();
-  }
+        display.onclick = e => {
+            e.stopPropagation();
+            selected = parse(input.value) || new Date();
+            view = new Date(selected.getFullYear(), selected.getMonth(), 1);
+            render();
+            panel.classList.remove("hidden");
+        };
 
-  function readValue() {
-    const match = /^(\d{2}):(\d{2})$/.exec(valueInput.value || "");
-    if (match) {
-      hour = Math.max(0, Math.min(23, Number(match[1])));
-      minute = Math.max(0, Math.min(59, Number(match[2])));
-      return true;
+        prev.onclick = () => { view.setMonth(view.getMonth() - 1); render(); };
+        next.onclick = () => { view.setMonth(view.getMonth() + 1); render(); };
+        todayBtn.onclick = () => {
+            selected = new Date();
+            view = new Date(selected.getFullYear(), selected.getMonth(), 1);
+            render();
+        };
+        confirmBtn.onclick = () => {
+            selected = selected || new Date();
+            input.value = iso(selected);
+            text.textContent = pad(selected.getDate()) + "/" + pad(selected.getMonth() + 1) + "/" + selected.getFullYear();
+            input.dispatchEvent(new Event("change", { bubbles: true }));
+            panel.classList.add("hidden");
+            console.log("Fecha confirmada:", input.value);
+        };
+
+        document.addEventListener("click", e => {
+            if (!picker.contains(e.target)) panel.classList.add("hidden");
+        });
+
+        const old = parse(input.value);
+        if (old) text.textContent = pad(old.getDate()) + "/" + pad(old.getMonth() + 1) + "/" + old.getFullYear();
     }
-    return false;
-  }
 
-  function renderWheel(element, max, selected, onSelect) {
-    element.innerHTML = "";
-    for (let n = 0; n <= max; n++) {
-      const item = document.createElement("div");
-      item.className = "retro-time-option" + (n === selected ? " selected" : "");
-      item.dataset.value = String(n);
-      item.textContent = pad(n);
-      item.addEventListener("click", () => {
-        onSelect(n);
-        render();
-      });
-      element.appendChild(item);
+    function initRetroTimePicker() {
+        const valueInput = document.getElementById("drawTimeInput");
+        const display = document.getElementById("retroTimeDisplay");
+        const displayValue = document.getElementById("retroTimeDisplayValue");
+        const panel = document.getElementById("retroTimePanel");
+        const hourWheel = document.getElementById("retroHourWheel");
+        const minuteWheel = document.getElementById("retroMinuteWheel");
+        const confirmBtn = document.getElementById("retroTimeConfirm");
+        const picker = document.getElementById("retroTimePicker");
+        if (!valueInput || !display || !displayValue || !panel || !hourWheel || !minuteWheel || !confirmBtn || !picker) return;
+
+        let hour = 0, minute = 0;
+        const pad = n => String(n).padStart(2, "0");
+
+        function setFromCurrentTime() {
+            const now = new Date();
+            hour = now.getHours();
+            minute = now.getMinutes();
+        }
+
+        function readValue() {
+            const match = /^(\d{2}):(\d{2})$/.exec(valueInput.value || "");
+            if (match) {
+                hour = Math.max(0, Math.min(23, Number(match[1])));
+                minute = Math.max(0, Math.min(59, Number(match[2])));
+                return true;
+            }
+            return false;
+        }
+
+        function renderWheel(element, max, selectedVal, onSelect) {
+            element.innerHTML = "";
+            for (let n = 0; n <= max; n++) {
+                const item = document.createElement("div");
+                item.className = "retro-time-option" + (n === selectedVal ? " selected" : "");
+                item.dataset.value = String(n);
+                item.textContent = pad(n);
+                item.addEventListener("click", () => {
+                    onSelect(n);
+                    render();
+                });
+                element.appendChild(item);
+            }
+            requestAnimationFrame(() => {
+                const selectedItem = element.querySelector(".selected");
+                if (selectedItem) {
+                    element.scrollTop = selectedItem.offsetTop - (element.clientHeight - selectedItem.offsetHeight) / 2;
+                }
+            });
+        }
+
+        function render() {
+            renderWheel(hourWheel, 23, hour, n => hour = n);
+            renderWheel(minuteWheel, 59, minute, n => minute = n);
+            const value = pad(hour) + ":" + pad(minute);
+            displayValue.textContent = value;
+            valueInput.value = value;
+        }
+
+        function step(type, amount) {
+            if (type === "hour") hour = (hour + amount + 24) % 24;
+            else minute = (minute + amount + 60) % 60;
+            render();
+        }
+
+        display.addEventListener("click", event => {
+            event.stopPropagation();
+            if (!valueInput.dataset.userSelected) setFromCurrentTime();
+            else readValue();
+            render();
+            panel.classList.remove("hidden");
+            display.setAttribute("aria-expanded", "true");
+        });
+
+        confirmBtn.addEventListener("click", () => {
+            valueInput.dataset.userSelected = "true";
+            valueInput.dispatchEvent(new Event("input", { bubbles: true }));
+            valueInput.dispatchEvent(new Event("change", { bubbles: true }));
+            panel.classList.add("hidden");
+            display.setAttribute("aria-expanded", "false");
+            console.log("Hora confirmada:", valueInput.value);
+        });
+
+        hourWheel.addEventListener("wheel", e => {
+            e.preventDefault();
+            step("hour", e.deltaY > 0 ? 1 : -1);
+        }, { passive: false });
+
+        minuteWheel.addEventListener("wheel", e => {
+            e.preventDefault();
+            step("minute", e.deltaY > 0 ? 1 : -1);
+        }, { passive: false });
+
+        hourWheel.addEventListener("keydown", e => {
+            if (e.key === "ArrowDown") { e.preventDefault(); step("hour", 1); }
+            if (e.key === "ArrowUp") { e.preventDefault(); step("hour", -1); }
+        });
+
+        minuteWheel.addEventListener("keydown", e => {
+            if (e.key === "ArrowDown") { e.preventDefault(); step("minute", 1); }
+            if (e.key === "ArrowUp") { e.preventDefault(); step("minute", -1); }
+        });
+
+        document.addEventListener("click", e => {
+            if (!picker.contains(e.target)) {
+                panel.classList.add("hidden");
+                display.setAttribute("aria-expanded", "false");
+            }
+        });
+
+        // Si no hay valor, ponemos uno por defecto (la hora actual)
+        if (!valueInput.value) {
+            setFromCurrentTime();
+            render();
+        } else {
+            readValue();
+            render();
+        }
     }
 
-    requestAnimationFrame(() => {
-      const selectedItem = element.querySelector(".selected");
-      if (selectedItem) {
-        element.scrollTop = selectedItem.offsetTop - (element.clientHeight - selectedItem.offsetHeight) / 2;
-      }
+    // Inicialización manual de los selectores (ya se llama desde DOMContentLoaded)
+    // Por si acaso, también se llaman al final del script.
+    document.addEventListener('DOMContentLoaded', function() {
+        initRetroDatePicker();
+        initRetroTimePicker();
     });
-  }
-
-  function render() {
-    renderWheel(hourWheel, 23, hour, n => hour = n);
-    renderWheel(minuteWheel, 59, minute, n => minute = n);
-
-    const value = pad(hour) + ":" + pad(minute);
-    displayValue.textContent = value;
-    valueInput.value = value;
-  }
-
-  function step(type, amount) {
-    if (type === "hour") hour = (hour + amount + 24) % 24;
-    else minute = (minute + amount + 60) % 60;
-    render();
-  }
-
-  display.addEventListener("click", event => {
-    event.stopPropagation();
-
-    if (!valueInput.dataset.userSelected) {
-      setFromCurrentTime();
-    } else {
-      readValue();
-    }
-
-    render();
-    panel.classList.remove("hidden");
-    display.setAttribute("aria-expanded", "true");
-  });
-
-  confirm.addEventListener("click", () => {
-    valueInput.dataset.userSelected = "true";
-    valueInput.dispatchEvent(new Event("input", { bubbles:true }));
-    valueInput.dispatchEvent(new Event("change", { bubbles:true }));
-    panel.classList.add("hidden");
-    display.setAttribute("aria-expanded", "false");
-  });
-
-  hourWheel.addEventListener("wheel", e => {
-    e.preventDefault();
-    step("hour", e.deltaY > 0 ? 1 : -1);
-  }, {passive:false});
-
-  minuteWheel.addEventListener("wheel", e => {
-    e.preventDefault();
-    step("minute", e.deltaY > 0 ? 1 : -1);
-  }, {passive:false});
-
-  hourWheel.addEventListener("keydown", e => {
-    if (e.key === "ArrowDown") { e.preventDefault(); step("hour", 1); }
-    if (e.key === "ArrowUp") { e.preventDefault(); step("hour", -1); }
-  });
-
-  minuteWheel.addEventListener("keydown", e => {
-    if (e.key === "ArrowDown") { e.preventDefault(); step("minute", 1); }
-    if (e.key === "ArrowUp") { e.preventDefault(); step("minute", -1); }
-  });
-
-  document.addEventListener("click", e => {
-    if (!picker.contains(e.target)) {
-      panel.classList.add("hidden");
-      display.setAttribute("aria-expanded", "false");
-    }
-  });
-
-  valueInput.value = "";
-  displayValue.textContent = "--:--";
-})();
 </script>
 
-<script>
-/* Selector de fecha retro (sin cambios) */
-(function(){
- const input=document.getElementById("drawDateInput"), picker=document.getElementById("retroDatePicker"), display=document.getElementById("retroDateDisplay"), text=document.getElementById("retroDateDisplayValue"), panel=document.getElementById("retroDatePanel"), grid=document.getElementById("retroDateGrid"), label=document.getElementById("retroDateMonthLabel");
- const prev=document.getElementById("retroDatePrev"), next=document.getElementById("retroDateNext"), todayBtn=document.getElementById("retroDateToday"), confirm=document.getElementById("retroDateConfirm");
- if(!input||!picker)return;
- const pad=n=>String(n).padStart(2,"0"), iso=d=>d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
- const now=new Date(); let selected=null, view=new Date(now.getFullYear(),now.getMonth(),1);
- function parse(s){const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(s||"");return m?new Date(+m[1],+m[2]-1,+m[3]):null}
- function render(){
-   label.textContent=view.toLocaleDateString("es-ES",{month:"long",year:"numeric"});
-   grid.innerHTML="";
-   const first=new Date(view.getFullYear(),view.getMonth(),1), start=(first.getDay()+6)%7, total=new Date(view.getFullYear(),view.getMonth()+1,0).getDate();
-   for(let i=0;i<42;i++){const d=new Date(view.getFullYear(),view.getMonth(),i-start+1),b=document.createElement("button");b.type="button";b.className="retro-date-cell";if(d.getMonth()!==view.getMonth())b.classList.add("other-month");if(iso(d)===iso(now))b.classList.add("today");if(selected&&iso(d)===iso(selected))b.classList.add("selected");b.textContent=d.getDate();b.onclick=()=>{selected=new Date(d.getFullYear(),d.getMonth(),d.getDate());render()};grid.appendChild(b)}
- }
- display.onclick=e=>{e.stopPropagation();selected=parse(input.value)||new Date();view=new Date(selected.getFullYear(),selected.getMonth(),1);render();panel.classList.remove("hidden")};
- prev.onclick=()=>{view.setMonth(view.getMonth()-1);render()};next.onclick=()=>{view.setMonth(view.getMonth()+1);render()};
- todayBtn.onclick=()=>{selected=new Date();view=new Date(selected.getFullYear(),selected.getMonth(),1);render()};
- confirm.onclick=()=>{selected=selected||new Date();input.value=iso(selected);text.textContent=pad(selected.getDate())+"/"+pad(selected.getMonth()+1)+"/"+selected.getFullYear();input.dispatchEvent(new Event("change",{bubbles:true}));panel.classList.add("hidden")};
- document.addEventListener("click",e=>{if(!picker.contains(e.target))panel.classList.add("hidden")});
- const old=parse(input.value); if(old)text.textContent=pad(old.getDate())+"/"+pad(old.getMonth()+1)+"/"+old.getFullYear();
-})();
-</script>
 </body>
 </html>
