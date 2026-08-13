@@ -492,7 +492,30 @@
             from { opacity: 0; transform: translateY(-10px); }
             to { opacity: 1; transform: translateY(0); }
         }
-    </style>
+    
+        /* ===== TRAGAPERRAS RETRO 8-BIT ===== */
+        #slotMachineCard {
+            display:none; text-align:center; margin:20px auto; padding:18px 14px;
+            max-width:560px; background:#111827; border:4px solid #f59e0b;
+            box-shadow:0 0 0 4px #312e81, 0 8px 30px rgba(0,0,0,.7);
+            image-rendering:pixelated;
+        }
+        #slotMachineCard.active { display:block; }
+        .slot-marquee { color:#fde68a; font-weight:900; font-size:1.15rem; letter-spacing:2px; text-shadow:2px 2px 0 #7c2d12; margin-bottom:14px; }
+        .slot-cabinet { background:linear-gradient(#4c1d95,#1e1b4b); border:4px solid #a78bfa; padding:14px 10px 12px; box-shadow:inset 0 0 0 4px #171717; }
+        .slot-display { display:flex; justify-content:center; gap:8px; padding:12px; background:#050505; border:4px solid #fbbf24; box-shadow:inset 0 0 18px rgba(255,255,255,.08); }
+        .slot-reel { width:31%; max-width:145px; height:82px; display:flex; align-items:center; justify-content:center; overflow:hidden; background:#f8fafc; color:#111827; border:4px solid #64748b; box-shadow:inset 0 0 0 3px #cbd5e1; font-family:monospace; font-size:2.5rem; font-weight:900; }
+        .slot-reel.spinning { animation:slotFlicker .075s steps(2,end) infinite; }
+        @keyframes slotFlicker { 0%{transform:translateY(-2px)} 50%{transform:translateY(2px)} 100%{transform:translateY(-1px)} }
+        .slot-status { margin-top:12px; color:#fbbf24; font-family:monospace; font-weight:bold; font-size:.95rem; }
+        .slot-lights { display:flex; justify-content:center; gap:7px; margin-top:10px; }
+        .slot-light { width:10px; height:10px; background:#fbbf24; box-shadow:0 0 8px #fbbf24; animation:blink8 .5s steps(2,end) infinite; }
+        .slot-light:nth-child(even){animation-delay:.25s}
+        @keyframes blink8 { 50%{opacity:.25} }
+        .slot-win { animation:slotWin .8s steps(2,end) infinite; }
+        @keyframes slotWin { 50%{filter:brightness(1.7); transform:scale(1.015)} }
+        @media(max-width:480px){ .slot-reel{height:68px;font-size:2rem} }
+</style>
 </head>
 <body>
 
@@ -503,6 +526,23 @@
     <!-- BOTÓN SUPERIOR -->
     <div class="top-prob-btn-container">
         <button class="top-prob-btn" onclick="abrirProbabilidadesModal()">📊 Lista de Participantes</button>
+    </div>
+
+    <!-- TRAGAPERRAS DEL SORTEO: solo aparece durante los 10 minutos previos a un sorteo programado -->
+    <div id="slotMachineCard" aria-live="polite">
+        <div class="slot-marquee">★ 🕹️ SORTEO EN DIRECTO 🕹️ ★</div>
+        <div class="slot-cabinet">
+            <div class="slot-display">
+                <div id="slotReel1" class="slot-reel">00</div>
+                <div id="slotReel2" class="slot-reel">00</div>
+                <div id="slotReel3" class="slot-reel">00</div>
+            </div>
+            <div class="slot-lights">
+                <span class="slot-light"></span><span class="slot-light"></span><span class="slot-light"></span><span class="slot-light"></span>
+                <span class="slot-light"></span><span class="slot-light"></span><span class="slot-light"></span>
+            </div>
+            <div id="slotStatus" class="slot-status">PREPARANDO LA TIRADA...</div>
+        </div>
     </div>
 
     <!-- PANTALLA GANADOR -->
@@ -723,6 +763,9 @@
 
     let timerInterval = null;
     let programData = null;
+    let slotAnimationInterval = null;
+    let slotAnimationActive = false;
+    let slotFinalizing = false;
 
     let adminClicks = 0;
     let adminClickTimer = null;
@@ -1326,12 +1369,14 @@
         if (data && data.status === 'programado') {
             document.getElementById('winnerCard').style.display = 'none';
             document.getElementById('waitingCard').classList.add('hidden');
-            document.getElementById('countdownCard').classList.remove('hidden');
+            actualizarEstadoVisualSorteo(data.targetTime);
             iniciarRelojCuentaAtras(data.targetTime);
         } else if (data && data.ganador) {
+            const habiaTragaperras = slotAnimationActive;
+            finalizarTragaperras(data.ganador);
             document.getElementById('countdownCard').classList.add('hidden');
             document.getElementById('waitingCard').classList.add('hidden');
-            document.getElementById('winnerCard').style.display = 'block';
+            document.getElementById('winnerCard').style.display = habiaTragaperras ? 'none' : 'block';
             
             actualGanadorUser = data.ganador.user;
             document.getElementById('winnerName').innerText = data.ganador.user;
@@ -1362,6 +1407,12 @@
                     arcadeList.appendChild(li);
                 });
             }
+
+            if (habiaTragaperras) {
+                setTimeout(() => {
+                    document.getElementById('winnerCard').style.display = 'block';
+                }, 1900);
+            }
         } else {
             document.getElementById('winnerCard').style.display = 'none';
             document.getElementById('countdownCard').classList.add('hidden');
@@ -1369,29 +1420,109 @@
         }
     });
 
+    function actualizarEstadoVisualSorteo(targetTime) {
+        const diferencia = targetTime - Date.now();
+        const slot = document.getElementById('slotMachineCard');
+        const countdown = document.getElementById('countdownCard');
+
+        if (diferencia > 0 && diferencia <= 10 * 60 * 1000) {
+            countdown.classList.add('hidden');
+            slot.classList.add('active');
+            iniciarTragaperras();
+        } else {
+            slot.classList.remove('active');
+            detenerTragaperras();
+            document.getElementById('winnerCard').style.display = 'none';
+            countdown.classList.remove('hidden');
+        }
+    }
+
+    function iniciarTragaperras() {
+        if (slotAnimationActive || slotFinalizing) return;
+        slotAnimationActive = true;
+        const reels = [document.getElementById('slotReel1'), document.getElementById('slotReel2'), document.getElementById('slotReel3')];
+        reels.forEach(reel => reel.classList.add('spinning'));
+        document.getElementById('slotStatus').innerText = '🎰 LOS RODILLOS ESTÁN GIRANDO...';
+
+        slotAnimationInterval = setInterval(() => {
+            reels.forEach(reel => {
+                reel.innerText = String(Math.floor(Math.random() * 100)).padStart(2, '0');
+            });
+        }, 75);
+    }
+
+    function detenerTragaperras() {
+        if (slotAnimationInterval) {
+            clearInterval(slotAnimationInterval);
+            slotAnimationInterval = null;
+        }
+        slotAnimationActive = false;
+        slotFinalizing = false;
+        const slot = document.getElementById('slotMachineCard');
+        slot.classList.remove('active');
+        [document.getElementById('slotReel1'), document.getElementById('slotReel2'), document.getElementById('slotReel3')].forEach(reel => {
+            reel.classList.remove('spinning', 'slot-win');
+        });
+    }
+
+    function finalizarTragaperras(ganador) {
+        if (!slotAnimationActive) return;
+        if (slotFinalizing) return;
+        slotFinalizing = true;
+
+        if (slotAnimationInterval) {
+            clearInterval(slotAnimationInterval);
+            slotAnimationInterval = null;
+        }
+
+        const reels = [document.getElementById('slotReel1'), document.getElementById('slotReel2'), document.getElementById('slotReel3')];
+        const match = String(ganador.ticket || '').match(/^(\d+)/);
+        const numero = match ? match[1].slice(-6).padStart(6, '0') : '000000';
+        const digitos = [numero.slice(0, 2), numero.slice(2, 4), numero.slice(4, 6)];
+
+        document.getElementById('slotStatus').innerText = '🎰 ¡RESULTADO OBTENIDO!';
+        reels.forEach((reel, index) => {
+            reel.classList.remove('spinning');
+            reel.innerText = digitos[index];
+            reel.classList.add('slot-win');
+        });
+
+        // Dejamos ver el resultado durante un instante antes de mostrar la tarjeta normal.
+        setTimeout(() => {
+            detenerTragaperras();
+        }, 1800);
+    }
+
     function iniciarRelojCuentaAtras(targetTime) {
         function actualizar() {
             const diferencia = targetTime - Date.now();
 
             if (diferencia <= 0) {
                 clearInterval(timerInterval);
-                document.getElementById('timerDisplay').innerText = "¡Sorteando...";
+                if (slotAnimationActive) {
+                    document.getElementById('slotStatus').innerText = '🎰 ¡REALIZANDO LA TIRADA!';
+                }
                 ejecutarTiradaProgramada();
                 return;
             }
+
+            actualizarEstadoVisualSorteo(targetTime);
 
             const dias = Math.floor(diferencia / (1000 * 60 * 60 * 24));
             const horas = Math.floor((diferencia % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
             const minutos = Math.floor((diferencia % (1000 * 60 * 60)) / (1000 * 60));
             const segundos = Math.floor((diferencia % (1000 * 60)) / 1000);
 
-            let textoReloj = "";
-            if (dias > 0) textoReloj += dias + "d ";
-            textoReloj += String(horas).padStart(2, '0') + "h " + 
-                         String(minutos).padStart(2, '0') + "m " + 
-                         String(segundos).padStart(2, '0') + "s";
+            let textoReloj = '';
+            if (dias > 0) textoReloj += dias + 'd ';
+            textoReloj += String(horas).padStart(2, '0') + 'h ' +
+                         String(minutos).padStart(2, '0') + 'm ' +
+                         String(segundos).padStart(2, '0') + 's';
 
-            document.getElementById('timerDisplay').innerText = textoReloj;
+            // La cuenta atrás solo se muestra durante los 10 minutos previos si todavía no ha comenzado la animación.
+            if (diferencia > 10 * 60 * 1000) {
+                document.getElementById('timerDisplay').innerText = textoReloj;
+            }
         }
 
         actualizar();
@@ -1569,6 +1700,7 @@
             }).then(() => alert("¡Sorteo programado con éxito!"));
         } else {
             if (confirm("El sorteo se realizará de inmediato. ¿Continuar?")) {
+                detenerTragaperras();
                 calcularYEjecutarTirada(rawLines, rawBlacklist);
             }
         }
