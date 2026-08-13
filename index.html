@@ -330,15 +330,6 @@
             text-align: center;
         }
 
-        .countdown-timer {
-            font-size: 1.8rem;
-            font-weight: bold;
-            color: var(--gold);
-            letter-spacing: 1px;
-            margin: 10px 0;
-            font-family: monospace;
-        }
-
         .arcade-box {
             background: rgba(15, 23, 42, 0.8);
             border: 1px solid var(--accent);
@@ -493,119 +484,161 @@
             to { opacity: 1; transform: translateY(0); }
         }
     
-        /* ===== TRAGAPERRAS RETRO 8-BIT ===== */
+        /* ===== TRAGAPERRAS RETRO 8-BIT (única definición) ===== */
         #slotMachineCard {
-            display:none; text-align:center; margin:20px auto; padding:18px 14px;
-            max-width:560px; background:#111827; border:4px solid #f59e0b;
-            box-shadow:0 0 0 4px #312e81, 0 8px 30px rgba(0,0,0,.7);
-            image-rendering:pixelated;
+            display: none;
+            text-align: center;
+            margin: 20px auto;
+            padding: 18px 14px;
+            max-width: 560px;
+            background: #111827;
+            border: 4px solid #f59e0b;
+            box-shadow: 0 0 0 4px #312e81, 0 8px 30px rgba(0,0,0,.7);
+            image-rendering: pixelated;
+            border-radius: 22px;
+            overflow: hidden;
         }
-        #slotMachineCard.active { display:block; }
-        .slot-marquee { color:#fde68a; font-weight:900; font-size:1.15rem; letter-spacing:2px; text-shadow:2px 2px 0 #7c2d12; margin-bottom:14px; }
-        .slot-cabinet { background:linear-gradient(#4c1d95,#1e1b4b); border:4px solid #a78bfa; padding:14px 10px 12px; box-shadow:inset 0 0 0 4px #171717; }
-        .slot-display { display:flex; justify-content:center; gap:8px; padding:12px; background:#050505; border:4px solid #fbbf24; box-shadow:inset 0 0 18px rgba(255,255,255,.08); }
-        .slot-reel { width:31%; max-width:120px; height:82px; display:flex; align-items:center; justify-content:center; overflow:hidden; background:#f8fafc; color:#111827; border:4px solid #64748b; box-shadow:inset 0 0 0 3px #cbd5e1; font-family:monospace; font-size:2.5rem; font-weight:900; }
-        .slot-reel.spinning { animation:slotFlicker .075s steps(2,end) infinite; }
-        @keyframes slotFlicker { 0%{transform:translateY(-2px)} 50%{transform:translateY(2px)} 100%{transform:translateY(-1px)} }
-        .slot-status { margin-top:12px; color:#fbbf24; text-shadow:0 0 8px rgba(251,191,36,.35); font-family:monospace; font-weight:bold; font-size:.95rem; min-height:1.25em; }
-        .slot-lights { display:flex; justify-content:center; gap:7px; margin-top:10px; }
-        .slot-light { width:10px; height:10px; background:#fbbf24; box-shadow:0 0 8px #fbbf24; animation:blink8 .5s steps(2,end) infinite; }
-        .slot-light:nth-child(even){animation-delay:.25s}
-        @keyframes blink8 { 50%{opacity:.25} }
-        .slot-win { animation:slotWin .8s steps(2,end) infinite; }
-        @keyframes slotWin { 50%{filter:brightness(1.7); transform:scale(1.015)} }
-        @media(max-width:480px){ .slot-reel{height:68px;font-size:2rem} }
+        #slotMachineCard.active { display: block; }
 
-/* Redondeado visible de la recreativa */
-.slot-machine-card,
-.slot-machine {
-    border-radius: 22px !important;
-    overflow: hidden !important;
-}
-.slot-display {
-    border-radius: 14px !important;
-    overflow: hidden !important;
-}
+        .slot-marquee {
+            color: #fde68a;
+            font-weight: 900;
+            font-size: 1.15rem;
+            letter-spacing: 2px;
+            text-shadow: 2px 2px 0 #7c2d12;
+            margin-bottom: 14px;
+            border-radius: 12px;
+        }
 
+        .slot-cabinet {
+            background: linear-gradient(#4c1d95, #1e1b4b);
+            border: 4px solid #a78bfa;
+            padding: 14px 10px 12px;
+            box-shadow: inset 0 0 0 4px #171717;
+            border-radius: 18px;
+            overflow: hidden;
+        }
 
-/* ===== REDONDEADO COMPLETO DE LA TRAGAPERRAS ===== */
-#slotMachineCard {
-    border-radius: 22px !important;
-    overflow: hidden !important;
-}
-#slotMachineCard .slot-cabinet {
-    border-radius: 18px !important;
-    overflow: hidden !important;
-}
-#slotMachineCard .slot-display {
-    border-radius: 14px !important;
-    overflow: hidden !important;
-}
-#slotMachineCard .slot-reel {
-    border-radius: 10px !important;
-    overflow: hidden !important;
-}
-#slotMachineCard .slot-marquee {
-    border-radius: 12px !important;
-}
-#slotMachineCard .slot-light,
-#slotMachineCard .slot-lights {
-    border-radius: 50% !important;
-}
+        .slot-display {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px;
+            background: #050505;
+            border: 4px solid #fbbf24;
+            box-shadow: inset 0 0 18px rgba(255,255,255,.08);
+            border-radius: 14px;
+            overflow: hidden;
+        }
 
+        .slot-reel {
+            width: 31%;
+            max-width: 120px;
+            height: 82px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            background: #f8fafc;
+            color: #111827;
+            border: 4px solid #64748b;
+            box-shadow: inset 0 0 0 3px #cbd5e1;
+            font-family: monospace;
+            font-size: 2.5rem;
+            font-weight: 900;
+            border-radius: 10px;
+        }
+        .slot-reel.spinning {
+            animation: slotFlicker .075s steps(2,end) infinite;
+        }
+        @keyframes slotFlicker {
+            0% { transform: translateY(-2px); }
+            50% { transform: translateY(2px); }
+            100% { transform: translateY(-1px); }
+        }
 
-/* Selector de hora: ciclo real, sin filas vacías en 23→00 ni 59→00 */
-.retro-time-picker { position:relative; width:100%; }
-.retro-time-display {
-  width:100%; min-height:44px; padding:10px 14px;
-  display:flex; align-items:center; justify-content:space-between;
-  box-sizing:border-box; border:1px solid rgba(139,92,246,.55);
-  border-radius:12px; background:rgba(15,23,42,.85); color:#f8fafc;
-  font:inherit; cursor:pointer;
-}
-.retro-time-display:hover { border-color:#a78bfa; }
-.retro-time-chevron { opacity:.7; font-size:1.1rem; }
-.retro-time-panel {
-  position:absolute; z-index:2000; left:0; right:0; top:calc(100% + 8px);
-  padding:14px; box-sizing:border-box; border:1px solid rgba(139,92,246,.55);
-  border-radius:16px; background:#111827; box-shadow:0 16px 40px rgba(0,0,0,.45);
-}
-.retro-time-panel.hidden { display:none; }
-.retro-time-title { text-align:center; font-weight:800; color:#c4b5fd; margin-bottom:10px; }
-.retro-time-wheels { display:flex; align-items:center; justify-content:center; gap:8px; }
-.retro-time-wheel-wrap { width:110px; }
-.retro-time-wheel-label { text-align:center; font-size:.72rem; opacity:.7; margin-bottom:5px; }
-.retro-time-wheel {
-  height:174px; overflow-y:auto; scroll-snap-type:y mandatory;
-  border:1px solid rgba(139,92,246,.45); border-radius:12px;
-  background:#020617; scrollbar-width:none;
-}
-.retro-time-wheel::-webkit-scrollbar { display:none; }
-.retro-time-option {
-  height:58px; display:flex; align-items:center; justify-content:center;
-  scroll-snap-align:center; font-size:1.35rem; font-weight:800;
-  color:#64748b; cursor:pointer; user-select:none;
-}
-.retro-time-option.selected { color:#f8fafc; background:rgba(139,92,246,.18); }
-.retro-time-colon { font-size:1.6rem; font-weight:900; padding-top:20px; }
-.retro-time-help { text-align:center; font-size:.72rem; opacity:.6; margin:9px 0; }
-.retro-time-confirm {
-  width:100%; border:0; border-radius:10px; padding:9px 12px;
-  background:#7c3aed; color:#fff; font-weight:800; cursor:pointer;
-}
-.retro-time-confirm:hover { background:#8b5cf6; }
-@media (max-width:480px) { .retro-time-wheel-wrap { width:90px; } }
+        .slot-status {
+            margin-top: 12px;
+            color: #fbbf24;
+            text-shadow: 0 0 8px rgba(251,191,36,.35);
+            font-family: monospace;
+            font-weight: bold;
+            font-size: .95rem;
+            min-height: 1.25em;
+        }
 
+        .slot-lights {
+            display: flex;
+            justify-content: center;
+            gap: 7px;
+            margin-top: 10px;
+        }
+        .slot-light {
+            width: 10px;
+            height: 10px;
+            background: #fbbf24;
+            box-shadow: 0 0 8px #fbbf24;
+            animation: blink8 .5s steps(2,end) infinite;
+            border-radius: 50%;
+        }
+        .slot-light:nth-child(even) { animation-delay: .25s; }
+        @keyframes blink8 { 50% { opacity: .25; } }
 
-/* Estado programado: la recreativa también funciona como contador visual */
-#slotMachineCard.active { animation: slotCardIn .35s ease-out; }
-@keyframes slotCardIn {
-    from { opacity:0; transform:translateY(8px) scale(.985); }
-    to { opacity:1; transform:translateY(0) scale(1); }
-}
+        .slot-win {
+            animation: slotWin .8s steps(2,end) infinite;
+        }
+        @keyframes slotWin {
+            50% { filter: brightness(1.7); transform: scale(1.015); }
+        }
 
-.retro-date-picker{position:relative;width:100%}.retro-date-display{width:100%;min-height:44px;padding:10px 14px;box-sizing:border-box;display:flex;align-items:center;gap:10px;border:1px solid rgba(139,92,246,.55);border-radius:12px;background:rgba(15,23,42,.85);color:#f8fafc;font:inherit;cursor:pointer;text-align:left}.retro-date-display span:last-child{margin-left:auto;opacity:.7}.retro-date-panel{position:absolute;z-index:2100;left:0;right:0;top:calc(100% + 8px);padding:14px;border:1px solid rgba(139,92,246,.55);border-radius:16px;background:#111827;box-shadow:0 16px 40px rgba(0,0,0,.45)}.retro-date-panel.hidden{display:none}.retro-date-head{display:grid;grid-template-columns:40px 1fr 40px;gap:6px;align-items:center;margin-bottom:10px}.retro-date-head strong{text-align:center;color:#c4b5fd;text-transform:capitalize}.retro-date-head button,.retro-date-today{border:1px solid rgba(139,92,246,.35);border-radius:9px;background:#1e293b;color:#fff;cursor:pointer;min-height:34px}.retro-date-weekdays,.retro-date-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}.retro-date-weekdays{margin-bottom:5px}.retro-date-weekdays span{text-align:center;font-size:.72rem;opacity:.6}.retro-date-cell{min-height:36px;border:0;border-radius:9px;background:transparent;color:#e2e8f0;cursor:pointer;font:inherit;font-weight:700}.retro-date-cell:hover{background:rgba(139,92,246,.22)}.retro-date-cell.other-month{opacity:.25}.retro-date-cell.today{outline:1px solid rgba(167,139,250,.7)}.retro-date-cell.selected{background:#7c3aed;color:#fff}.retro-date-today{width:100%;margin-top:10px}.retro-date-confirm{width:100%;margin-top:7px;padding:9px 12px;border:0;border-radius:10px;background:#7c3aed;color:#fff;font-weight:800;cursor:pointer}
-</style>
+        @media(max-width:480px) {
+            .slot-reel { height: 68px; font-size: 2rem; }
+        }
+
+        /* Selector de hora retro */
+        .retro-time-picker { position:relative; width:100%; }
+        .retro-time-display {
+            width:100%; min-height:44px; padding:10px 14px;
+            display:flex; align-items:center; justify-content:space-between;
+            box-sizing:border-box; border:1px solid rgba(139,92,246,.55);
+            border-radius:12px; background:rgba(15,23,42,.85); color:#f8fafc;
+            font:inherit; cursor:pointer;
+        }
+        .retro-time-display:hover { border-color:#a78bfa; }
+        .retro-time-chevron { opacity:.7; font-size:1.1rem; }
+        .retro-time-panel {
+            position:absolute; z-index:2000; left:0; right:0; top:calc(100% + 8px);
+            padding:14px; box-sizing:border-box; border:1px solid rgba(139,92,246,.55);
+            border-radius:16px; background:#111827; box-shadow:0 16px 40px rgba(0,0,0,.45);
+        }
+        .retro-time-panel.hidden { display:none; }
+        .retro-time-title { text-align:center; font-weight:800; color:#c4b5fd; margin-bottom:10px; }
+        .retro-time-wheels { display:flex; align-items:center; justify-content:center; gap:8px; }
+        .retro-time-wheel-wrap { width:110px; }
+        .retro-time-wheel-label { text-align:center; font-size:.72rem; opacity:.7; margin-bottom:5px; }
+        .retro-time-wheel {
+            height:174px; overflow-y:auto; scroll-snap-type:y mandatory;
+            border:1px solid rgba(139,92,246,.45); border-radius:12px;
+            background:#020617; scrollbar-width:none;
+        }
+        .retro-time-wheel::-webkit-scrollbar { display:none; }
+        .retro-time-option {
+            height:58px; display:flex; align-items:center; justify-content:center;
+            scroll-snap-align:center; font-size:1.35rem; font-weight:800;
+            color:#64748b; cursor:pointer; user-select:none;
+        }
+        .retro-time-option.selected { color:#f8fafc; background:rgba(139,92,246,.18); }
+        .retro-time-colon { font-size:1.6rem; font-weight:900; padding-top:20px; }
+        .retro-time-help { text-align:center; font-size:.72rem; opacity:.6; margin:9px 0; }
+        .retro-time-confirm {
+            width:100%; border:0; border-radius:10px; padding:9px 12px;
+            background:#7c3aed; color:#fff; font-weight:800; cursor:pointer;
+        }
+        .retro-time-confirm:hover { background:#8b5cf6; }
+        @media (max-width:480px) { .retro-time-wheel-wrap { width:90px; } }
+
+        .retro-date-picker{position:relative;width:100%}.retro-date-display{width:100%;min-height:44px;padding:10px 14px;box-sizing:border-box;display:flex;align-items:center;gap:10px;border:1px solid rgba(139,92,246,.55);border-radius:12px;background:rgba(15,23,42,.85);color:#f8fafc;font:inherit;cursor:pointer;text-align:left}.retro-date-display span:last-child{margin-left:auto;opacity:.7}.retro-date-panel{position:absolute;z-index:2100;left:0;right:0;top:calc(100% + 8px);padding:14px;border:1px solid rgba(139,92,246,.55);border-radius:16px;background:#111827;box-shadow:0 16px 40px rgba(0,0,0,.45)}.retro-date-panel.hidden{display:none}.retro-date-head{display:grid;grid-template-columns:40px 1fr 40px;gap:6px;align-items:center;margin-bottom:10px}.retro-date-head strong{text-align:center;color:#c4b5fd;text-transform:capitalize}.retro-date-head button,.retro-date-today{border:1px solid rgba(139,92,246,.35);border-radius:9px;background:#1e293b;color:#fff;cursor:pointer;min-height:34px}.retro-date-weekdays,.retro-date-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}.retro-date-weekdays{margin-bottom:5px}.retro-date-weekdays span{text-align:center;font-size:.72rem;opacity:.6}.retro-date-cell{min-height:36px;border:0;border-radius:9px;background:transparent;color:#e2e8f0;cursor:pointer;font:inherit;font-weight:700}.retro-date-cell:hover{background:rgba(139,92,246,.22)}.retro-date-cell.other-month{opacity:.25}.retro-date-cell.today{outline:1px solid rgba(167,139,250,.7)}.retro-date-cell.selected{background:#7c3aed;color:#fff}.retro-date-today{width:100%;margin-top:10px}.retro-date-confirm{width:100%;margin-top:7px;padding:9px 12px;border:0;border-radius:10px;background:#7c3aed;color:#fff;font-weight:800;cursor:pointer}
+    </style>
 </head>
 <body>
 
@@ -618,7 +651,7 @@
         <button class="top-prob-btn" onclick="abrirProbabilidadesModal()">📊 Lista de Participantes</button>
     </div>
 
-    <!-- TRAGAPERRAS DEL SORTEO: solo aparece durante los 10 minutos previos a un sorteo programado -->
+    <!-- TRAGAPERRAS DEL SORTEO: siempre visible cuando hay un sorteo programado o en curso -->
     <div id="slotMachineCard" aria-live="polite">
         <div class="slot-marquee">★ 🕹️ SORTEO EN DIRECTO 🕹️ ★</div>
         <div class="slot-cabinet">
@@ -674,14 +707,7 @@
         <div class="log-box" id="publicLog"></div>
     </div>
 
-    <!-- TARJETA DE CUENTA ATRÁS -->
-    <div id="countdownCard" class="card hidden" style="text-align: center;">
-        <h2>⏳ ¡El Sorteo se celebrará muy pronto!</h2>
-        <p style="color: var(--muted); font-size: 0.85rem;">Tiempo restante para la tirada oficial:</p>
-        <div id="timerDisplay" class="countdown-timer">00h 00m 00s</div>
-    </div>
-
-    <!-- MENSAJE ESPERA -->
+    <!-- MENSAJE ESPERA (cuando no hay sorteo activo) -->
     <div id="waitingCard" class="card hidden" style="text-align: center;">
         <h2>⏳ El sorteo aún no se ha realizado</h2>
         <p style="color: var(--muted); font-size: 0.85rem;">El administrador realizará o programará la tirada en breve. Esta página se actualizará automáticamente.</p>
@@ -1484,36 +1510,192 @@
         });
     }
 
+    // --- NUEVA LÓGICA DE LA RECREATIVA (V9) ---
+    function mostrarRecreativa(activa) {
+        const slot = document.getElementById('slotMachineCard');
+        if (activa) slot.classList.add('active');
+        else slot.classList.remove('active');
+    }
+
+    function detenerRodillos() {
+        if (slotAnimationInterval) {
+            clearInterval(slotAnimationInterval);
+            slotAnimationInterval = null;
+        }
+        slotAnimationActive = false;
+        document.querySelectorAll('.slot-reel').forEach(reel => {
+            reel.classList.remove('spinning');
+        });
+    }
+
+    function iniciarRodillos() {
+        if (slotAnimationActive) return;
+        slotAnimationActive = true;
+        const reels = document.querySelectorAll('.slot-reel');
+        reels.forEach(reel => reel.classList.add('spinning'));
+
+        slotAnimationInterval = setInterval(() => {
+            reels.forEach(reel => {
+                reel.innerText = String(Math.floor(Math.random() * 10));
+            });
+        }, 75);
+    }
+
+    function actualizarEstadoRecreativa(targetTime) {
+        const ahora = Date.now();
+        const diff = targetTime - ahora;
+        const slotStatus = document.getElementById('slotStatus');
+
+        if (diff > 0) {
+            // Sorteo programado en el futuro
+            mostrarRecreativa(true);
+            if (diff <= 10 * 60 * 1000) {
+                // Últimos 10 minutos: rodillos girando
+                iniciarRodillos();
+                const seg = Math.ceil(diff / 1000);
+                slotStatus.innerText = '🎰 BUENA SUERTE, LA NECESITARÁS · ' +
+                    String(Math.floor(seg/60)).padStart(2,'0') + ':' + String(seg%60).padStart(2,'0');
+            } else {
+                // Más de 10 min: rodillos parados, cuenta atrás larga
+                detenerRodillos();
+                const dias = Math.floor(diff / (1000*60*60*24));
+                const horas = Math.floor((diff % (1000*60*60*24)) / (1000*60*60));
+                const mins = Math.floor((diff % (1000*60*60)) / (1000*60));
+                const segs = Math.floor((diff % (1000*60)) / 1000);
+                let texto = '';
+                if (dias > 0) texto += dias + 'd ';
+                texto += String(horas).padStart(2,'0') + 'h ' +
+                         String(mins).padStart(2,'0') + 'm ' +
+                         String(segs).padStart(2,'0') + 's';
+                slotStatus.innerText = '🎰 PRÓXIMO SORTEO · ' + texto;
+            }
+        } else {
+            // El tiempo ha llegado: se debe ejecutar la tirada
+            detenerRodillos();
+            slotStatus.innerText = '⚡ ¡SORTEO EN MARCHA!';
+            ejecutarTiradaProgramada();
+        }
+    }
+
+    function iniciarRelojCuentaAtras(targetTime) {
+        if (timerInterval) clearInterval(timerInterval);
+        // Actualización inmediata y luego cada segundo
+        actualizarEstadoRecreativa(targetTime);
+        timerInterval = setInterval(() => {
+            const ahora = Date.now();
+            if (ahora >= targetTime) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+                // Ya se llamará a ejecutarTiradaProgramada desde actualizarEstadoRecreativa
+                actualizarEstadoRecreativa(targetTime);
+            } else {
+                actualizarEstadoRecreativa(targetTime);
+            }
+        }, 1000);
+    }
+
+    function finalizarTragaperras(ganador, revealAt) {
+        // Esta función se llama cuando ya hay un resultado con revealAt pendiente.
+        // Muestra el número premiado y una cuenta atrás de 30s.
+        if (slotFinalizing) return;
+        slotFinalizing = true;
+
+        detenerRodillos();
+        const reels = document.querySelectorAll('.slot-reel');
+        const digitos = obtenerDigitosPremiados(ganador);
+        reels.forEach((reel, idx) => {
+            reel.innerText = digitos[idx] || '0';
+            reel.classList.add('slot-win');
+        });
+
+        mostrarRecreativa(true);
+        const slotStatus = document.getElementById('slotStatus');
+
+        if (slotRevealInterval) clearInterval(slotRevealInterval);
+
+        const actualizar = () => {
+            const restante = Math.max(0, Math.ceil((revealAt - Date.now()) / 1000));
+            if (restante <= 0) {
+                clearInterval(slotRevealInterval);
+                slotRevealInterval = null;
+                slotStatus.innerText = '🎉 ¡RESULTADO LISTO! MOSTRANDO GANADOR...';
+                // La tarjeta de ganador se mostrará en el listener de Firebase
+                // cuando el valor de revealAt haya expirado.
+                return;
+            }
+            slotStatus.innerText = '🎰 NÚMERO PREMIADO · MOSTRANDO GANADOR EN ' +
+                String(restante).padStart(2,'0') + ' s';
+        };
+
+        actualizar();
+        slotRevealInterval = setInterval(actualizar, 250);
+    }
+
+    function detenerTragaperras() {
+        // Versión ligera: solo detiene animaciones, no oculta la recreativa.
+        detenerRodillos();
+        if (slotRevealInterval) {
+            clearInterval(slotRevealInterval);
+            slotRevealInterval = null;
+        }
+        slotFinalizing = false;
+        document.querySelectorAll('.slot-reel').forEach(reel => {
+            reel.classList.remove('slot-win');
+        });
+    }
+
+    function obtenerDigitosPremiados(ganador) {
+        const match = String(ganador.ticket || '').match(/^(\d+)/);
+        const numero = match ? match[1] : '0';
+        const numero3 = numero.slice(-3).padStart(3, '0');
+        return [numero3.charAt(0), numero3.charAt(1), numero3.charAt(2)];
+    }
+
+    // --- FIN LÓGICA RECREATIVA ---
+
     db.ref('sorteo_actual').on('value', function(snapshot) {
         const data = snapshot.val();
         programData = data;
         
         if (timerInterval) clearInterval(timerInterval);
+        detenerTragaperras(); // Limpia cualquier animación anterior
 
-        if (data && data.status === 'programado') {
-            document.getElementById('winnerCard').style.display = 'none';
-            document.getElementById('waitingCard').classList.add('hidden');
-            actualizarEstadoVisualSorteo(data.targetTime);
+        const slot = document.getElementById('slotMachineCard');
+        const winnerCard = document.getElementById('winnerCard');
+        const waitingCard = document.getElementById('waitingCard');
+
+        if (data && data.status === 'programado' && data.targetTime) {
+            // Sorteo programado
+            winnerCard.style.display = 'none';
+            waitingCard.classList.add('hidden');
             iniciarRelojCuentaAtras(data.targetTime);
         } else if (data && data.ganador) {
-            const tieneRevelacionProgramada = Number(data.revealAt) > 0;
-            const revealAt = tieneRevelacionProgramada ? Number(data.revealAt) : 0;
-            const restanteRevelacion = revealAt ? revealAt - Date.now() : 0;
+            // Ya hay resultado
+            waitingCard.classList.add('hidden');
+            const revealAt = Number(data.revealAt) || 0;
+            const restante = revealAt - Date.now();
 
-            if (tieneRevelacionProgramada && restanteRevelacion > 0) {
+            if (restante > 0) {
+                // Estamos en el periodo de revelación (30s)
+                winnerCard.style.display = 'none';
                 finalizarTragaperras(data.ganador, revealAt);
+                // Programar la aparición de la tarjeta cuando termine
+                setTimeout(() => {
+                    // Verificar que aún no se haya mostrado
+                    if (document.getElementById('winnerCard').style.display !== 'block') {
+                        detenerTragaperras();
+                        mostrarGanador(data);
+                    }
+                }, restante + 100);
             } else {
+                // Ya pasó el tiempo de revelación, mostrar ganador directamente
                 detenerTragaperras();
+                mostrarGanador(data);
             }
 
-            document.getElementById('countdownCard').classList.add('hidden');
-            document.getElementById('waitingCard').classList.add('hidden');
-            document.getElementById('winnerCard').style.display =
-                (tieneRevelacionProgramada && restanteRevelacion > 0) ? 'none' : 'block';
-            
+            // Actualizar la tarjeta de ganador con los datos (aunque esté oculta)
             actualGanadorUser = data.ganador.user;
             document.getElementById('winnerName').innerText = data.ganador.user;
-            
             let numeroBoleto = data.ganador.ticket;
             const matchNum = data.ganador.ticket.match(/^(\d+)/);
             if (matchNum) {
@@ -1540,212 +1722,121 @@
                     arcadeList.appendChild(li);
                 });
             }
-
-            if (tieneRevelacionProgramada && restanteRevelacion > 0) {
-                const mostrarGanador = () => {
-                    if (revealAt - Date.now() <= 0) {
-                        detenerTragaperras();
-                        document.getElementById('winnerCard').style.display = 'block';
-                    }
-                };
-
-                setTimeout(mostrarGanador, Math.max(0, restanteRevelacion));
-            }
         } else {
-            document.getElementById('winnerCard').style.display = 'none';
-            document.getElementById('countdownCard').classList.add('hidden');
-            document.getElementById('waitingCard').classList.remove('hidden');
+            // No hay sorteo activo
+            slot.classList.remove('active');
+            winnerCard.style.display = 'none';
+            waitingCard.classList.remove('hidden');
         }
     });
 
-    function formatearCuentaAtras(ms) {
-        const segundosTotales = Math.max(0, Math.ceil(ms / 1000));
-        const minutos = Math.floor(segundosTotales / 60);
-        const segundos = segundosTotales % 60;
-        return String(minutos).padStart(2, '0') + ':' + String(segundos).padStart(2, '0');
+    function mostrarGanador(data) {
+        const winnerCard = document.getElementById('winnerCard');
+        winnerCard.style.display = 'block';
+        // Asegurarse de que la recreativa se oculte o se ponga en segundo plano
+        document.getElementById('slotMachineCard').classList.remove('active');
     }
 
-    function actualizarEstadoVisualSorteo(targetTime) {
-    const diferencia = targetTime - Date.now();
-    const slot = document.getElementById('slotMachineCard');
-    const countdown = document.getElementById('countdownCard');
+    function ejecutarTiradaProgramada() {
+        if (!programData || programData.status !== 'programado') return;
+        // Siempre queremos animar el resultado (revealAt)
+        calcularYEjecutarTirada(programData.rawLines, programData.rawBlacklist, true);
+    }
 
-    if (countdown) countdown.classList.add('hidden');
-    slot.classList.add('active');
+    function calcularYEjecutarTirada(rawLinesStr, rawBlacklistStr, animarResultado = true) {
+        const rawLines = rawLinesStr.split('\n');
+        const rawBlacklist = rawBlacklistStr.split('\n');
 
-    if (diferencia > 0) {
-        document.getElementById('winnerCard').style.display = 'none';
-
-        if (diferencia <= 10 * 60 * 1000) {
-            iniciarTragaperras();
-            if (!slotFinalizing) {
-                document.getElementById('slotStatus').innerText =
-                    'Buena suerte, la necesitarás · ' + formatearCuentaAtras(diferencia);
+        let participantesValidos = [];
+        rawLines.forEach(function(line) {
+            let lineaLimpia = line.trim();
+            if (!lineaLimpia) return;
+            const matchUser = lineaLimpia.match(/@[\w_]+/);
+            if (matchUser) {
+                let boletoLimpio = lineaLimpia.replace(/PUNTO\s+EXTRA\s*/gi, '').trim();
+                participantesValidos.push({ ticket: boletoLimpio, user: matchUser[0] });
             }
-        } else {
-            detenerTragaperras();
-            if (!slotFinalizing) {
-                document.getElementById('slotStatus').innerText =
-                    '🎰 PRÓXIMO SORTEO · ' + formatearCuentaAtras(diferencia);
-            }
-        }
-    }
-}
-
-    function iniciarTragaperras() {
-        if (slotAnimationActive || slotFinalizing) return;
-
-        slotAnimationActive = true;
-        const reels = [
-            document.getElementById('slotReel1'),
-            document.getElementById('slotReel2'),
-            document.getElementById('slotReel3')
-        ];
-
-        reels.forEach(reel => reel.classList.add('spinning'));
-
-        slotAnimationInterval = setInterval(() => {
-            reels.forEach(reel => {
-                reel.innerText = String(Math.floor(Math.random() * 10));
-            });
-        }, 75);
-    }
-
-    function detenerTragaperras() {
-        if (slotAnimationInterval) {
-            clearInterval(slotAnimationInterval);
-            slotAnimationInterval = null;
-        }
-
-        if (slotRevealInterval) {
-            clearInterval(slotRevealInterval);
-            slotRevealInterval = null;
-        }
-
-        slotAnimationActive = false;
-        slotFinalizing = false;
-
-        const slot = document.getElementById('slotMachineCard');
-        slot.classList.remove('active');
-
-        [
-            document.getElementById('slotReel1'),
-            document.getElementById('slotReel2'),
-            document.getElementById('slotReel3')
-        ].forEach(reel => {
-            reel.classList.remove('spinning', 'slot-win');
-        });
-    }
-
-    function obtenerDigitosPremiados(ganador) {
-        const match = String(ganador.ticket || '').match(/^(\d+)/);
-        const numero = match ? match[1] : '0';
-
-        // La recreativa tiene tres rodillos, por lo que muestra los tres
-        // últimos dígitos del número de boleto, conservando ceros a la izquierda.
-        const numero3 = numero.slice(-3).padStart(3, '0');
-
-        return [
-            numero3.charAt(0),
-            numero3.charAt(1),
-            numero3.charAt(2)
-        ];
-    }
-
-    function actualizarCuentaResultado(restanteMs) {
-        const restante = Math.max(0, Math.ceil(restanteMs / 1000));
-        document.getElementById('slotStatus').innerText =
-            '🎰 NÚMERO PREMIADO · MOSTRANDO GANADOR EN ' +
-            String(restante).padStart(2, '0') + ' s';
-    }
-
-    function finalizarTragaperras(ganador, revealAt) {
-        if (!slotAnimationActive && !slotFinalizing) return;
-
-        slotFinalizing = true;
-
-        if (slotAnimationInterval) {
-            clearInterval(slotAnimationInterval);
-            slotAnimationInterval = null;
-        }
-
-        const reels = [
-            document.getElementById('slotReel1'),
-            document.getElementById('slotReel2'),
-            document.getElementById('slotReel3')
-        ];
-
-        const digitos = obtenerDigitosPremiados(ganador);
-
-        reels.forEach((reel, index) => {
-            reel.classList.remove('spinning');
-            reel.innerText = digitos[index];
-            reel.classList.add('slot-win');
         });
 
-        document.getElementById('slotMachineCard').classList.add('active');
+        const total = participantesValidos.length;
+        if (total === 0) return;
 
-        // El instante de revelación se guarda en Firebase para que, si alguien
-        // recarga la página, siga viendo el resultado durante el tiempo restante.
-        const fin = revealAt || (Date.now() + SLOT_REVEAL_MS);
+        const blacklist = rawBlacklist.map(u => u.trim().toLowerCase()).filter(u => u.length > 0);
 
-        if (slotRevealInterval) clearInterval(slotRevealInterval);
+        let log = [];
+        let ganadorEncontrado = null;
+        let indexGanador = -1;
+        let listaCopia = participantesValidos.slice();
 
-        const actualizar = () => {
-            const restante = fin - Date.now();
+        while (listaCopia.length > 0) {
+            const indexAleatorio = obtenerIndiceCriptografico(listaCopia.length);
+            const entrada = listaCopia[indexAleatorio];
+            const usuarioMinusculas = entrada.user.toLowerCase();
 
-            if (restante <= 0) {
-                clearInterval(slotRevealInterval);
-                slotRevealInterval = null;
-                document.getElementById('slotStatus').innerText =
-                    '🎉 ¡RESULTADO LISTO! MOSTRANDO GANADOR...';
-                return;
+            if (blacklist.indexOf(usuarioMinusculas) !== -1) {
+                log.push("❌ Descartado: " + entrada.ticket + " (" + entrada.user + " está en la Lista Negra)");
+                listaCopia.splice(indexAleatorio, 1);
+            } else {
+                ganadorEncontrado = entrada;
+                indexGanador = participantesValidos.findIndex(p => p.ticket === entrada.ticket);
+                log.push("✅ ¡TIRADA GANADORA!: " + entrada.ticket);
+                break;
             }
+        }
 
-            actualizarCuentaResultado(restante);
+        if (!ganadorEncontrado) return;
+
+        let anteriores = [], posteriores = [], usuariosUsados = {};
+        usuariosUsados[ganadorEncontrado.user.toLowerCase()] = true;
+
+        let curr = indexGanador - 1, cntAnt = 0;
+        while (anteriores.length < 2 && cntAnt < total) {
+            if (curr < 0) curr = total - 1;
+            let cand = participantesValidos[curr];
+            if (!usuariosUsados[cand.user.toLowerCase()]) {
+                anteriores.unshift(cand);
+                usuariosUsados[cand.user.toLowerCase()] = true;
+            }
+            curr--; cntAnt++;
+        }
+
+        curr = indexGanador + 1; let cntPost = 0;
+        while (posteriores.length < 2 && cntPost < total) {
+            if (curr >= total) curr = 0;
+            let cand = participantesValidos[curr];
+            if (!usuariosUsados[cand.user.toLowerCase()]) {
+                posteriores.push(cand);
+                usuariosUsados[cand.user.toLowerCase()] = true;
+            }
+            curr++; cntPost++;
+        }
+
+        const arcadeGroup = anteriores.concat([ganadorEncontrado], posteriores);
+        const ahora = new Date();
+        const fechaFormateada = `${nombresMeses[ahora.getMonth()]} ${ahora.getFullYear()}`;
+
+        db.ref('historial_ganadores').push({
+            user: ganadorEncontrado.user,
+            ticket: ganadorEncontrado.ticket,
+            fecha: fechaFormateada,
+            timestamp: Date.now() + Math.random()
+        });
+
+        const resultadoData = {
+            ganador: ganadorEncontrado,
+            arcadeGroup: arcadeGroup,
+            log: log,
+            timestamp: Date.now()
         };
 
-        actualizar();
-        slotRevealInterval = setInterval(actualizar, 250);
-    }
-
-    function iniciarRelojCuentaAtras(targetTime) {
-        function actualizar() {
-            const diferencia = targetTime - Date.now();
-
-            if (diferencia <= 0) {
-                clearInterval(timerInterval);
-
-                if (slotAnimationActive) {
-                    document.getElementById('slotStatus').innerText =
-                        'Buena suerte, la necesitarás';
-                }
-
-                ejecutarTiradaProgramada();
-                return;
-            }
-
-            actualizarEstadoVisualSorteo(targetTime);
-
-            const dias = Math.floor(diferencia / (1000 * 60 * 60 * 24));
-            const horas = Math.floor((diferencia % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            const minutos = Math.floor((diferencia % (1000 * 60 * 60)) / (1000 * 60));
-            const segundos = Math.floor((diferencia % (1000 * 60)) / 1000);
-
-            let textoReloj = '';
-            if (dias > 0) textoReloj += dias + 'd ';
-            textoReloj += String(horas).padStart(2, '0') + 'h ' +
-                         String(minutos).padStart(2, '0') + 'm ' +
-                         String(segundos).padStart(2, '0') + 's';
-
-            if (diferencia > 10 * 60 * 1000) {
-                document.getElementById('timerDisplay').innerText = textoReloj;
-            }
+        if (animarResultado) {
+            resultadoData.revealAt = Date.now() + SLOT_REVEAL_MS;
         }
 
-        actualizar();
-        timerInterval = setInterval(actualizar, 1000);
+        db.ref('sorteo_actual').set(resultadoData);
     }
+
+    // ---- Funciones existentes de administración, historial, etc. (no modificadas) ----
 
     db.ref('historial_ganadores').on('value', function(snapshot) {
         const data = snapshot.val();
@@ -1918,113 +2009,22 @@
             }).then(() => alert("¡Sorteo programado con éxito!"));
         } else {
             if (confirm("El sorteo se realizará de inmediato. ¿Continuar?")) {
-                detenerTragaperras();
-                calcularYEjecutarTirada(rawLines, rawBlacklist);
+                // Sorteo inmediato: usamos la misma lógica pero con animación de 30s
+                detenerTragaperras(); // limpia estado previo
+                // Mostramos la recreativa de inmediato
+                mostrarRecreativa(true);
+                document.getElementById('slotStatus').innerText = '🎰 SORTEO INMEDIATO...';
+                calcularYEjecutarTirada(rawLines, rawBlacklist, true);
             }
         }
     }
 
-    function ejecutarTiradaProgramada() {
-        if (!programData || programData.status !== 'programado') return;
-        calcularYEjecutarTirada(programData.rawLines, programData.rawBlacklist, true);
-    }
-
-    function calcularYEjecutarTirada(rawLinesStr, rawBlacklistStr, animarResultado = false) {
-        const rawLines = rawLinesStr.split('\n');
-        const rawBlacklist = rawBlacklistStr.split('\n');
-
-        let participantesValidos = [];
-        rawLines.forEach(function(line) {
-            let lineaLimpia = line.trim();
-            if (!lineaLimpia) return;
-            const matchUser = lineaLimpia.match(/@[\w_]+/);
-            if (matchUser) {
-                let boletoLimpio = lineaLimpia.replace(/PUNTO\s+EXTRA\s*/gi, '').trim();
-                participantesValidos.push({ ticket: boletoLimpio, user: matchUser[0] });
-            }
-        });
-
-        const total = participantesValidos.length;
-        if (total === 0) return;
-
-        const blacklist = rawBlacklist.map(u => u.trim().toLowerCase()).filter(u => u.length > 0);
-
-        let log = [];
-        let ganadorEncontrado = null;
-        let indexGanador = -1;
-        let listaCopia = participantesValidos.slice();
-
-        while (listaCopia.length > 0) {
-            const indexAleatorio = obtenerIndiceCriptografico(listaCopia.length);
-            const entrada = listaCopia[indexAleatorio];
-            const usuarioMinusculas = entrada.user.toLowerCase();
-
-            if (blacklist.indexOf(usuarioMinusculas) !== -1) {
-                log.push("❌ Descartado: " + entrada.ticket + " (" + entrada.user + " está en la Lista Negra)");
-                listaCopia.splice(indexAleatorio, 1);
-            } else {
-                ganadorEncontrado = entrada;
-                indexGanador = participantesValidos.findIndex(p => p.ticket === entrada.ticket);
-                log.push("✅ ¡TIRADA GANADORA!: " + entrada.ticket);
-                break;
-            }
-        }
-
-        if (!ganadorEncontrado) return;
-
-        let anteriores = [], posteriores = [], usuariosUsados = {};
-        usuariosUsados[ganadorEncontrado.user.toLowerCase()] = true;
-
-        let curr = indexGanador - 1, cntAnt = 0;
-        while (anteriores.length < 2 && cntAnt < total) {
-            if (curr < 0) curr = total - 1;
-            let cand = participantesValidos[curr];
-            if (!usuariosUsados[cand.user.toLowerCase()]) {
-                anteriores.unshift(cand);
-                usuariosUsados[cand.user.toLowerCase()] = true;
-            }
-            curr--; cntAnt++;
-        }
-
-        curr = indexGanador + 1; let cntPost = 0;
-        while (posteriores.length < 2 && cntPost < total) {
-            if (curr >= total) curr = 0;
-            let cand = participantesValidos[curr];
-            if (!usuariosUsados[cand.user.toLowerCase()]) {
-                posteriores.push(cand);
-                usuariosUsados[cand.user.toLowerCase()] = true;
-            }
-            curr++; cntPost++;
-        }
-
-        const arcadeGroup = anteriores.concat([ganadorEncontrado], posteriores);
-        const ahora = new Date();
-        const fechaFormateada = `${nombresMeses[ahora.getMonth()]} ${ahora.getFullYear()}`;
-
-        db.ref('historial_ganadores').push({
-            user: ganadorEncontrado.user,
-            ticket: ganadorEncontrado.ticket,
-            fecha: fechaFormateada,
-            timestamp: Date.now() + Math.random()
-        });
-
-        const resultadoData = {
-            ganador: ganadorEncontrado,
-            arcadeGroup: arcadeGroup,
-            log: log,
-            timestamp: Date.now()
-        };
-
-        if (animarResultado) {
-            resultadoData.revealAt = Date.now() + SLOT_REVEAL_MS;
-        }
-
-        db.ref('sorteo_actual').set(resultadoData);
-    }
+    // Inicializar los selectores de fecha y hora (ya están en el HTML)
+    // El código de los selectores retro se incluye al final del body.
 </script>
 
 <script>
-/* Selector de hora retro dinámico */
+/* Selector de hora retro dinámico (sin cambios) */
 (function initRetroTimePicker() {
   const valueInput = document.getElementById("drawTimeInput");
   const display = document.getElementById("retroTimeDisplay");
@@ -2043,8 +2043,6 @@
   function setFromCurrentTime() {
     const now = new Date();
     hour = now.getHours();
-    // Redondeamos al siguiente minuto para que la primera opción sea realmente
-    // una hora válida a partir del instante en que se abre el selector.
     minute = now.getMinutes();
   }
 
@@ -2059,8 +2057,6 @@
   }
 
   function renderWheel(element, max, selected, onSelect) {
-    // Cinco filas visibles, pero todos los valores son reales: nunca hay
-    // separadores vacíos. El desplazamiento se centra en el valor seleccionado.
     element.innerHTML = "";
     for (let n = 0; n <= max; n++) {
       const item = document.createElement("div");
@@ -2100,8 +2096,6 @@
   display.addEventListener("click", event => {
     event.stopPropagation();
 
-    // Si todavía no se ha elegido una hora, arrancamos en la hora/minuto real.
-    // Si ya existe una elección, la respetamos al volver a abrir.
     if (!valueInput.dataset.userSelected) {
       setFromCurrentTime();
     } else {
@@ -2148,12 +2142,13 @@
     }
   });
 
-  // No ponemos 00:00 al cargar: la primera apertura parte de la hora real.
   valueInput.value = "";
   displayValue.textContent = "--:--";
 })();
 </script>
+
 <script>
+/* Selector de fecha retro (sin cambios) */
 (function(){
  const input=document.getElementById("drawDateInput"), picker=document.getElementById("retroDatePicker"), display=document.getElementById("retroDateDisplay"), text=document.getElementById("retroDateDisplayValue"), panel=document.getElementById("retroDatePanel"), grid=document.getElementById("retroDateGrid"), label=document.getElementById("retroDateMonthLabel");
  const prev=document.getElementById("retroDatePrev"), next=document.getElementById("retroDateNext"), todayBtn=document.getElementById("retroDateToday"), confirm=document.getElementById("retroDateConfirm");
