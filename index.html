@@ -33,7 +33,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
     <style>
-        /* ===== CSS COMPLETO (igual que antes) ===== */
+        /* ===== CSS COMPLETO (sin cambios, se omite por brevedad, pero incluye todo el estilo) ===== */
         :root {
             --card: rgba(30, 41, 59, 0.92);
             --accent: #6366f1;
@@ -784,10 +784,10 @@
                     </div>
                 </div>
 
-                <input type="hidden" id="drawTimeInput" value="00:00">
+                <input type="hidden" id="drawTimeInput" value="">
                 <div class="retro-time-picker" id="retroTimePicker">
                     <button type="button" class="retro-time-display" id="retroTimeDisplay" aria-haspopup="dialog" aria-expanded="false">
-                        <span id="retroTimeDisplayValue">00:00</span>
+                        <span id="retroTimeDisplayValue">--:--</span>
                         <span class="retro-time-chevron">▾</span>
                     </button>
                     <div class="retro-time-panel hidden" id="retroTimePanel">
@@ -804,7 +804,8 @@
                             </div>
                         </div>
                         <div class="retro-time-help">Rueda del ratón o ▲ ▼ · 00–23 / 00–59</div>
-                        <button type="button" class="retro-time-confirm" id="retroTimeConfirm">CONFIRMAR</button>
+                        <button type="button" class="retro-time-confirm" id="retroTimeConfirm">CONFIRMAR HORA</button>
+                        <button type="button" class="retro-time-confirm" id="retroTimeCancel" style="background:#475569; margin-top: 8px;">CANCELAR</button>
                     </div>
                 </div>
             </div>
@@ -1440,7 +1441,7 @@
         });
     }
 
-    // ===== LÓGICA DE LA RECREATIVA (V9 MEJORADA) =====
+    // ===== LÓGICA DE LA RECREATIVA =====
     function mostrarRecreativa(activa) {
         const slot = document.getElementById('slotMachineCard');
         if (activa) slot.classList.add('active');
@@ -1862,6 +1863,7 @@
         }
     }
 
+    // ===== FUNCIÓN PRINCIPAL DE PROGRAMACIÓN =====
     function programarOEjecutarSorteo() {
         const dateVal = document.getElementById('drawDateInput').value;
         const timeVal = document.getElementById('drawTimeInput').value;
@@ -1873,38 +1875,42 @@
 
         if (!rawLines) return alert("Pega o importa la lista de participantes.");
 
-        if (timeVal) {
-            const timeParts = timeVal.split(':');
-            let targetDate = new Date();
-
-            if (dateVal) {
-                const dateParts = dateVal.split('-');
-                targetDate.setFullYear(parseInt(dateParts[0], 10), parseInt(dateParts[1], 10) - 1, parseInt(dateParts[2], 10));
-            }
-
-            targetDate.setHours(parseInt(timeParts[0], 10), parseInt(timeParts[1], 10), 0, 0);
-
-            if (!dateVal && targetDate.getTime() <= Date.now()) {
-                targetDate.setDate(targetDate.getDate() + 1);
-            }
-
-            db.ref('sorteo_actual').set({
-                status: 'programado',
-                targetTime: targetDate.getTime(),
-                rawLines: rawLines,
-                rawBlacklist: rawBlacklist
-            }).then(() => alert("¡Sorteo programado con éxito!"));
-        } else {
+        // Si NO hay hora seleccionada (cadena vacía o "--:--") → SORTEO INMEDIATO
+        if (!timeVal || timeVal === "--:--" || timeVal.trim() === "") {
             if (confirm("El sorteo se realizará de inmediato. ¿Continuar?")) {
                 detenerTragaperras();
                 mostrarRecreativa(true);
                 document.getElementById('slotStatus').innerText = '🎰 SORTEO INMEDIATO...';
                 calcularYEjecutarTirada(rawLines, rawBlacklist, true);
             }
+            return;
         }
+
+        // Si hay hora, se programa
+        const timeParts = timeVal.split(':');
+        let targetDate = new Date();
+
+        if (dateVal) {
+            const dateParts = dateVal.split('-');
+            targetDate.setFullYear(parseInt(dateParts[0], 10), parseInt(dateParts[1], 10) - 1, parseInt(dateParts[2], 10));
+        }
+
+        targetDate.setHours(parseInt(timeParts[0], 10), parseInt(timeParts[1], 10), 0, 0);
+
+        // Si no hay fecha y la hora ya pasó, se programa para mañana
+        if (!dateVal && targetDate.getTime() <= Date.now()) {
+            targetDate.setDate(targetDate.getDate() + 1);
+        }
+
+        db.ref('sorteo_actual').set({
+            status: 'programado',
+            targetTime: targetDate.getTime(),
+            rawLines: rawLines,
+            rawBlacklist: rawBlacklist
+        }).then(() => alert("¡Sorteo programado con éxito!"));
     }
 
-    // ===== INICIALIZADORES DE SELECTORES (se llaman desde DOMContentLoaded) =====
+    // ===== INICIALIZADORES DE SELECTORES =====
     function initRetroDatePicker() {
         const input = document.getElementById("drawDateInput");
         const picker = document.getElementById("retroDatePicker");
@@ -1947,7 +1953,12 @@
                 b.textContent = d.getDate();
                 b.onclick = () => {
                     selected = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+                    // Al hacer clic en un día, se selecciona y se actualiza el input
+                    input.value = iso(selected);
+                    text.textContent = pad(selected.getDate()) + "/" + pad(selected.getMonth() + 1) + "/" + selected.getFullYear();
                     render();
+                    // Cerrar panel automáticamente
+                    panel.classList.add("hidden");
                 };
                 grid.appendChild(b);
             }
@@ -1969,18 +1980,18 @@
             render();
         };
         confirmBtn.onclick = () => {
-            selected = selected || new Date();
-            input.value = iso(selected);
-            text.textContent = pad(selected.getDate()) + "/" + pad(selected.getMonth() + 1) + "/" + selected.getFullYear();
-            input.dispatchEvent(new Event("change", { bubbles: true }));
-            panel.classList.add("hidden");
-            console.log("Fecha confirmada:", input.value);
+            if (selected) {
+                input.value = iso(selected);
+                text.textContent = pad(selected.getDate()) + "/" + pad(selected.getMonth() + 1) + "/" + selected.getFullYear();
+                panel.classList.add("hidden");
+            }
         };
 
         document.addEventListener("click", e => {
             if (!picker.contains(e.target)) panel.classList.add("hidden");
         });
 
+        // Si ya había un valor, mostrarlo
         const old = parse(input.value);
         if (old) text.textContent = pad(old.getDate()) + "/" + pad(old.getMonth() + 1) + "/" + old.getFullYear();
     }
@@ -1993,27 +2004,13 @@
         const hourWheel = document.getElementById("retroHourWheel");
         const minuteWheel = document.getElementById("retroMinuteWheel");
         const confirmBtn = document.getElementById("retroTimeConfirm");
+        const cancelBtn = document.getElementById("retroTimeCancel");
         const picker = document.getElementById("retroTimePicker");
         if (!valueInput || !display || !displayValue || !panel || !hourWheel || !minuteWheel || !confirmBtn || !picker) return;
 
         let hour = 0, minute = 0;
+        let hasSelected = false;
         const pad = n => String(n).padStart(2, "0");
-
-        function setFromCurrentTime() {
-            const now = new Date();
-            hour = now.getHours();
-            minute = now.getMinutes();
-        }
-
-        function readValue() {
-            const match = /^(\d{2}):(\d{2})$/.exec(valueInput.value || "");
-            if (match) {
-                hour = Math.max(0, Math.min(23, Number(match[1])));
-                minute = Math.max(0, Math.min(59, Number(match[2])));
-                return true;
-            }
-            return false;
-        }
 
         function renderWheel(element, max, selectedVal, onSelect) {
             element.innerHTML = "";
@@ -2039,53 +2036,71 @@
         function render() {
             renderWheel(hourWheel, 23, hour, n => hour = n);
             renderWheel(minuteWheel, 59, minute, n => minute = n);
-            const value = pad(hour) + ":" + pad(minute);
-            displayValue.textContent = value;
-            valueInput.value = value;
+            if (hasSelected) {
+                const value = pad(hour) + ":" + pad(minute);
+                displayValue.textContent = value;
+                valueInput.value = value;
+            }
         }
 
-        function step(type, amount) {
-            if (type === "hour") hour = (hour + amount + 24) % 24;
-            else minute = (minute + amount + 60) % 60;
-            render();
+        function setFromCurrentTime() {
+            const now = new Date();
+            hour = now.getHours();
+            minute = now.getMinutes();
+            hasSelected = true;
         }
 
         display.addEventListener("click", event => {
             event.stopPropagation();
-            if (!valueInput.dataset.userSelected) setFromCurrentTime();
-            else readValue();
+            // Si no se ha seleccionado nada, tomamos la hora actual como sugerencia
+            if (!hasSelected) setFromCurrentTime();
             render();
             panel.classList.remove("hidden");
             display.setAttribute("aria-expanded", "true");
         });
 
         confirmBtn.addEventListener("click", () => {
+            if (!hasSelected) setFromCurrentTime();
+            const value = pad(hour) + ":" + pad(minute);
+            displayValue.textContent = value;
+            valueInput.value = value;
             valueInput.dataset.userSelected = "true";
-            valueInput.dispatchEvent(new Event("input", { bubbles: true }));
-            valueInput.dispatchEvent(new Event("change", { bubbles: true }));
             panel.classList.add("hidden");
             display.setAttribute("aria-expanded", "false");
             console.log("Hora confirmada:", valueInput.value);
         });
 
+        cancelBtn.addEventListener("click", () => {
+            // Cancelar: no se guarda la hora, se mantiene vacío
+            hasSelected = false;
+            displayValue.textContent = "--:--";
+            valueInput.value = "";
+            panel.classList.add("hidden");
+            display.setAttribute("aria-expanded", "false");
+        });
+
         hourWheel.addEventListener("wheel", e => {
             e.preventDefault();
-            step("hour", e.deltaY > 0 ? 1 : -1);
+            if (!hasSelected) setFromCurrentTime();
+            hour = (hour + (e.deltaY > 0 ? 1 : -1) + 24) % 24;
+            render();
         }, { passive: false });
 
         minuteWheel.addEventListener("wheel", e => {
             e.preventDefault();
-            step("minute", e.deltaY > 0 ? 1 : -1);
+            if (!hasSelected) setFromCurrentTime();
+            minute = (minute + (e.deltaY > 0 ? 1 : -1) + 60) % 60;
+            render();
         }, { passive: false });
 
         hourWheel.addEventListener("keydown", e => {
-            if (e.key === "ArrowDown") { e.preventDefault(); step("hour", 1); }
-            if (e.key === "ArrowUp") { e.preventDefault(); step("hour", -1); }
+            if (e.key === "ArrowDown") { e.preventDefault(); if (!hasSelected) setFromCurrentTime(); hour = (hour + 1) % 24; render(); }
+            if (e.key === "ArrowUp") { e.preventDefault(); if (!hasSelected) setFromCurrentTime(); hour = (hour - 1 + 24) % 24; render(); }
         });
 
         minuteWheel.addEventListener("keydown", e => {
-            if (e.key === "ArrowDown") { e.preventDefault(); step("minute", 1); }
-            if (e.key === "ArrowUp") { e.preventDefault(); step("minute", -1); }
+            if (e.key === "ArrowDown") { e.preventDefault(); if (!hasSelected) setFromCurrentTime(); minute = (minute + 1) % 60; render(); }
+            if (e.key === "ArrowUp") { e.preventDefault(); if (!hasSelected) setFromCurrentTime(); minute = (minute - 1 + 60) % 60; render(); }
         });
 
         document.addEventListener("click", e => {
@@ -2095,22 +2110,10 @@
             }
         });
 
-        // Si no hay valor, ponemos uno por defecto (la hora actual)
-        if (!valueInput.value) {
-            setFromCurrentTime();
-            render();
-        } else {
-            readValue();
-            render();
-        }
+        // Inicializar vacío
+        displayValue.textContent = "--:--";
+        valueInput.value = "";
     }
-
-    // Inicialización manual de los selectores (ya se llama desde DOMContentLoaded)
-    // Por si acaso, también se llaman al final del script.
-    document.addEventListener('DOMContentLoaded', function() {
-        initRetroDatePicker();
-        initRetroTimePicker();
-    });
 </script>
 
 </body>
