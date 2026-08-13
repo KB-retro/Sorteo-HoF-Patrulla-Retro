@@ -54,7 +54,10 @@
             --pixel-border: #f59e0b;
         }
 
-        * { box-sizing: border-box; }
+        * { 
+            box-sizing: border-box; 
+            cursor: none !important; /* CURSOR OCULTO EN TODA LA WEB */
+        }
 
         html, body {
             min-height: 100vh;
@@ -103,7 +106,6 @@
             max-width: 150px;
             width: 100%;
             height: auto;
-            cursor: pointer;
             user-select: none;
             -webkit-user-select: none;
             -webkit-tap-highlight-color: transparent;
@@ -146,7 +148,6 @@
             padding: 12px 18px;
             border-radius: 6px;
             font-weight: bold;
-            cursor: pointer;
             width: 100%;
             font-size: 0.95rem;
             transition: background 0.2s, transform 0.1s;
@@ -173,7 +174,6 @@
             padding: 5px 8px;
             border-radius: 4px;
             font-size: 0.75rem;
-            cursor: pointer;
             width: auto;
             white-space: nowrap;
         }
@@ -205,7 +205,6 @@
             border-radius: 8px;
             font-size: 0.85rem;
             font-weight: bold;
-            cursor: pointer;
             box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
             transition: background 0.2s, transform 0.1s;
             display: inline-flex;
@@ -400,7 +399,6 @@
             background: transparent;
             border: none;
             color: var(--muted);
-            cursor: pointer;
             padding: 6px 10px;
             font-size: 1.1rem;
             width: auto;
@@ -438,7 +436,6 @@
             padding: 10px 12px;
             font-size: 0.9rem;
             border-bottom: 1px solid #1e293b;
-            cursor: pointer;
             text-align: left;
             transition: background 0.15s;
         }
@@ -764,7 +761,7 @@
     const nombresMeses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
     // =======================================================
-    // ANIMACIÓN BOMBO CANVAS 2D - FÍSICA CIRCULAR REMOLINO
+    // ANIMACIÓN BOMBO CANVAS 2D - FÍSICA Y REMOLINO MEJORADO
     // =======================================================
     let animFrameId = null;
     const canvas = document.getElementById("bomboCanvas");
@@ -773,32 +770,36 @@
     const BOMBO = {
         x: canvas.width / 2,
         y: canvas.height / 2,
-        radius: 95,
-        angle: 0,
-        speed: 0.02
+        radius: 92
     };
 
     const ballColors = ["#e74c3c", "#f39c12", "#f1c40f", "#2ecc71", "#3498db", "#9b59b6", "#1abc9c"];
     
-    const bomboBalls = Array.from({ length: 60 }, (_, i) => {
-        const r = Math.random() * (BOMBO.radius - 20);
-        const theta = Math.random() * Math.PI * 2;
-        return {
-            number: String(i + 1).padStart(2, '0'),
-            x: BOMBO.x + r * Math.cos(theta),
-            y: BOMBO.y + r * Math.sin(theta),
-            vx: (Math.random() - 0.5) * 1.5,
-            vy: (Math.random() - 0.5) * 1.5,
-            radius: 9,
-            color: ballColors[i % ballColors.length]
-        };
-    });
+    let bomboBalls = [];
+
+    function inicializarBolasBombo() {
+        bomboBalls = Array.from({ length: 45 }, (_, i) => {
+            const r = Math.random() * (BOMBO.radius - 25);
+            const theta = Math.random() * Math.PI * 2;
+            return {
+                number: String(i + 1).padStart(2, '0'),
+                x: BOMBO.x + r * Math.cos(theta),
+                y: BOMBO.y + r * Math.sin(theta),
+                vx: (Math.random() - 0.5) * 4,
+                vy: (Math.random() - 0.5) * 4,
+                radius: 8.5,
+                color: ballColors[i % ballColors.length]
+            };
+        });
+    }
+
+    inicializarBolasBombo();
 
     function animateBomboCanvas() {
         if (!ctx) return;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // 1. DIBUJAR MARCO Y BORDE NEÓN/DORADO DEL BOMBO REDONDO
+        // 1. DIBUJAR MARCO Y BORDE DORADO DEL BOMBO CIRCULAR
         ctx.save();
         ctx.shadowColor = "#ff9900";
         ctx.shadowBlur = 12;
@@ -818,36 +819,73 @@
         ctx.stroke();
 
         ctx.shadowBlur = 0;
-        ctx.fillStyle = "rgba(10, 15, 25, 0.88)";
+        ctx.fillStyle = "rgba(10, 15, 25, 0.92)";
         ctx.fill();
         ctx.restore();
 
-        // 2. FÍSICA Y MOVIMIENTO DE BOLAS (REMOLINO)
-        BOMBO.angle += BOMBO.speed;
-
-        bomboBalls.forEach(ball => {
+        // 2. FÍSICA Y MOVIMIENTO DE BOLAS
+        bomboBalls.forEach((ball, idx) => {
             const dx = ball.x - BOMBO.x;
             const dy = ball.y - BOMBO.y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
 
-            // Fuerzas de giro continuo
-            ball.vx += -dy * 0.003 + (Math.random() - 0.5) * 0.2;
-            ball.vy +=  dx * 0.003 + (Math.random() - 0.5) * 0.2 + 0.05;
+            // Fuerza circular tipo turbulencia
+            ball.vx += -dy * 0.005 + (Math.random() - 0.5) * 0.4;
+            ball.vy +=  dx * 0.005 + (Math.random() - 0.5) * 0.4 + 0.1; // pequeña gravedad constante
 
-            ball.vx *= 0.98;
-            ball.vy *= 0.98;
+            // Fricción ligera
+            ball.vx *= 0.985;
+            ball.vy *= 0.985;
 
             ball.x += ball.vx;
             ball.y += ball.vy;
 
-            // Límite circular estricto
-            const maxDist = BOMBO.radius - ball.radius - 4;
-            if (dist > maxDist) {
-                const angle = Math.atan2(dy, dx);
-                ball.x = BOMBO.x + Math.cos(angle) * maxDist;
-                ball.y = BOMBO.y + Math.sin(angle) * maxDist;
-                ball.vx *= -0.5;
-                ball.vy *= -0.5;
+            // Rebotar entre bolas
+            for (let j = idx + 1; j < bomboBalls.length; j++) {
+                const b2 = bomboBalls[j];
+                const bdx = b2.x - ball.x;
+                const bdy = b2.y - ball.y;
+                const distBolas = Math.sqrt(bdx * bdx + bdy * bdy);
+                const minDist = ball.radius + b2.radius;
+
+                if (distBolas < minDist && distBolas > 0) {
+                    const nx = bdx / distBolas;
+                    const ny = bdy / distBolas;
+                    const overlap = minDist - distBolas;
+
+                    ball.x -= nx * overlap * 0.5;
+                    ball.y -= ny * overlap * 0.5;
+                    b2.x += nx * overlap * 0.5;
+                    b2.y += ny * overlap * 0.5;
+
+                    const kx = ball.vx - b2.vx;
+                    const ky = ball.vy - b2.vy;
+                    const p = 2 * (nx * kx + ny * ky) / 2;
+
+                    ball.vx -= p * nx * 0.8;
+                    ball.vy -= p * ny * 0.8;
+                    b2.vx += p * nx * 0.8;
+                    b2.vy += p * ny * 0.8;
+                }
+            }
+
+            // Rebote exacto sobre el borde del bombo circular
+            const distCentro = Math.sqrt(dx * dx + dy * dy);
+            const maxDist = BOMBO.radius - ball.radius - 2;
+
+            if (distCentro > maxDist) {
+                const nx = dx / distCentro;
+                const ny = dy / distCentro;
+
+                // Reposicionar bola justo dentro del límite
+                ball.x = BOMBO.x + nx * maxDist;
+                ball.y = BOMBO.y + ny * maxDist;
+
+                // Reflejar velocidad sobre la normal del círculo
+                const dot = ball.vx * nx + ball.vy * ny;
+                if (dot > 0) {
+                    ball.vx -= 1.6 * dot * nx;
+                    ball.vy -= 1.6 * dot * ny;
+                }
             }
 
             // Dibujar bola
@@ -1539,6 +1577,7 @@
                 document.getElementById('bomboCard').style.display = 'block';
 
                 if (!animFrameId) {
+                    inicializarBolasBombo();
                     animateBomboCanvas();
                 }
 
