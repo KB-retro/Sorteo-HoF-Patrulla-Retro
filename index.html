@@ -33,7 +33,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
     <style>
-        /* ===== CSS COMPLETO (sin cambios, se omite por brevedad, pero incluye todo el estilo) ===== */
+        /* ===== CSS COMPLETO ===== */
         :root {
             --card: rgba(30, 41, 59, 0.92);
             --accent: #6366f1;
@@ -644,7 +644,7 @@
         .retro-time-cancel:hover { background:#334155; }
         @media (max-width:480px) { .retro-time-wheel-wrap { width:90px; } }
 
-        /* ===== SELECTOR DE FECHA RETRO (actualizado) ===== */
+        /* ===== SELECTOR DE FECHA RETRO ===== */
         .retro-date-picker{position:relative;width:100%}
         .retro-date-display{width:100%;min-height:44px;padding:10px 14px;box-sizing:border-box;display:flex;align-items:center;gap:10px;border:1px solid rgba(139,92,246,.55);border-radius:12px;background:rgba(15,23,42,.85);color:#f8fafc;font:inherit;cursor:pointer;text-align:left}
         .retro-date-display span:last-child{margin-left:auto;opacity:.7}
@@ -969,7 +969,6 @@
 
     window.addEventListener('DOMContentLoaded', function() {
         importarDesdeTelegram(false);
-        // Inicializar selectores de fecha/hora después de cargar el DOM
         initRetroDatePicker();
         initRetroTimePicker();
     });
@@ -1935,7 +1934,7 @@
         }).then(() => alert("¡Sorteo programado con éxito!"));
     }
 
-    // ===== INICIALIZADORES DE SELECTORES =====
+    // ===== INICIALIZADORES DE SELECTORES (CORREGIDOS) =====
     function initRetroDatePicker() {
         const input = document.getElementById("drawDateInput");
         const picker = document.getElementById("retroDatePicker");
@@ -1955,7 +1954,6 @@
         const now = new Date();
         let selected = null;
         let view = new Date(now.getFullYear(), now.getMonth(), 1);
-        // Guardar el valor anterior para cancelar
         let previousValue = input.value || "";
 
         function parse(s) {
@@ -1968,7 +1966,6 @@
             grid.innerHTML = "";
             const first = new Date(view.getFullYear(), view.getMonth(), 1);
             const start = (first.getDay() + 6) % 7;
-            const total = new Date(view.getFullYear(), view.getMonth() + 1, 0).getDate();
             for (let i = 0; i < 42; i++) {
                 const d = new Date(view.getFullYear(), view.getMonth(), i - start + 1);
                 const b = document.createElement("button");
@@ -1980,7 +1977,6 @@
                 b.textContent = d.getDate();
                 b.onclick = () => {
                     selected = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-                    // Marcar visualmente, pero no guardamos aún
                     render();
                 };
                 grid.appendChild(b);
@@ -1989,9 +1985,7 @@
 
         display.onclick = e => {
             e.stopPropagation();
-            // Al abrir, guardamos el valor actual para posible cancelación
             previousValue = input.value || "";
-            // Si no hay selección, usamos la fecha actual como sugerencia
             if (!selected) {
                 selected = parse(input.value) || new Date();
                 view = new Date(selected.getFullYear(), selected.getMonth(), 1);
@@ -2015,30 +2009,25 @@
         };
 
         cancelBtn.onclick = () => {
-            // Restaurar el valor anterior (vacío o el que había)
-            input.value = previousValue;
-            if (previousValue) {
-                const d = parse(previousValue);
-                if (d) {
-                    text.textContent = pad(d.getDate()) + "/" + pad(d.getMonth() + 1) + "/" + d.getFullYear();
-                } else {
-                    text.textContent = "--/--/----";
-                }
-            } else {
-                text.textContent = "--/--/----";
-            }
-            selected = parse(previousValue) || null;
+            // CORREGIDO: Vuelve a limpiar completamente a --/--/----
+            input.value = "";
+            text.textContent = "--/--/----";
+            selected = null;
             panel.classList.add("hidden");
         };
 
         document.addEventListener("click", e => {
-            if (!picker.contains(e.target)) {
-                // Si se cierra sin confirmar, no hacemos nada (se mantiene el valor actual)
+            if (!picker.contains(e.target) && !panel.classList.contains("hidden")) {
+                // CORREGIDO: Al hacer clic fuera, si hay una fecha seleccionada, se guarda automáticamente como la hora
+                if (selected) {
+                    const val = iso(selected);
+                    input.value = val;
+                    text.textContent = pad(selected.getDate()) + "/" + pad(selected.getMonth() + 1) + "/" + selected.getFullYear();
+                }
                 panel.classList.add("hidden");
             }
         });
 
-        // Inicializar display con el valor actual (vacío por defecto)
         const old = parse(input.value);
         if (old) text.textContent = pad(old.getDate()) + "/" + pad(old.getMonth() + 1) + "/" + old.getFullYear();
         else text.textContent = "--/--/----";
@@ -2102,10 +2091,8 @@
         display.addEventListener("click", event => {
             event.stopPropagation();
             previousValue = valueInput.value || "";
-            // Si no se ha seleccionado nada, tomamos la hora actual como sugerencia
             if (!hasSelected) setFromCurrentTime();
             else {
-                // Si ya había selección, la restauramos
                 const match = /^(\d{2}):(\d{2})$/.exec(valueInput.value || "");
                 if (match) {
                     hour = Number(match[1]);
@@ -2128,26 +2115,13 @@
             valueInput.dataset.userSelected = "true";
             panel.classList.add("hidden");
             display.setAttribute("aria-expanded", "false");
-            console.log("Hora confirmada:", valueInput.value);
         });
 
         cancelBtn.addEventListener("click", () => {
-            // Restaurar el valor anterior
-            valueInput.value = previousValue;
-            if (previousValue) {
-                displayValue.textContent = previousValue;
-                const match = /^(\d{2}):(\d{2})$/.exec(previousValue);
-                if (match) {
-                    hour = Number(match[1]);
-                    minute = Number(match[2]);
-                    hasSelected = true;
-                } else {
-                    hasSelected = false;
-                }
-            } else {
-                displayValue.textContent = "--:--";
-                hasSelected = false;
-            }
+            // CORREGIDO: Limpia completamente el campo de hora volviendo a --:--
+            valueInput.value = "";
+            displayValue.textContent = "--:--";
+            hasSelected = false;
             panel.classList.add("hidden");
             display.setAttribute("aria-expanded", "false");
         });
@@ -2183,7 +2157,6 @@
             }
         });
 
-        // Inicializar vacío
         displayValue.textContent = "--:--";
         valueInput.value = "";
     }
