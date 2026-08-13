@@ -193,31 +193,7 @@
             margin-top: 10px;
         }
 
-        .footer-btn {
-            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-            color: #fff;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 8px 16px;
-            border-radius: 8px;
-            font-size: 0.85rem;
-            text-align: center;
-            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
-            cursor: pointer;
-            font-weight: bold;
-            transition: background 0.2s, transform 0.1s;
-            width: auto;
-            display: inline-block;
-        }
-        .footer-btn:hover { background: linear-gradient(135deg, #4338ca 0%, #6d28d9 100%); }
-        .footer-btn:active { transform: scale(0.98); }
-
-        .top-prob-btn-container {
-            display: flex;
-            justify-content: center;
-            margin-bottom: 5px;
-        }
-
-        .top-prob-btn {
+        .footer-btn, .top-prob-btn {
             background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
             color: #fff;
             border: 1px solid rgba(255, 255, 255, 0.2);
@@ -233,8 +209,14 @@
             gap: 6px;
             width: auto;
         }
-        .top-prob-btn:hover { background: linear-gradient(135deg, #4338ca 0%, #6d28d9 100%); }
-        .top-prob-btn:active { transform: scale(0.98); }
+        .footer-btn:hover, .top-prob-btn:hover { background: linear-gradient(135deg, #4338ca 0%, #6d28d9 100%); }
+        .footer-btn:active, .top-prob-btn:active { transform: scale(0.98); }
+
+        .top-prob-btn-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 5px;
+        }
 
         .modal-overlay {
             position: fixed;
@@ -337,6 +319,101 @@
             letter-spacing: 1px;
             margin: 10px 0;
             font-family: monospace;
+        }
+
+        /* --- NUEVA ANIMACIÓN DEL BOMBO INTEGRADA EN RECUADRO --- */
+        .bombo-card-box {
+            display: none;
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 27, 75, 0.95) 100%);
+            border: 2px solid var(--accent);
+            border-radius: 12px;
+            padding: 25px 15px;
+            text-align: center;
+            box-shadow: 0 8px 30px rgba(99, 102, 241, 0.3);
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .bombo-title {
+            color: var(--gold);
+            font-size: 1.25rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            text-shadow: 0 2px 10px rgba(245, 158, 11, 0.4);
+        }
+
+        .bombo-sphere-wrapper {
+            position: relative;
+            width: 210px;
+            height: 210px;
+            margin: 0 auto;
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.25) 0%, rgba(99, 102, 241, 0.1) 60%, rgba(0, 0, 0, 0.6) 100%);
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            box-shadow: inset -10px -10px 25px rgba(0, 0, 0, 0.8), 
+                        inset 8px 8px 20px rgba(255, 255, 255, 0.4),
+                        0 0 25px rgba(99, 102, 241, 0.4);
+            overflow: hidden;
+        }
+
+        .bombo-sphere-wrapper::after {
+            content: "";
+            position: absolute;
+            top: 8%;
+            left: 15%;
+            width: 40%;
+            height: 20%;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0) 100%);
+            border-radius: 50%;
+            transform: rotate(-25deg);
+            pointer-events: none;
+        }
+
+        .bombo-balls-container {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            animation: girarGasto 1.8s infinite linear;
+        }
+
+        @keyframes girarGasto {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .bombo-ball {
+            position: absolute;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            color: #fff;
+            font-size: 0.7rem;
+            font-weight: bold;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: inset -2px -2px 4px rgba(0,0,0,0.6), 0 2px 5px rgba(0,0,0,0.4);
+            animation: rebotarBola 0.5s infinite alternate ease-in-out;
+        }
+
+        @keyframes rebotarBola {
+            0% { transform: translate(0, 0) scale(0.95); }
+            100% { transform: translate(10px, -10px) scale(1.05); }
+        }
+
+        .bombo-countdown-badge {
+            margin-top: 18px;
+            display: inline-block;
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid var(--gold);
+            padding: 8px 18px;
+            border-radius: 20px;
+            font-family: monospace;
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: var(--gold);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
         }
 
         .arcade-box {
@@ -488,77 +565,6 @@
 
         .hidden { display: none !important; }
 
-        /* --- ESTILOS DE LA ANIMACIÓN DEL BOMBO --- */
-        #bombo-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: rgba(0, 0, 0, 0.88);
-            backdrop-filter: blur(8px);
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-            z-index: 2000;
-        }
-
-        .bombo-container {
-            position: relative;
-            width: 220px;
-            height: 220px;
-            border: 8px solid #cbd5e1;
-            border-radius: 50%;
-            background: rgba(56, 189, 248, 0.08);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            animation: girarBombo 1.2s infinite linear;
-            box-shadow: 0 0 35px rgba(99, 102, 241, 0.5);
-        }
-
-        @keyframes girarBombo {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .bola {
-            position: absolute;
-            width: 36px;
-            height: 36px;
-            background: radial-gradient(circle at 30% 30%, #ef4444, #991b1b);
-            color: white;
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-weight: bold;
-            font-size: 0.85rem;
-            box-shadow: inset -3px -3px 6px rgba(0,0,0,0.6);
-            animation: moverBolas 0.6s infinite alternate ease-in-out;
-        }
-
-        .bola:nth-child(1) { top: 25px; left: 45px; animation-delay: 0.05s; }
-        .bola:nth-child(2) { top: 55px; right: 35px; animation-delay: 0.25s; background: radial-gradient(circle at 30% 30%, #38bdf8, #0369a1); }
-        .bola:nth-child(3) { bottom: 35px; left: 55px; animation-delay: 0.15s; background: radial-gradient(circle at 30% 30%, #22c55e, #15803d); }
-        .bola:nth-child(4) { bottom: 45px; right: 45px; animation-delay: 0.35s; background: radial-gradient(circle at 30% 30%, #f59e0b, #b45309); }
-        .bola:nth-child(5) { top: 90px; left: 90px; animation-delay: 0.2s; background: radial-gradient(circle at 30% 30%, #a855f7, #6b21a8); }
-
-        @keyframes moverBolas {
-            0% { transform: translate(0, 0) scale(1); }
-            100% { transform: translate(12px, -12px) scale(1.1); }
-        }
-
-        .bombo-texto {
-            margin-top: 25px;
-            font-size: 1.4rem;
-            font-weight: bold;
-            color: var(--gold);
-            text-align: center;
-            text-shadow: 0 2px 10px rgba(0,0,0,0.8);
-        }
-
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(-10px); }
             to { opacity: 1; transform: translateY(0); }
@@ -574,6 +580,15 @@
     <!-- BOTÓN SUPERIOR -->
     <div class="top-prob-btn-container">
         <button class="top-prob-btn" onclick="abrirProbabilidadesModal()">📊 Lista de Participantes</button>
+    </div>
+
+    <!-- TARJETA DE ANIMACIÓN DEL BOMBO (SE MUESTRA SOLO EN EL ÚLTIMO MINUTO PROGRAMADO) -->
+    <div id="bomboCard" class="bombo-card-box">
+        <div class="bombo-title">🎰 Mezclando bolas en el bombo...</div>
+        <div class="bombo-sphere-wrapper">
+            <div id="bomboBallsContainer" class="bombo-balls-container"></div>
+        </div>
+        <div id="bomboCountdownText" class="bombo-countdown-badge">00:60</div>
     </div>
 
     <!-- PANTALLA GANADOR -->
@@ -738,18 +753,6 @@
     </div>
 </div>
 
-<!-- CAPA OVERLAY ANIMACIÓN DEL BOMBO Y BOLAS -->
-<div id="bombo-overlay">
-    <div class="bombo-container">
-        <div class="bola">07</div>
-        <div class="bola">12</div>
-        <div class="bola">45</div>
-        <div class="bola">23</div>
-        <div class="bola">89</div>
-    </div>
-    <div class="bombo-texto">🎰 ¡Mezclando bolas en el bombo...!</div>
-</div>
-
 <!-- VENTANA MODAL CRÉDITOS -->
 <div id="creditsModal" class="modal-overlay hidden">
     <div class="modal-card">
@@ -812,6 +815,43 @@
 
     const nombresMeses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
+    // Generar 18 bolas dinámicas dentro del bombo
+    function inicializarBolasBombo() {
+        const container = document.getElementById('bomboBallsContainer');
+        if (!container) return;
+        container.innerHTML = '';
+
+        const coloresGradients = [
+            'radial-gradient(circle at 35% 35%, #ef4444, #7f1d1d)',
+            'radial-gradient(circle at 35% 35%, #38bdf8, #0369a1)',
+            'radial-gradient(circle at 35% 35%, #22c55e, #14532d)',
+            'radial-gradient(circle at 35% 35%, #f59e0b, #78350f)',
+            'radial-gradient(circle at 35% 35%, #a855f7, #581c87)',
+            'radial-gradient(circle at 35% 35%, #ec4899, #831843)',
+            'radial-gradient(circle at 35% 35%, #f97316, #7c2d12)'
+        ];
+
+        for (let i = 1; i <= 18; i++) {
+            const bola = document.createElement('div');
+            bola.className = 'bombo-ball';
+            
+            // Distribución física realista dentro del diámetro
+            const angulo = (i / 18) * 2 * Math.PI;
+            const radio = 35 + (i % 4) * 16;
+            const posX = 90 + radio * Math.cos(angulo);
+            const posY = 90 + radio * Math.sin(angulo);
+
+            bola.style.left = `${posX}px`;
+            bola.style.top = `${posY}px`;
+            bola.style.background = coloresGradients[i % coloresGradients.length];
+            bola.style.animationDelay = `${(i * 0.08).toFixed(2)}s`;
+            bola.style.animationDuration = `${0.3 + (i % 5) * 0.1}s`;
+            bola.innerText = String(i).padStart(2, '0');
+
+            container.appendChild(bola);
+        }
+    }
+
     db.ref('sorteo_participantes_raw').on('value', function(snapshot) {
         const val = snapshot.val();
         const textarea = document.getElementById('listInput');
@@ -832,6 +872,7 @@
     });
 
     window.addEventListener('DOMContentLoaded', function() {
+        inicializarBolasBombo();
         importarDesdeTelegram(false);
     });
 
@@ -1409,9 +1450,9 @@
         if (data && data.status === 'programado') {
             document.getElementById('winnerCard').style.display = 'none';
             document.getElementById('waitingCard').classList.add('hidden');
-            document.getElementById('countdownCard').classList.remove('hidden');
             iniciarRelojCuentaAtras(data.targetTime);
         } else if (data && data.ganador) {
+            document.getElementById('bomboCard').style.display = 'none';
             document.getElementById('countdownCard').classList.add('hidden');
             document.getElementById('waitingCard').classList.add('hidden');
             document.getElementById('winnerCard').style.display = 'block';
@@ -1446,6 +1487,7 @@
                 });
             }
         } else {
+            document.getElementById('bomboCard').style.display = 'none';
             document.getElementById('winnerCard').style.display = 'none';
             document.getElementById('countdownCard').classList.add('hidden');
             document.getElementById('waitingCard').classList.remove('hidden');
@@ -1458,23 +1500,36 @@
 
             if (diferencia <= 0) {
                 clearInterval(timerInterval);
-                document.getElementById('timerDisplay').innerText = "¡Sorteando...";
+                document.getElementById('timerDisplay').innerText = "00h 00m 00s";
+                document.getElementById('bomboCard').style.display = 'none';
                 ejecutarTiradaProgramada();
                 return;
             }
 
-            const dias = Math.floor(diferencia / (1000 * 60 * 60 * 24));
-            const horas = Math.floor((diferencia % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            const minutos = Math.floor((diferencia % (1000 * 60 * 60)) / (1000 * 60));
-            const segundos = Math.floor((diferencia % (1000 * 60)) / 1000);
+            // Si faltan 60 segundos o menos, mostramos el bombo interactivo en lugar del contador normal
+            if (diferencia <= 60000) {
+                document.getElementById('countdownCard').classList.add('hidden');
+                document.getElementById('bomboCard').style.display = 'block';
 
-            let textoReloj = "";
-            if (dias > 0) textoReloj += dias + "d ";
-            textoReloj += String(horas).padStart(2, '0') + "h " + 
-                         String(minutos).padStart(2, '0') + "m " + 
-                         String(segundos).padStart(2, '0') + "s";
+                const segsRestantes = Math.ceil(diferencia / 1000);
+                document.getElementById('bomboCountdownText').innerText = `00:${String(segsRestantes).padStart(2, '0')}`;
+            } else {
+                document.getElementById('bomboCard').style.display = 'none';
+                document.getElementById('countdownCard').classList.remove('hidden');
 
-            document.getElementById('timerDisplay').innerText = textoReloj;
+                const dias = Math.floor(diferencia / (1000 * 60 * 60 * 24));
+                const horas = Math.floor((diferencia % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutos = Math.floor((diferencia % (1000 * 60 * 60)) / (1000 * 60));
+                const segundos = Math.floor((diferencia % (1000 * 60)) / 1000);
+
+                let textoReloj = "";
+                if (dias > 0) textoReloj += dias + "d ";
+                textoReloj += String(horas).padStart(2, '0') + "h " + 
+                             String(minutos).padStart(2, '0') + "m " + 
+                             String(segundos).padStart(2, '0') + "s";
+
+                document.getElementById('timerDisplay').innerText = textoReloj;
+            }
         }
 
         actualizar();
@@ -1651,31 +1706,16 @@
                 rawBlacklist: rawBlacklist
             }).then(() => alert("¡Sorteo programado con éxito!"));
         } else {
-            if (confirm("El sorteo se realizará de inmediato. ¿Continuar?")) {
-                mostrarAnimacionBombo(function() {
-                    calcularYEjecutarTirada(rawLines, rawBlacklist);
-                });
+            if (confirm("El sorteo se realizará de inmediato sin animación previa. ¿Continuar?")) {
+                // Ejecución directa inmediata sin animación
+                calcularYEjecutarTirada(rawLines, rawBlacklist);
             }
         }
     }
 
     function ejecutarTiradaProgramada() {
         if (!programData || programData.status !== 'programado') return;
-        mostrarAnimacionBombo(function() {
-            calcularYEjecutarTirada(programData.rawLines, programData.rawBlacklist);
-        });
-    }
-
-    function mostrarAnimacionBombo(callbackTirada) {
-        const overlay = document.getElementById('bombo-overlay');
-        overlay.style.display = 'flex';
-
-        setTimeout(() => {
-            overlay.style.display = 'none';
-            if (typeof callbackTirada === 'function') {
-                callbackTirada();
-            }
-        }, 3500);
+        calcularYEjecutarTirada(programData.rawLines, programData.rawBlacklist);
     }
 
     function calcularYEjecutarTirada(rawLinesStr, rawBlacklistStr) {
