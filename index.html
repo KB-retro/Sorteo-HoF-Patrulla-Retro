@@ -103,7 +103,7 @@
             max-width: 150px;
             width: 100%;
             height: auto;
-            cursor: default;
+            cursor: pointer;
             user-select: none;
             -webkit-user-select: none;
             -webkit-tap-highlight-color: transparent;
@@ -160,7 +160,7 @@
         button.admin-btn { background-color: var(--success); font-size: 1.05rem; margin-top: 15px; padding: 12px; }
         button.admin-btn:hover { background-color: var(--success-hover); }
 
-        button.warning-btn { background-color: var(--warning); margin-top: 10px; }
+        button.warning-btn { background-color: var(--warning); margin-top: 10px; color: #000; }
         button.warning-btn:hover { background-color: var(--warning-hover); }
 
         button.clear-btn { background-color: var(--danger); margin-top: 10px; }
@@ -325,7 +325,7 @@
             font-family: monospace;
         }
 
-        /* --- NUEVO BOMBO RETRO / 8-BITS CON FÍSICAS CAÓTICAS --- */
+        /* --- BOMBO RETRO / 8-BITS CON FÍSICAS CAÓTICAS --- */
         .bombo-card-box {
             display: none;
             background: #090c15;
@@ -360,7 +360,6 @@
             overflow: hidden;
         }
 
-        /* Estructura cristal pixelada */
         .bombo-arcade-frame::before {
             content: "";
             position: absolute;
@@ -378,7 +377,6 @@
             left: 0;
         }
 
-        /* Estilo 8-bits de las bolas */
         .bombo-ball-pixel {
             position: absolute;
             width: 18px;
@@ -395,7 +393,6 @@
             text-shadow: 1px 1px 0 #000;
         }
 
-        /* Trayectorias caóticas individuales */
         @keyframes chaosBounce1 {
             0% { transform: translate(10px, 150px); }
             20% { transform: translate(80px, 20px); }
@@ -849,7 +846,6 @@
             const bola = document.createElement('div');
             bola.className = 'bombo-ball-pixel';
             
-            // Asignación de animación caótica con duraciones y offsets aleatorios
             const animSeleccionada = tiposAnimacion[i % tiposAnimacion.length];
             const duracion = (0.7 + (i % 7) * 0.15).toFixed(2);
             const delay = ((i * 0.05) % 0.8).toFixed(2);
@@ -1517,7 +1513,6 @@
                 return;
             }
 
-            // Si faltan 60 segundos o menos, se muestra el bombo Pixel Art
             if (diferencia <= 60000) {
                 document.getElementById('countdownCard').classList.add('hidden');
                 document.getElementById('bomboCard').style.display = 'block';
