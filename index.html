@@ -515,6 +515,18 @@
         .slot-win { animation:slotWin .8s steps(2,end) infinite; }
         @keyframes slotWin { 50%{filter:brightness(1.7); transform:scale(1.015)} }
         @media(max-width:480px){ .slot-reel{height:68px;font-size:2rem} }
+
+/* Redondeado visible de la recreativa */
+.slot-machine-card,
+.slot-machine {
+    border-radius: 22px !important;
+    overflow: hidden !important;
+}
+.slot-display {
+    border-radius: 14px !important;
+    overflow: hidden !important;
+}
+
 </style>
 </head>
 <body>
@@ -1457,7 +1469,7 @@
             // para que termine la cuenta atrás y se realice la tirada.
             if (!slotFinalizing) {
                 document.getElementById('slotStatus').innerText =
-                    '🎰 LOS RODILLOS ESTÁN GIRANDO...  ' + formatearCuentaAtras(diferencia);
+                    '🎰 Buena suerte, la necesitarás.  ' + formatearCuentaAtras(diferencia);
             }
         } else if (diferencia > 0) {
             slot.classList.remove('active');
