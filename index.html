@@ -56,7 +56,6 @@
 
         * { 
             box-sizing: border-box; 
-            cursor: none !important; /* CURSOR OCULTO EN TODA LA WEB */
         }
 
         html, body {
@@ -107,6 +106,7 @@
             width: 100%;
             height: auto;
             user-select: none;
+            cursor: pointer;
             -webkit-user-select: none;
             -webkit-tap-highlight-color: transparent;
         }
@@ -150,6 +150,7 @@
             font-weight: bold;
             width: 100%;
             font-size: 0.95rem;
+            cursor: pointer;
             transition: background 0.2s, transform 0.1s;
         }
 
@@ -211,6 +212,7 @@
             align-items: center;
             gap: 6px;
             width: auto;
+            cursor: pointer;
         }
         .footer-btn:hover, .top-prob-btn:hover { background: linear-gradient(135deg, #4338ca 0%, #6d28d9 100%); }
         .footer-btn:active, .top-prob-btn:active { transform: scale(0.98); }
@@ -328,7 +330,6 @@
             box-shadow: inset 0 0 20px rgba(0,0,0,0.9);
         }
 
-        /* Efecto Scanlines de pantalla CRT */
         .crt-screen::after {
             content: "";
             position: absolute;
@@ -365,7 +366,7 @@
             top: 0;
             left: 0;
             width: 100%;
-            transition: top 0.1s linear;
+            will-change: transform;
         }
 
         .slot-digit {
@@ -489,6 +490,7 @@
             font-size: 1.1rem;
             width: auto;
             border-radius: 4px;
+            cursor: pointer;
             transition: color 0.2s, background 0.2s;
         }
         .mic-btn:hover { color: var(--text); background: rgba(255, 255, 255, 0.1); }
@@ -523,6 +525,7 @@
             font-size: 0.9rem;
             border-bottom: 1px solid #1e293b;
             text-align: left;
+            cursor: pointer;
             transition: background 0.15s;
         }
         .suggestion-item:hover, .suggestion-item:active { background: rgba(99, 102, 241, 0.25); color: #fff; }
@@ -871,10 +874,12 @@
     const nombresMeses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
     // =======================================================
-    // MÁQUINA RECREATIVA SLOTS (GIRADOR DE NUMEROS 0 AL 9)
+    // MÁQUINA RECREATIVA SLOTS (GIRADOR DE NUMEROS ROBUSTO Y FLUIDO)
     // =======================================================
-    let slotInterval = null;
+    let slotAnimationId = null;
     let isReelsSpinning = false;
+    let currentYPositions = [0, 0, 0];
+    const reelSpeeds = [24, 32, 40]; // Velocidad fluida por rodillo
 
     function inicializarRodillosSlot() {
         [1, 2, 3].forEach(id => {
@@ -882,8 +887,8 @@
             if (!reel) return;
             reel.innerHTML = '';
             
-            // Creamos 2 secuencias completas del 0 al 9 para el scroll continuo
-            for (let loop = 0; loop < 2; loop++) {
+            // Repetimos la secuencia del 0 al 9 varias veces para scroll continuo
+            for (let loop = 0; loop < 3; loop++) {
                 for (let i = 0; i <= 9; i++) {
                     const digit = document.createElement('div');
                     digit.className = 'slot-digit';
@@ -891,8 +896,9 @@
                     reel.appendChild(digit);
                 }
             }
-            reel.style.top = '0px';
+            reel.style.transform = 'translateY(0px)';
         });
+        currentYPositions = [0, 0, 0];
     }
 
     inicializarRodillosSlot();
@@ -901,44 +907,54 @@
         if (isReelsSpinning) return;
         isReelsSpinning = true;
 
-        let pos1 = 0, pos2 = 0, pos3 = 0;
+        function step() {
+            [1, 2, 3].forEach((id, index) => {
+                const reel = document.getElementById(`reel${id}`);
+                if (reel) {
+                    currentYPositions[index] -= reelSpeeds[index];
+                    if (currentYPositions[index] <= -900) {
+                        currentYPositions[index] += 900;
+                    }
+                    reel.style.transform = `translateY(${currentYPositions[index]}px)`;
+                }
+            });
 
-        slotInterval = setInterval(() => {
-            pos1 = (pos1 - 30) % 900;
-            pos2 = (pos2 - 45) % 900;
-            pos3 = (pos3 - 60) % 900;
+            if (isReelsSpinning) {
+                slotAnimationId = requestAnimationFrame(step);
+            }
+        }
 
-            const r1 = document.getElementById('reel1');
-            const r2 = document.getElementById('reel2');
-            const r3 = document.getElementById('reel3');
-
-            if (r1) r1.style.top = `${pos1}px`;
-            if (r2) r2.style.top = `${pos2}px`;
-            if (r3) r3.style.top = `${pos3}px`;
-        }, 30);
+        slotAnimationId = requestAnimationFrame(step);
     }
 
     function detenerRodillosEnNumero(numeroTargetStr) {
-        if (slotInterval) {
-            clearInterval(slotInterval);
-            slotInterval = null;
+        if (slotAnimationId) {
+            cancelAnimationFrame(slotAnimationId);
+            slotAnimationId = null;
         }
         isReelsSpinning = false;
 
-        // Aseguramos 3 dígitos (ej: "7" -> "007")
+        // Aseguramos formato de 3 dígitos (ej: "7" -> "007")
         const numPadded = String(numeroTargetStr).padStart(3, '0');
-        const d1 = parseInt(numPadded[0], 10);
-        const d2 = parseInt(numPadded[1], 10);
-        const d3 = parseInt(numPadded[2], 10);
+        const d1 = parseInt(numPadded[0], 10) || 0;
+        const d2 = parseInt(numPadded[1], 10) || 0;
+        const d3 = parseInt(numPadded[2], 10) || 0;
 
-        // Ajustamos la posición exacta de cada número
-        const r1 = document.getElementById('reel1');
-        const r2 = document.getElementById('reel2');
-        const r3 = document.getElementById('reel3');
+        const digits = [d1, d2, d3];
 
-        if (r1) r1.style.top = `-${d1 * 90}px`;
-        if (r2) r2.style.top = `-${d2 * 90}px`;
-        if (r3) r3.style.top = `-${d3 * 90}px`;
+        [1, 2, 3].forEach((id, index) => {
+            const reel = document.getElementById(`reel${id}`);
+            if (reel) {
+                const targetY = -(digits[index] * 90);
+                reel.style.transition = 'transform 0.4s cubic-bezier(0.1, 0.9, 0.2, 1)';
+                reel.style.transform = `translateY(${targetY}px)`;
+                currentYPositions[index] = targetY;
+                
+                setTimeout(() => {
+                    reel.style.transition = 'none';
+                }, 450);
+            }
+        });
     }
 
     db.ref('sorteo_participantes_raw').on('value', function(snapshot) {
@@ -1540,7 +1556,8 @@
             document.getElementById('waitingCard').classList.add('hidden');
             iniciarRelojCuentaAtras(data.targetTime);
         } else if (data && data.ganador) {
-            if (slotInterval) { clearInterval(slotInterval); slotInterval = null; }
+            if (slotAnimationId) { cancelAnimationFrame(slotAnimationId); slotAnimationId = null; }
+            isReelsSpinning = false;
             
             document.getElementById('arcadeCard').style.display = 'none';
             document.getElementById('countdownCard').classList.add('hidden');
@@ -1578,7 +1595,8 @@
                 });
             }
         } else {
-            if (slotInterval) { clearInterval(slotInterval); slotInterval = null; }
+            if (slotAnimationId) { cancelAnimationFrame(slotAnimationId); slotAnimationId = null; }
+            isReelsSpinning = false;
             document.getElementById('arcadeCard').style.display = 'none';
             document.getElementById('winnerCard').style.display = 'none';
             document.getElementById('countdownCard').classList.add('hidden');
@@ -1589,7 +1607,7 @@
     // =======================================================
     // CONTROL CUENTA ATRÁS Y ACTIVACIÓN DE LA RECREATIVA (10 MIN)
     // =======================================================
-    const TIEMPO_ARCADE_MS = 10 * 60 * 1000; // 10 minutos (600.000 ms)
+    const TIEMPO_ARCADE_MS = 10 * 60 * 1000;
 
     function iniciarRelojCuentaAtras(targetTime) {
         function actualizar() {
@@ -1602,7 +1620,6 @@
                 return;
             }
 
-            // ACTIVACIÓN DE LA RECREATIVA ARCADE Y SUS RODILLOS EN LOS ÚLTIMOS 10 MINUTOS
             if (diferencia <= TIEMPO_ARCADE_MS) {
                 document.getElementById('countdownCard').classList.add('hidden');
                 document.getElementById('arcadeCard').style.display = 'block';
