@@ -28,12 +28,13 @@
     <link rel="icon" type="image/png" sizes="16x16" href="logo.png?v=2">
     <link rel="apple-touch-icon" sizes="180x180" href="logo.png?v=2">
 
-    <!-- Firebase JS SDK -->
+    <!-- Firebase SDKs (con Auth) -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 
     <style>
-        /* ===== CSS COMPLETO ===== */
+        /* ===== TODO EL CSS DE TU VERSIÓN FUNCIONAL (sin cambios) ===== */
         :root {
             --card: rgba(30, 41, 59, 0.92);
             --accent: #6366f1;
@@ -914,17 +915,33 @@
     </div>
 </div>
 
+<!-- ===== MODAL DE LOGIN (NUEVO) ===== -->
+<div id="loginModal" class="modal-overlay hidden" style="display: none;">
+    <div class="modal-card" style="max-width: 350px;">
+        <h2 style="color: var(--gold); margin-top: 0;">🔐 Acceso Administrador</h2>
+        <p style="color: var(--muted); font-size: 0.85rem;">Introduce tus credenciales de Firebase</p>
+        <input type="email" id="loginEmail" placeholder="Correo electrónico" style="width:100%; margin-bottom:10px; background:#0f172a; color:white; border:1px solid #334155; border-radius:6px; padding:10px;">
+        <input type="password" id="loginPassword" placeholder="Contraseña" style="width:100%; margin-bottom:15px; background:#0f172a; color:white; border:1px solid #334155; border-radius:6px; padding:10px;">
+        <button id="loginBtn" style="background-color: var(--accent);">INICIAR SESIÓN</button>
+        <button id="logoutBtn" style="background-color: var(--danger); margin-top: 10px; display: none;">CERRAR SESIÓN</button>
+        <div id="loginError" style="color: #ef4444; font-size: 0.85rem; margin-top: 8px; display: none;"></div>
+    </div>
+</div>
+
 <script>
-    // ===== CONFIGURACIÓN DE FIREBASE =====
+    // ============================================================
+    //  CONFIGURACIÓN DE FIREBASE (NO CAMBIAR)
+    // ============================================================
     const firebaseConfig = {
         databaseURL: "https://sorteo-hof-default-rtdb.europe-west1.firebasedatabase.app"
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
+    const auth = firebase.auth();
 
-    const MI_CLOUDFLARE_WORKER = "https://dawn-band-8bc8.microbiops.workers.dev";
-    const GOOGLE_SHEETS_CSV_URL = "https://docs.google.com/spreadsheets/d/1JApebwPe9J_fbS_hnQBHHElSlELlWiAjxdvDJQ8yw2E/export?format=csv";
-
+    // ============================================================
+    //  VARIABLES GLOBALES (TAL CUAL EN TU VERSIÓN FUNCIONAL)
+    // ============================================================
     let actualGanadorUser = "";
     let isWinnersExpanded = false;
     let isHistoryExpanded = false;
@@ -947,7 +964,15 @@
     let adminClickTimer = null;
     const nombresMeses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
-    // ===== FUNCIONES DE FIREBASE Y PARTICIPANTES =====
+    const MI_CLOUDFLARE_WORKER = "https://dawn-band-8bc8.microbiops.workers.dev";
+    const GOOGLE_SHEETS_CSV_URL = "https://docs.google.com/spreadsheets/d/1JApebwPe9J_fbS_hnQBHHElSlELlWiAjxdvDJQ8yw2E/export?format=csv";
+
+    // ============================================================
+    //  TODAS LAS FUNCIONES DE TU VERSIÓN FUNCIONAL (SIN CAMBIOS)
+    //  (he copiado todo tu código desde tu último mensaje)
+    // ============================================================
+
+    // ---- Firebase y participantes ----
     db.ref('sorteo_participantes_raw').on('value', function(snapshot) {
         const val = snapshot.val();
         const textarea = document.getElementById('listInput');
@@ -971,9 +996,15 @@
         importarDesdeTelegram(false);
         initRetroDatePicker();
         initRetroTimePicker();
+        // Ocultar modal de login por defecto (por si acaso)
+        const loginModal = document.getElementById('loginModal');
+        if (loginModal) {
+            loginModal.classList.add('hidden');
+            loginModal.style.display = 'none';
+        }
     });
 
-    // ===== FUNCIONES DE MODALES =====
+    // ---- Modales ----
     function abrirCreditos() {
         document.getElementById('creditsModal').classList.remove('hidden');
     }
@@ -991,8 +1022,13 @@
     window.addEventListener('click', function(event) {
         const credModal = document.getElementById('creditsModal');
         const probModal = document.getElementById('probabilitiesModal');
+        const loginModal = document.getElementById('loginModal');
         if (event.target === credModal) cerrarCreditos();
         if (event.target === probModal) cerrarProbabilidadesModal();
+        if (event.target === loginModal) {
+            loginModal.classList.add('hidden');
+            loginModal.style.display = 'none';
+        }
     });
 
     function calcularYMostrarProbabilidades() {
@@ -1054,6 +1090,93 @@
         }
     }
 
+    // ---- NUEVA FUNCIÓN toggleAdminPanel (con Firebase Auth) ----
+    function toggleAdminPanel() {
+        const loginModal = document.getElementById('loginModal');
+        if (isAdminLoggedIn) {
+            // Si ya está autenticado, mostrar/ocultar el panel
+            document.getElementById('adminPanel').classList.toggle('hidden');
+        } else {
+            // Mostrar modal de login
+            if (loginModal) {
+                loginModal.classList.remove('hidden');
+                loginModal.style.display = 'flex';
+                document.getElementById('loginEmail').focus();
+            }
+        }
+    }
+
+    // ---- MANEJAR LOGIN / LOGOUT ----
+    document.addEventListener('DOMContentLoaded', function() {
+        const loginBtn = document.getElementById('loginBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const loginEmail = document.getElementById('loginEmail');
+        const loginPassword = document.getElementById('loginPassword');
+        const loginError = document.getElementById('loginError');
+
+        if (loginBtn) {
+            loginBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const email = loginEmail.value.trim();
+                const password = loginPassword.value.trim();
+
+                if (!email || !password) {
+                    loginError.textContent = "Por favor, completa ambos campos.";
+                    loginError.style.display = 'block';
+                    return;
+                }
+
+                loginError.style.display = 'none';
+                this.textContent = "⏳ Iniciando sesión...";
+                this.disabled = true;
+
+                auth.signInWithEmailAndPassword(email, password)
+                    .then(() => {
+                        this.textContent = "INICIAR SESIÓN";
+                        this.disabled = false;
+                    })
+                    .catch((error) => {
+                        this.textContent = "INICIAR SESIÓN";
+                        this.disabled = false;
+                        loginError.textContent = "❌ " + error.message;
+                        loginError.style.display = 'block';
+                    });
+            });
+        }
+
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', function() {
+                auth.signOut();
+            });
+        }
+    });
+
+    // ---- OBSERVADOR DE AUTENTICACIÓN ----
+    auth.onAuthStateChanged((user) => {
+        const loginModal = document.getElementById('loginModal');
+        const adminPanel = document.getElementById('adminPanel');
+        const logoutBtn = document.getElementById('logoutBtn');
+
+        if (user) {
+            isAdminLoggedIn = true;
+            if (loginModal) {
+                loginModal.classList.add('hidden');
+                loginModal.style.display = 'none';
+            }
+            if (adminPanel) adminPanel.classList.remove('hidden');
+            if (logoutBtn) logoutBtn.style.display = 'block';
+            // Cargar datos de administrador
+            importarDesdeTelegram(false);
+            renderHistoryList();
+            cargarListaBackups();
+        } else {
+            isAdminLoggedIn = false;
+            if (adminPanel) adminPanel.classList.add('hidden');
+            if (logoutBtn) logoutBtn.style.display = 'none';
+        }
+    });
+
+    // ---- RESTO DE FUNCIONES (copiadas exactamente de tu archivo) ----
     function obtenerIndiceCriptografico(max) {
         if (max <= 0) return 0;
         const arrayBuffer = new Uint32Array(1);
@@ -1067,7 +1190,7 @@
         return valorRandom % max;
     }
 
-    // ===== FUNCIONES DE GOOGLE SHEETS Y BÚSQUEDA =====
+    // ---- Google Sheets ----
     function parseCSVLine(linea) {
         let resultado = [];
         let celda = '';
@@ -1201,7 +1324,7 @@
         await comprobarJuegoEnSheets();
     }
 
-    // ===== FUNCIONES DE BACKUP =====
+    // ---- Backups ----
     function crearBackupManual() {
         const ahora = new Date();
         const horaTag = `${String(ahora.getHours()).padStart(2,'0')}${String(ahora.getMinutes()).padStart(2,'0')}`;
@@ -1332,7 +1455,7 @@
         };
     }
 
-    // ===== IMPORTAR DESDE TELEGRAM =====
+    // ---- Importar Telegram ----
     async function importarDesdeTelegram(esManual = true) {
         const btn = document.querySelector('.telegram-btn');
         let originalText = "";
@@ -1388,7 +1511,7 @@
         }
     }
 
-    // ===== MES DEL SORTEO =====
+    // ---- Mes del sorteo ----
     db.ref('mes_sorteo').on('value', function(snapshot) {
         const mes = snapshot.val();
         const titleEl = document.getElementById('mainTitle');
@@ -1408,7 +1531,7 @@
         }
     }
 
-    // ===== AÑADIR GANADOR MANUAL =====
+    // ---- Añadir ganador manual ----
     function agregarGanadorManual() {
         const inputVal = document.getElementById('manualUserAdmin').value.trim();
         const customMonthVal = document.getElementById('manualWinnerMonth').value;
@@ -1465,7 +1588,7 @@
         });
     }
 
-    // ===== LÓGICA DE LA RECREATIVA =====
+    // ---- Recreativa ----
     function mostrarRecreativa(activa) {
         const slot = document.getElementById('slotMachineCard');
         if (activa) slot.classList.add('active');
@@ -1589,7 +1712,7 @@
         return [numero3.charAt(0), numero3.charAt(1), numero3.charAt(2)];
     }
 
-    // ===== OBSERVADOR DE SORTEO ACTUAL =====
+    // ---- Observador sorteo actual ----
     db.ref('sorteo_actual').on('value', function(snapshot) {
         const data = snapshot.val();
         programData = data;
@@ -1759,7 +1882,7 @@
         db.ref('sorteo_actual').set(resultadoData);
     }
 
-    // ===== HISTORIAL Y LISTAS =====
+    // ---- Historial ----
     db.ref('historial_ganadores').on('value', function(snapshot) {
         const data = snapshot.val();
         let mapaConteo = {};
@@ -1844,20 +1967,7 @@
     function toggleWinnersView() { isWinnersExpanded = !isWinnersExpanded; renderWinnersList(); }
     function toggleHistoryView() { isHistoryExpanded = !isHistoryExpanded; renderHistoryList(); }
 
-    // ===== ADMIN =====
-    function toggleAdminPanel() {
-        const pass = prompt("Introduce la clave de administrador:");
-        if (pass && btoa(pass) === "cGF0cnVsbGExMjM=") {
-            isAdminLoggedIn = true;
-            document.getElementById('adminPanel').classList.remove('hidden');
-            importarDesdeTelegram(false);
-            renderHistoryList();
-            cargarListaBackups();
-        } else if (pass !== null) {
-            alert("Contraseña incorrecta.");
-        }
-    }
-
+    // ---- Admin - borrar ----
     function borrarUltimoSorteo() {
         if (confirm("⚠️ ¿Deseas borrar la tirada actual o la programación activa?")) {
             db.ref('sorteo_actual').remove();
@@ -1887,7 +1997,7 @@
         }
     }
 
-    // ===== FUNCIÓN PRINCIPAL DE PROGRAMACIÓN =====
+    // ---- Programar sorteo ----
     function programarOEjecutarSorteo() {
         const dateVal = document.getElementById('drawDateInput').value;
         const timeVal = document.getElementById('drawTimeInput').value;
@@ -1934,7 +2044,7 @@
         }).then(() => alert("¡Sorteo programado con éxito!"));
     }
 
-    // ===== INICIALIZADORES DE SELECTORES (CORREGIDOS) =====
+    // ---- Inicializadores ----
     function initRetroDatePicker() {
         const input = document.getElementById("drawDateInput");
         const picker = document.getElementById("retroDatePicker");
@@ -2009,7 +2119,6 @@
         };
 
         cancelBtn.onclick = () => {
-            // CORREGIDO: Vuelve a limpiar completamente a --/--/----
             input.value = "";
             text.textContent = "--/--/----";
             selected = null;
@@ -2018,7 +2127,6 @@
 
         document.addEventListener("click", e => {
             if (!picker.contains(e.target) && !panel.classList.contains("hidden")) {
-                // CORREGIDO: Al hacer clic fuera, si hay una fecha seleccionada, se guarda automáticamente como la hora
                 if (selected) {
                     const val = iso(selected);
                     input.value = val;
@@ -2118,7 +2226,6 @@
         });
 
         cancelBtn.addEventListener("click", () => {
-            // CORREGIDO: Limpia completamente el campo de hora volviendo a --:--
             valueInput.value = "";
             displayValue.textContent = "--:--";
             hasSelected = false;
@@ -2160,7 +2267,8 @@
         displayValue.textContent = "--:--";
         valueInput.value = "";
     }
-</script>
 
+    console.log("✅ Web cargada con Firebase Auth. Login solo al hacer 3 clics en el logo.");
+</script>
 </body>
 </html>
