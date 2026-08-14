@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sorteo HoF Patrulla Retro</title>
 
+    <!-- Meta etiquetas Open Graph / Redes Sociales -->
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="Patrulla Retro">
     <meta property="og:title" content="🏆 Sorteo HoF Patrulla Retro">
@@ -25,11 +26,13 @@
     <link rel="icon" type="image/png" sizes="16x16" href="logo.png?v=2">
     <link rel="apple-touch-icon" sizes="180x180" href="logo.png?v=2">
 
+    <!-- Firebase SDKs (incluyendo Auth) -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 
     <style>
+        /* ===== TODO EL CSS DE TU VERSIÓN ORIGINAL ===== */
         :root {
             --card: rgba(30, 41, 59, 0.92);
             --accent: #6366f1;
@@ -481,6 +484,7 @@
             to { opacity: 1; transform: translateY(0); }
         }
     
+        /* ===== TRAGAPERRAS RETRO 8-BIT ===== */
         #slotMachineCard {
             display: none;
             text-align: center;
@@ -666,6 +670,7 @@
         <button class="top-prob-btn" onclick="abrirProbabilidadesModal()">📊 Lista de Participantes</button>
     </div>
 
+    <!-- TRAGAPERRAS DEL SORTEO -->
     <div id="slotMachineCard" aria-live="polite">
         <div class="slot-marquee">★ 🕹️ SORTEO EN DIRECTO 🕹️ ★</div>
         <div class="slot-cabinet">
@@ -682,16 +687,20 @@
         </div>
     </div>
 
+    <!-- PANTALLA GANADOR -->
     <div id="winnerCard" class="winner-box">
         <div class="winner-title">🎉 ¡Tenemos Ganador Oficial! 🎉</div>
         <div id="winnerName" class="winner-name">Cargando...</div>
         <div id="winnerTicket" class="winner-ticket"></div>
+
         <div id="repeatNotice" class="repeat-winner-banner hidden">
             🚨 <b>¡Campeón!</b> ¡Teniendo ya la camiseta en el armario, es hora de repartir el botín!<br>Elige a un compañero de la lista de este mes para cederle el premio. 🚨
         </div>
+
         <div class="arcade-box">
             <div class="arcade-title">🕹️ Eligen el Arcade del Mes (5 Usuarios):</div>
             <ul id="arcadeList" class="custom-list"></ul>
+
             <div class="search-container">
                 <label style="font-size: 0.8rem; color: var(--gold); display: block; margin-bottom: 4px; text-align: center;">
                     🔍 <b>Comprobar si un juego ya ha sido elegido:</b>
@@ -709,28 +718,34 @@
                 </div>
             </div>
         </div>
+
         <div class="log-box" id="publicLog"></div>
     </div>
 
+    <!-- MENSAJE ESPERA -->
     <div id="waitingCard" class="card hidden" style="text-align: center;">
         <h2>⏳ El sorteo aún no se ha realizado</h2>
         <p style="color: var(--muted); font-size: 0.85rem;">El administrador realizará o programará la tirada en breve. Esta página se actualizará automáticamente.</p>
     </div>
 
+    <!-- LISTA DE PREMIADOS -->
     <div id="winnersCountCard" class="card hidden">
         <h3>👾 Hall of Fame 👾</h3>
         <ul id="winnersCountList" class="custom-list"></ul>
         <button id="btnToggleWinners" class="btn-toggle-view hidden" onclick="toggleWinnersView()">⬇️ Ver todos los usuarios premiados</button>
     </div>
 
+    <!-- HISTORIAL DE SORTEOS -->
     <div id="historyCard" class="card hidden">
         <h3>📜 Historial de Ganadores Anteriores</h3>
         <ul id="historyList" class="custom-list"></ul>
         <button id="btnToggleHistory" class="btn-toggle-view hidden" onclick="toggleHistoryView()">⬇️ Ver todo el historial</button>
     </div>
 
+    <!-- PANEL ADMIN -->
     <div id="adminPanel" class="card admin-panel hidden">
         <h2>🛠️ Panel de Control (Administrador)</h2>
+
         <div class="admin-section">
             <label><b>📅 Mes correspondiente al Sorteo:</b></label>
             <select id="monthSelect" style="margin-top: 8px;">
@@ -753,11 +768,14 @@
 
         <div class="admin-section">
             <button class="telegram-btn" onclick="importarDesdeTelegram()">📲 CARGAR ÚLTIMA LISTA DE TELEGRAM</button>
+
             <label><b>1. Participantes:</b></label>
             <textarea id="listInput" placeholder="1-@M_1_c_h_3_l&#10;2-@cerebrosolido" oninput="calcularYMostrarProbabilidades()"></textarea>
+
             <br><br>
             <label><b>2. Excluidos / Lista Negra (1 por línea):</b></label>
             <textarea id="blacklistInput" placeholder="@usuario_excluido1&#10;@usuario_excluido2"></textarea>
+
             <br><br>
             <label><b>3. Fecha y Hora Exacta del Sorteo (Opcional):</b></label>
             <div class="datetime-group" style="margin-top: 6px;">
@@ -778,6 +796,7 @@
                         <button type="button" class="retro-date-cancel" id="retroDateCancel">CANCELAR</button>
                     </div>
                 </div>
+
                 <input type="hidden" id="drawTimeInput" value="">
                 <div class="retro-time-picker" id="retroTimePicker">
                     <button type="button" class="retro-time-display" id="retroTimeDisplay" aria-haspopup="dialog" aria-expanded="false">
@@ -802,6 +821,7 @@
                     </div>
                 </div>
             </div>
+
             <button class="admin-btn" onclick="programarOEjecutarSorteo()">🎲 GUARDAR Y PROGRAMAR SORTEO</button>
         </div>
 
@@ -811,8 +831,10 @@
                 Introduce los usuarios y selecciona el mes y año en el que obtuvieron el premio.
             </p>
             <textarea id="manualUserAdmin" placeholder="@usuario1&#10;@usuario2, @usuario3" style="height: 60px;"></textarea>
+            
             <label style="margin-top: 8px; display: block; font-size: 0.85rem;"><b>📅 Mes y Año del Premio (opcional):</b></label>
             <input type="month" id="manualWinnerMonth" style="margin-top: 4px; margin-bottom: 8px;">
+
             <button style="background-color: #0284c7;" onclick="agregarGanadorManual()">➕ AÑADIR AL HISTORIAL</button>
         </div>
 
@@ -821,15 +843,19 @@
             <p style="font-size: 0.8rem; color: var(--muted); margin: 4px 0 10px 0;">
                 Puedes guardar un punto de restauración en Firebase antes de hacer sorteos, o descargarte una copia física a tu PC.
             </p>
+
             <button style="background-color: #0284c7; margin-bottom: 10px;" onclick="crearBackupManual()">📸 CREAR COPIA DE SEGURIDAD AHORA</button>
+
             <label style="font-size: 0.85rem; margin-top: 8px; display: block;"><b>📅 Seleccionar Copia para Restaurar o Borrar:</b></label>
             <select id="backupSelect" style="margin-top: 4px; margin-bottom: 8px;">
                 <option value="">-- Cargando copias disponibles... --</option>
             </select>
+
             <div style="display: flex; gap: 8px; margin-bottom: 10px;">
                 <button style="flex: 1; background-color: var(--warning); color: black;" onclick="restaurarBackupSeleccionado()">🔄 RESTAURAR COPIA</button>
                 <button style="flex: 1; background-color: var(--danger); color: white;" onclick="borrarBackupSeleccionado()">🗑️ BORRAR COPIA</button>
             </div>
+
             <div style="border-top: 1px dashed #334155; padding-top: 10px; display: flex; gap: 8px; flex-wrap: wrap;">
                 <button style="flex: 1; background: #334155; font-size: 0.8rem; padding: 8px;" onclick="descargarBackupJSON()">📥 Descargar JSON PC</button>
                 <button style="flex: 1; background: #334155; font-size: 0.8rem; padding: 8px;" onclick="document.getElementById('jsonFileInput').click()">📤 Cargar JSON PC</button>
@@ -846,12 +872,16 @@
     </div>
 </div>
 
-<!-- MODALES -->
+<!-- VENTANA MODAL CRÉDITOS -->
 <div id="creditsModal" class="modal-overlay hidden">
     <div class="modal-card">
         <h2 style="color: var(--gold); margin-top: 0; margin-bottom: 15px;">Créditos</h2>
         <ul class="credits-list">
-            <li class="credits-item"><a href="https://elreclamo.es/" target="_blank" rel="noopener noreferrer" class="credits-link">👕 @elReclamo.es ↗️</a></li>
+            <li class="credits-item">
+                <a href="https://elreclamo.es/" target="_blank" rel="noopener noreferrer" class="credits-link">
+                    👕 @elReclamo.es ↗️
+                </a>
+            </li>
             <li class="credits-item">💻 @M_1_c_h_3_l</li>
             <li class="credits-item">🕹️ @AlexisToretto</li>
             <li class="credits-item">🧠 @cerebrosolido</li>
@@ -860,6 +890,7 @@
     </div>
 </div>
 
+<!-- VENTANA MODAL PARTICIPANTES -->
 <div id="probabilitiesModal" class="modal-overlay hidden">
     <div class="modal-card">
         <h2 style="color: var(--gold); margin-top: 0; margin-bottom: 10px;">📊 Lista de Participantes</h2>
@@ -870,7 +901,7 @@
     </div>
 </div>
 
-<!-- MODAL LOGIN -->
+<!-- ===== NUEVO MODAL DE LOGIN ===== -->
 <div id="loginModal" class="modal-overlay hidden" style="display: none;">
     <div class="modal-card" style="max-width: 350px;">
         <h2 style="color: var(--gold); margin-top: 0;">🔐 Acceso Administrador</h2>
@@ -895,7 +926,7 @@ const db = firebase.database();
 const auth = firebase.auth();
 
 // ============================================================
-//  VARIABLES GLOBALES
+//  VARIABLES GLOBALES (LAS MISMAS QUE TENÍAS EN V8)
 // ============================================================
 let actualGanadorUser = "";
 let isWinnersExpanded = false;
@@ -917,11 +948,12 @@ const SLOT_REVEAL_MS = 30000;
 let adminClicks = 0;
 let adminClickTimer = null;
 const nombresMeses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+
 const MI_CLOUDFLARE_WORKER = "https://dawn-band-8bc8.microbiops.workers.dev";
 const GOOGLE_SHEETS_CSV_URL = "https://docs.google.com/spreadsheets/d/1JApebwPe9J_fbS_hnQBHHElSlELlWiAjxdvDJQ8yw2E/export?format=csv";
 
 // ============================================================
-//  FUNCIONES DE FIREBASE Y PARTICIPANTES
+//  FUNCIONES DE FIREBASE Y PARTICIPANTES (COPIADAS DE V8)
 // ============================================================
 db.ref('sorteo_participantes_raw').on('value', function(snapshot) {
     const val = snapshot.val();
@@ -942,11 +974,27 @@ document.getElementById('listInput').addEventListener('input', function() {
     db.ref('sorteo_participantes_raw').set(this.value);
 });
 
+window.addEventListener('DOMContentLoaded', function() {
+    importarDesdeTelegram(false);
+    initRetroDatePicker();
+    initRetroTimePicker();
+    // Ocultar modal de login por defecto
+    const loginModal = document.getElementById('loginModal');
+    if (loginModal) {
+        loginModal.classList.add('hidden');
+        loginModal.style.display = 'none';
+    }
+});
+
 // ============================================================
-//  FUNCIONES DE MODALES
+//  FUNCIONES DE MODALES (CRÉDITOS, PARTICIPANTES)
 // ============================================================
-function abrirCreditos() { document.getElementById('creditsModal').classList.remove('hidden'); }
-function cerrarCreditos() { document.getElementById('creditsModal').classList.add('hidden'); }
+function abrirCreditos() {
+    document.getElementById('creditsModal').classList.remove('hidden');
+}
+function cerrarCreditos() {
+    document.getElementById('creditsModal').classList.add('hidden');
+}
 function abrirProbabilidadesModal() {
     calcularYMostrarProbabilidades();
     document.getElementById('probabilitiesModal').classList.remove('hidden');
@@ -1015,9 +1063,6 @@ function calcularYMostrarProbabilidades() {
     });
 }
 
-// ============================================================
-//  FUNCIÓN PARA LOS 3 CLICS (TOGGLE ADMIN)
-// ============================================================
 function contarClicksAdmin() {
     adminClicks++;
     clearTimeout(adminClickTimer);
@@ -1029,6 +1074,9 @@ function contarClicksAdmin() {
     }
 }
 
+// ============================================================
+//  NUEVA FUNCIÓN TOGGLE ADMIN CON FIREBASE AUTH
+// ============================================================
 function toggleAdminPanel() {
     const loginModal = document.getElementById('loginModal');
     if (isAdminLoggedIn) {
@@ -1043,22 +1091,9 @@ function toggleAdminPanel() {
 }
 
 // ============================================================
-//  MANEJAR LOGIN / LOGOUT
+//  EVENTOS DE LOGIN / LOGOUT
 // ============================================================
 document.addEventListener('DOMContentLoaded', function() {
-    // Ocultar modal de login por defecto
-    const loginModal = document.getElementById('loginModal');
-    if (loginModal) {
-        loginModal.classList.add('hidden');
-        loginModal.style.display = 'none';
-    }
-
-    // Importar datos iniciales
-    importarDesdeTelegram(false);
-    initRetroDatePicker();
-    initRetroTimePicker();
-
-    // Asignar eventos de login
     const loginBtn = document.getElementById('loginBtn');
     const logoutBtn = document.getElementById('logoutBtn');
     const loginEmail = document.getElementById('loginEmail');
@@ -1118,6 +1153,7 @@ auth.onAuthStateChanged((user) => {
         }
         if (adminPanel) adminPanel.classList.remove('hidden');
         if (logoutBtn) logoutBtn.style.display = 'block';
+        // Cargar datos de administrador
         importarDesdeTelegram(false);
         renderHistoryList();
         cargarListaBackups();
@@ -1129,10 +1165,9 @@ auth.onAuthStateChanged((user) => {
 });
 
 // ============================================================
-//  RESTO DE FUNCIONES (SORTEO, RECREATIVA, BACKUP, ETC.)
-//  (Todas las funciones que ya tenías en tu código original)
-//  Aquí solo pongo las mínimas para que no dé error, pero DEBES
-//  copiar TODAS las funciones de tu versión anterior aquí.
+//  RESTO DE FUNCIONES (SORTEO, RECREATIVA, GOOGLE SHEETS, BACKUP, ETC.)
+//  - Aquí van TODAS las funciones que ya tenías en tu V8 original.
+//  - Asegúrate de que están todas (las he copiado de tu primer mensaje).
 // ============================================================
 
 function obtenerIndiceCriptografico(max) {
@@ -1148,9 +1183,7 @@ function obtenerIndiceCriptografico(max) {
     return valorRandom % max;
 }
 
-// ============================================================
-//  FUNCIONES DE GOOGLE SHEETS Y BÚSQUEDA
-// ============================================================
+// ===== FUNCIONES DE GOOGLE SHEETS Y BÚSQUEDA =====
 function parseCSVLine(linea) {
     let resultado = [];
     let celda = '';
@@ -1284,9 +1317,7 @@ async function comprobarJuegoInmediato(texto) {
     await comprobarJuegoEnSheets();
 }
 
-// ============================================================
-//  FUNCIONES DE BACKUP
-// ============================================================
+// ===== FUNCIONES DE BACKUP =====
 function crearBackupManual() {
     const ahora = new Date();
     const horaTag = `${String(ahora.getHours()).padStart(2,'0')}${String(ahora.getMinutes()).padStart(2,'0')}`;
@@ -1410,9 +1441,14 @@ function restaurarDesdeJSON(event) {
     reader.readAsText(file);
 }
 
-// ============================================================
-//  IMPORTAR DESDE TELEGRAM
-// ============================================================
+const logoImg = document.querySelector('.header-logo');
+if (logoImg) {
+    logoImg.onerror = function() {
+        if (this.src.includes('logo.png')) this.src = 'logo.jpg?v=2';
+    };
+}
+
+// ===== IMPORTAR DESDE TELEGRAM =====
 async function importarDesdeTelegram(esManual = true) {
     const btn = document.querySelector('.telegram-btn');
     let originalText = "";
@@ -1468,9 +1504,7 @@ async function importarDesdeTelegram(esManual = true) {
     }
 }
 
-// ============================================================
-//  MES DEL SORTEO
-// ============================================================
+// ===== MES DEL SORTEO =====
 db.ref('mes_sorteo').on('value', function(snapshot) {
     const mes = snapshot.val();
     const titleEl = document.getElementById('mainTitle');
@@ -1490,9 +1524,7 @@ function guardarMesSorteo() {
     }
 }
 
-// ============================================================
-//  AÑADIR GANADOR MANUAL
-// ============================================================
+// ===== AÑADIR GANADOR MANUAL =====
 function agregarGanadorManual() {
     const inputVal = document.getElementById('manualUserAdmin').value.trim();
     const customMonthVal = document.getElementById('manualWinnerMonth').value;
@@ -1549,9 +1581,7 @@ function verificarRepetidoVisual() {
     });
 }
 
-// ============================================================
-//  LÓGICA DE LA RECREATIVA
-// ============================================================
+// ===== LÓGICA DE LA RECREATIVA =====
 function mostrarRecreativa(activa) {
     const slot = document.getElementById('slotMachineCard');
     if (activa) slot.classList.add('active');
@@ -1675,9 +1705,7 @@ function obtenerDigitosPremiados(ganador) {
     return [numero3.charAt(0), numero3.charAt(1), numero3.charAt(2)];
 }
 
-// ============================================================
-//  OBSERVADOR DE SORTEO ACTUAL
-// ============================================================
+// ===== OBSERVADOR DE SORTEO ACTUAL =====
 db.ref('sorteo_actual').on('value', function(snapshot) {
     const data = snapshot.val();
     programData = data;
@@ -1847,9 +1875,7 @@ function calcularYEjecutarTirada(rawLinesStr, rawBlacklistStr, animarResultado =
     db.ref('sorteo_actual').set(resultadoData);
 }
 
-// ============================================================
-//  HISTORIAL Y LISTAS
-// ============================================================
+// ===== HISTORIAL Y LISTAS =====
 db.ref('historial_ganadores').on('value', function(snapshot) {
     const data = snapshot.val();
     let mapaConteo = {};
@@ -1934,9 +1960,7 @@ function renderHistoryList() {
 function toggleWinnersView() { isWinnersExpanded = !isWinnersExpanded; renderWinnersList(); }
 function toggleHistoryView() { isHistoryExpanded = !isHistoryExpanded; renderHistoryList(); }
 
-// ============================================================
-//  ADMIN - BORRAR
-// ============================================================
+// ===== ADMIN - BORRAR =====
 function borrarUltimoSorteo() {
     if (confirm("⚠️ ¿Deseas borrar la tirada actual o la programación activa?")) {
         db.ref('sorteo_actual').remove();
@@ -1966,9 +1990,7 @@ function borrarTodo() {
     }
 }
 
-// ============================================================
-//  PROGRAMAR SORTEO
-// ============================================================
+// ===== PROGRAMAR SORTEO =====
 function programarOEjecutarSorteo() {
     const dateVal = document.getElementById('drawDateInput').value;
     const timeVal = document.getElementById('drawTimeInput').value;
@@ -1977,6 +1999,7 @@ function programarOEjecutarSorteo() {
 
     if (!rawLines) return alert("Pega o importa la lista de participantes.");
 
+    // Si no hay hora → Sorteo inmediato
     if (!timeVal || timeVal === "--:--" || timeVal.trim() === "") {
         if (confirm("El sorteo se realizará de inmediato. ¿Continuar?")) {
             detenerTragaperras();
@@ -1987,6 +2010,7 @@ function programarOEjecutarSorteo() {
         return;
     }
 
+    // Programar sorteo
     const timeParts = timeVal.split(':');
     let targetDate = new Date();
     if (dateVal) {
@@ -2006,9 +2030,7 @@ function programarOEjecutarSorteo() {
     }).then(() => alert("¡Sorteo programado con éxito!"));
 }
 
-// ============================================================
-//  INICIALIZADORES DE SELECTORES (FECHA Y HORA)
-// ============================================================
+// ===== INICIALIZADORES DE SELECTORES (FECHA Y HORA) =====
 function initRetroDatePicker() {
     const input = document.getElementById("drawDateInput");
     const picker = document.getElementById("retroDatePicker");
