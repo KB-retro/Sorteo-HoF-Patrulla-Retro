@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sorteo HoF Patrulla Retro</title>
 
-    <!-- Meta etiquetas Open Graph / Redes Sociales -->
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="Patrulla Retro">
     <meta property="og:title" content="🏆 Sorteo HoF Patrulla Retro">
@@ -17,23 +16,20 @@
     <meta property="og:image:width" content="600">
     <meta property="og:image:height" content="600">
 
-    <!-- Twitter Cards -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="🏆 Sorteo HoF Patrulla Retro">
     <meta name="twitter:description" content="Entra para ver la cuenta atrás en directo y el resultado del sorteo de la Patrulla Retro.">
     <meta name="twitter:image" content="https://kb-retro.github.io/Sorteo-HoF-Patrulla-Retro/logo.png?v=2">
 
-    <!-- Favicon -->
     <link rel="icon" type="image/png" sizes="32x32" href="logo.png?v=2">
     <link rel="icon" type="image/png" sizes="16x16" href="logo.png?v=2">
     <link rel="apple-touch-icon" sizes="180x180" href="logo.png?v=2">
 
-    <!-- Firebase JS SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
     <style>
-        /* ===== CSS COMPLETO ===== */
+        
         :root {
             --card: rgba(30, 41, 59, 0.92);
             --accent: #6366f1;
@@ -484,8 +480,7 @@
             from { opacity: 0; transform: translateY(-10px); }
             to { opacity: 1; transform: translateY(0); }
         }
-    
-        /* ===== TRAGAPERRAS RETRO 8-BIT ===== */
+
         #slotMachineCard {
             display: none;
             text-align: center;
@@ -596,7 +591,6 @@
             .slot-reel { height: 68px; font-size: 2rem; }
         }
 
-        /* ===== SELECTOR DE HORA RETRO ===== */
         .retro-time-picker { position:relative; width:100%; }
         .retro-time-display {
             width:100%; min-height:44px; padding:10px 14px;
@@ -644,7 +638,6 @@
         .retro-time-cancel:hover { background:#334155; }
         @media (max-width:480px) { .retro-time-wheel-wrap { width:90px; } }
 
-        /* ===== SELECTOR DE FECHA RETRO ===== */
         .retro-date-picker{position:relative;width:100%}
         .retro-date-display{width:100%;min-height:44px;padding:10px 14px;box-sizing:border-box;display:flex;align-items:center;gap:10px;border:1px solid rgba(139,92,246,.55);border-radius:12px;background:rgba(15,23,42,.85);color:#f8fafc;font:inherit;cursor:pointer;text-align:left}
         .retro-date-display span:last-child{margin-left:auto;opacity:.7}
@@ -673,12 +666,10 @@
     <img src="logo.png?v=2" alt="Logo Patrulla Retro" class="header-logo" onclick="contarClicksAdmin()">
     <h1 id="mainTitle">🏆 Sorteo HoF Patrulla Retro</h1>
 
-    <!-- BOTÓN SUPERIOR -->
     <div class="top-prob-btn-container">
         <button class="top-prob-btn" onclick="abrirProbabilidadesModal()">📊 Lista de Participantes</button>
     </div>
 
-    <!-- TRAGAPERRAS DEL SORTEO -->
     <div id="slotMachineCard" aria-live="polite">
         <div class="slot-marquee">★ 🕹️ SORTEO EN DIRECTO 🕹️ ★</div>
         <div class="slot-cabinet">
@@ -695,7 +686,6 @@
         </div>
     </div>
 
-    <!-- PANTALLA GANADOR -->
     <div id="winnerCard" class="winner-box">
         <div class="winner-title">🎉 ¡Tenemos Ganador Oficial! 🎉</div>
         <div id="winnerName" class="winner-name">Cargando...</div>
@@ -730,27 +720,23 @@
         <div class="log-box" id="publicLog"></div>
     </div>
 
-    <!-- MENSAJE ESPERA -->
     <div id="waitingCard" class="card hidden" style="text-align: center;">
         <h2>⏳ El sorteo aún no se ha realizado</h2>
         <p style="color: var(--muted); font-size: 0.85rem;">El administrador realizará o programará la tirada en breve. Esta página se actualizará automáticamente.</p>
     </div>
 
-    <!-- LISTA DE PREMIADOS -->
     <div id="winnersCountCard" class="card hidden">
         <h3>👾 Hall of Fame 👾</h3>
         <ul id="winnersCountList" class="custom-list"></ul>
         <button id="btnToggleWinners" class="btn-toggle-view hidden" onclick="toggleWinnersView()">⬇️ Ver todos los usuarios premiados</button>
     </div>
 
-    <!-- HISTORIAL DE SORTEOS -->
     <div id="historyCard" class="card hidden">
         <h3>📜 Historial de Ganadores Anteriores</h3>
         <ul id="historyList" class="custom-list"></ul>
         <button id="btnToggleHistory" class="btn-toggle-view hidden" onclick="toggleHistoryView()">⬇️ Ver todo el historial</button>
     </div>
 
-    <!-- PANEL ADMIN -->
     <div id="adminPanel" class="card admin-panel hidden">
         <h2>🛠️ Panel de Control (Administrador)</h2>
 
@@ -885,7 +871,6 @@
     </div>
 </div>
 
-<!-- VENTANA MODAL CRÉDITOS -->
 <div id="creditsModal" class="modal-overlay hidden">
     <div class="modal-card">
         <h2 style="color: var(--gold); margin-top: 0; margin-bottom: 15px;">Créditos</h2>
@@ -903,7 +888,6 @@
     </div>
 </div>
 
-<!-- VENTANA MODAL PARTICIPANTES -->
 <div id="probabilitiesModal" class="modal-overlay hidden">
     <div class="modal-card">
         <h2 style="color: var(--gold); margin-top: 0; margin-bottom: 10px;">📊 Lista de Participantes</h2>
@@ -915,7 +899,6 @@
 </div>
 
 <script>
-    // ===== CONFIGURACIÓN DE FIREBASE =====
     const firebaseConfig = {
         databaseURL: "https://sorteo-hof-default-rtdb.europe-west1.firebasedatabase.app"
     };
@@ -946,8 +929,6 @@
     let adminClicks = 0;
     let adminClickTimer = null;
     const nombresMeses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
-
-    // ===== FUNCIONES DE FIREBASE Y PARTICIPANTES =====
     db.ref('sorteo_participantes_raw').on('value', function(snapshot) {
         const val = snapshot.val();
         const textarea = document.getElementById('listInput');
@@ -972,8 +953,6 @@
         initRetroDatePicker();
         initRetroTimePicker();
     });
-
-    // ===== FUNCIONES DE MODALES =====
     function abrirCreditos() {
         document.getElementById('creditsModal').classList.remove('hidden');
     }
@@ -1053,21 +1032,6 @@
             adminClickTimer = setTimeout(() => { adminClicks = 0; }, 800);
         }
     }
-
-    function obtenerIndiceCriptografico(max) {
-        if (max <= 0) return 0;
-        const arrayBuffer = new Uint32Array(1);
-        const maxUint32 = 0xFFFFFFFF;
-        const limiteEquitativo = maxUint32 - (maxUint32 % max);
-        let valorRandom;
-        do {
-            window.crypto.getRandomValues(arrayBuffer);
-            valorRandom = arrayBuffer[0];
-        } while (valorRandom >= limiteEquitativo);
-        return valorRandom % max;
-    }
-
-    // ===== FUNCIONES DE GOOGLE SHEETS Y BÚSQUEDA =====
     function parseCSVLine(linea) {
         let resultado = [];
         let celda = '';
@@ -1200,8 +1164,6 @@
         inputEl.value = texto;
         await comprobarJuegoEnSheets();
     }
-
-    // ===== FUNCIONES DE BACKUP =====
     function crearBackupManual() {
         const ahora = new Date();
         const horaTag = `${String(ahora.getHours()).padStart(2,'0')}${String(ahora.getMinutes()).padStart(2,'0')}`;
@@ -1331,8 +1293,6 @@
             if (this.src.includes('logo.png')) this.src = 'logo.jpg?v=2';
         };
     }
-
-    // ===== IMPORTAR DESDE TELEGRAM =====
     async function importarDesdeTelegram(esManual = true) {
         const btn = document.querySelector('.telegram-btn');
         let originalText = "";
@@ -1387,8 +1347,6 @@
             }
         }
     }
-
-    // ===== MES DEL SORTEO =====
     db.ref('mes_sorteo').on('value', function(snapshot) {
         const mes = snapshot.val();
         const titleEl = document.getElementById('mainTitle');
@@ -1407,8 +1365,6 @@
             db.ref('mes_sorteo').set(mes).then(() => alert("¡Mes actualizado con éxito!"));
         }
     }
-
-    // ===== AÑADIR GANADOR MANUAL =====
     function agregarGanadorManual() {
         const inputVal = document.getElementById('manualUserAdmin').value.trim();
         const customMonthVal = document.getElementById('manualWinnerMonth').value;
@@ -1464,8 +1420,6 @@
             else noticeEl.classList.add('hidden');
         });
     }
-
-    // ===== LÓGICA DE LA RECREATIVA =====
     function mostrarRecreativa(activa) {
         const slot = document.getElementById('slotMachineCard');
         if (activa) slot.classList.add('active');
@@ -1523,7 +1477,6 @@
         } else {
             detenerRodillos();
             slotStatus.innerText = '⚡ ¡SORTEO EN MARCHA!';
-            ejecutarTiradaProgramada();
         }
     }
 
@@ -1588,8 +1541,6 @@
         const numero3 = numero.slice(-3).padStart(3, '0');
         return [numero3.charAt(0), numero3.charAt(1), numero3.charAt(2)];
     }
-
-    // ===== OBSERVADOR DE SORTEO ACTUAL =====
     db.ref('sorteo_actual').on('value', function(snapshot) {
         const data = snapshot.val();
         programData = data;
@@ -1660,151 +1611,6 @@
         winnerCard.style.display = 'block';
         document.getElementById('slotMachineCard').classList.remove('active');
     }
-
-    function ejecutarTiradaProgramada() {
-        if (!programData || programData.status !== 'programado') return;
-        calcularYEjecutarTirada(programData.rawLines, programData.rawBlacklist, true);
-    }
-
-    function calcularYEjecutarTirada(rawLinesStr, rawBlacklistStr, animarResultado = true) {
-        const rawLines = rawLinesStr.split('\n');
-        const rawBlacklist = rawBlacklistStr.split('\n');
-
-        let participantesValidos = [];
-        rawLines.forEach(function(line) {
-            let lineaLimpia = line.trim();
-            if (!lineaLimpia) return;
-            const matchUser = lineaLimpia.match(/@[\w_]+/);
-            if (matchUser) {
-                let boletoLimpio = lineaLimpia.replace(/PUNTO\s+EXTRA\s*/gi, '').trim();
-                participantesValidos.push({ ticket: boletoLimpio, user: matchUser[0] });
-            }
-        });
-
-        const total = participantesValidos.length;
-        if (total === 0) return;
-
-        const blacklist = rawBlacklist.map(u => u.trim().toLowerCase()).filter(u => u.length > 0);
-
-        let log = [];
-        let ganadorEncontrado = null;
-        let indexGanador = -1;
-        let listaCopia = participantesValidos.slice();
-
-        while (listaCopia.length > 0) {
-            const indexAleatorio = obtenerIndiceCriptografico(listaCopia.length);
-            const entrada = listaCopia[indexAleatorio];
-            const usuarioMinusculas = entrada.user.toLowerCase();
-
-            if (blacklist.indexOf(usuarioMinusculas) !== -1) {
-                log.push("❌ Descartado: " + entrada.ticket + " (" + entrada.user + " está en la Lista Negra)");
-                listaCopia.splice(indexAleatorio, 1);
-            } else {
-                ganadorEncontrado = entrada;
-                indexGanador = participantesValidos.findIndex(p => p.ticket === entrada.ticket);
-                log.push("✅ ¡TIRADA GANADORA!: " + entrada.ticket);
-                break;
-            }
-        }
-
-        if (!ganadorEncontrado) return;
-
-        let anteriores = [], posteriores = [], usuariosUsados = {};
-        usuariosUsados[ganadorEncontrado.user.toLowerCase()] = true;
-
-        let curr = indexGanador - 1, cntAnt = 0;
-        while (anteriores.length < 2 && cntAnt < total) {
-            if (curr < 0) curr = total - 1;
-            let cand = participantesValidos[curr];
-            if (!usuariosUsados[cand.user.toLowerCase()]) {
-                anteriores.unshift(cand);
-                usuariosUsados[cand.user.toLowerCase()] = true;
-            }
-            curr--; cntAnt++;
-        }
-
-        curr = indexGanador + 1; let cntPost = 0;
-        while (posteriores.length < 2 && cntPost < total) {
-            if (curr >= total) curr = 0;
-            let cand = participantesValidos[curr];
-            if (!usuariosUsados[cand.user.toLowerCase()]) {
-                posteriores.push(cand);
-                usuariosUsados[cand.user.toLowerCase()] = true;
-            }
-            curr++; cntPost++;
-        }
-
-        const arcadeGroup = anteriores.concat([ganadorEncontrado], posteriores);
-        const ahora = new Date();
-        const fechaFormateada = `${nombresMeses[ahora.getMonth()]} ${ahora.getFullYear()}`;
-
-        const nuevoGanador = {
-            user: ganadorEncontrado.user,
-            ticket: ganadorEncontrado.ticket,
-            fecha: fechaFormateada,
-            timestamp: Date.now() + Math.random()
-        };
-
-        const resultadoData = {
-            ganador: ganadorEncontrado,
-            arcadeGroup: arcadeGroup,
-            log: log,
-            timestamp: Date.now()
-        };
-
-        if (animarResultado) {
-            resultadoData.revealAt = Date.now() + SLOT_REVEAL_MS;
-        }
-
-        // Guardamos primero el resultado del sorteo. Una vez confirmado en Firebase,
-        // hacemos automáticamente una copia completa en GitHub mediante el mismo Worker
-        // de Cloudflare que ya utilizas para Telegram.
-        db.ref('historial_ganadores').push(nuevoGanador)
-            .then(function() {
-                return db.ref('sorteo_actual').set(resultadoData);
-            })
-            .then(function() {
-                return enviarBackupGitHubAutomatico();
-            })
-            .catch(function(error) {
-                console.error('Error guardando el sorteo o creando el backup automático:', error);
-            });
-    }
-
-    // ===== BACKUP AUTOMÁTICO EN GITHUB =====
-    async function enviarBackupGitHubAutomatico() {
-        try {
-            const results = await Promise.all([
-                db.ref('historial_ganadores').once('value'),
-                db.ref('sorteo_actual').once('value'),
-                db.ref('mes_sorteo').once('value')
-            ]);
-
-            const backupData = {
-                historial_ganadores: results[0].val() || null,
-                sorteo_actual: results[1].val() || null,
-                mes_sorteo: results[2].val() || null
-            };
-
-            const response = await fetch(`${MI_CLOUDFLARE_WORKER}/backup`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(backupData)
-            });
-
-            if (!response.ok) {
-                throw new Error(`Error del Worker de backup: ${response.status}`);
-            }
-
-            console.log('✅ Backup automático guardado en GitHub.');
-        } catch (error) {
-            console.error('❌ No se pudo realizar el backup automático en GitHub:', error);
-        }
-    }
-
-    // ===== HISTORIAL Y LISTAS =====
     db.ref('historial_ganadores').on('value', function(snapshot) {
         const data = snapshot.val();
         let mapaConteo = {};
@@ -1888,8 +1694,6 @@
 
     function toggleWinnersView() { isWinnersExpanded = !isWinnersExpanded; renderWinnersList(); }
     function toggleHistoryView() { isHistoryExpanded = !isHistoryExpanded; renderHistoryList(); }
-
-    // ===== ADMIN =====
     function toggleAdminPanel() {
         const pass = prompt("Introduce la clave de administrador:");
         if (pass && btoa(pass) === "cGF0cnVsbGExMjM=") {
@@ -1931,8 +1735,6 @@
             alert("Todo borrado correctamente.");
         }
     }
-
-    // ===== FUNCIÓN PRINCIPAL DE PROGRAMACIÓN =====
     function programarOEjecutarSorteo() {
         const dateVal = document.getElementById('drawDateInput').value;
         const timeVal = document.getElementById('drawTimeInput').value;
@@ -1944,18 +1746,16 @@
 
         if (!rawLines) return alert("Pega o importa la lista de participantes.");
 
-        // Si NO hay hora seleccionada (cadena vacía o "--:--") → SORTEO INMEDIATO
         if (!timeVal || timeVal === "--:--" || timeVal.trim() === "") {
-            if (confirm("El sorteo se realizará de inmediato. ¿Continuar?")) {
-                detenerTragaperras();
-                mostrarRecreativa(true);
-                document.getElementById('slotStatus').innerText = '🎰 SORTEO INMEDIATO...';
-                calcularYEjecutarTirada(rawLines, rawBlacklist, true);
-            }
-            return;
+            if (!confirm("El sorteo se realizará de inmediato. ¿Continuar?")) return;
+            const targetTime = Date.now();
+            return db.ref('sorteo_actual').set({
+                status: 'programado',
+                targetTime,
+                rawLines,
+                rawBlacklist
+            }).then(() => alert("¡Sorteo iniciado! El Worker realizará la tirada."));
         }
-
-        // Si hay hora, se programa
         const timeParts = timeVal.split(':');
         let targetDate = new Date();
 
@@ -1965,8 +1765,6 @@
         }
 
         targetDate.setHours(parseInt(timeParts[0], 10), parseInt(timeParts[1], 10), 0, 0);
-
-        // Si no hay fecha y la hora ya pasó, se programa para mañana
         if (!dateVal && targetDate.getTime() <= Date.now()) {
             targetDate.setDate(targetDate.getDate() + 1);
         }
@@ -1978,8 +1776,6 @@
             rawBlacklist: rawBlacklist
         }).then(() => alert("¡Sorteo programado con éxito!"));
     }
-
-    // ===== INICIALIZADORES DE SELECTORES (CORREGIDOS) =====
     function initRetroDatePicker() {
         const input = document.getElementById("drawDateInput");
         const picker = document.getElementById("retroDatePicker");
@@ -2054,7 +1850,6 @@
         };
 
         cancelBtn.onclick = () => {
-            // CORREGIDO: Vuelve a limpiar completamente a --/--/----
             input.value = "";
             text.textContent = "--/--/----";
             selected = null;
@@ -2063,7 +1858,6 @@
 
         document.addEventListener("click", e => {
             if (!picker.contains(e.target) && !panel.classList.contains("hidden")) {
-                // CORREGIDO: Al hacer clic fuera, si hay una fecha seleccionada, se guarda automáticamente como la hora
                 if (selected) {
                     const val = iso(selected);
                     input.value = val;
@@ -2163,7 +1957,6 @@
         });
 
         cancelBtn.addEventListener("click", () => {
-            // CORREGIDO: Limpia completamente el campo de hora volviendo a --:--
             valueInput.value = "";
             displayValue.textContent = "--:--";
             hasSelected = false;
