@@ -1653,7 +1653,7 @@
             document.getElementById('winnerName').innerText = data.ganador.user;
             // Usamos la frase guardada en data.frase, o una nueva solo si no existe (por compatibilidad)
             const frase = data.frase || fraseVideojuegoAleatoria();
-            document.getElementById('winnerQuote').innerText = '🎮 ' + frase;
+            document.getElementById('winnerQuote').innerText = frase;
             let numeroBoleto = data.ganador.ticket;
             const matchNum = data.ganador.ticket.match(/^(\d+)/);
             if (matchNum) {
