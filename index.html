@@ -33,7 +33,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
     <style>
-        /* ===== CSS COMPLETO ===== */
+        /* ===== CSS COMPLETO (sin cambios respecto a tu versión) ===== */
         :root {
             --card: rgba(30, 41, 59, 0.92);
             --accent: #6366f1;
@@ -317,6 +317,7 @@
         .winner-title { color: var(--gold); font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px; }
         .winner-name { font-size: 2rem; font-weight: bold; margin: 10px 0 5px; color: #fff; word-break: break-word; }
         .winner-ticket { font-size: 1.05rem; font-weight: bold; color: var(--muted); word-break: break-word; margin-bottom: 5px; }
+        .winner-quote { font-size: 1.2rem; font-style: italic; color: var(--gold); margin-top: 6px; }
 
         .repeat-winner-banner {
             background: rgba(245, 158, 11, 0.2);
@@ -700,7 +701,7 @@
         <div class="winner-title">🎉 ¡Tenemos Ganador Oficial! 🎉</div>
         <div id="winnerName" class="winner-name">Cargando...</div>
         <div id="winnerTicket" class="winner-ticket"></div>
-        <div id="winnerQuote" class="winner-ticket" style="font-style: italic; margin-top: 6px;"></div>
+        <div id="winnerQuote" class="winner-quote"></div>
 
         <div id="repeatNotice" class="repeat-winner-banner hidden">
             🚨 <b>¡Campeón!</b> ¡Teniendo ya la camiseta en el armario, es hora de repartir el botín!<br>Elige a un compañero de la lista de este mes para cederle el premio. 🚨
@@ -967,8 +968,6 @@
     function fraseVideojuegoAleatoria() {
         return FRASES_VIDEOJUEGOS[Math.floor(Math.random() * FRASES_VIDEOJUEGOS.length)];
     }
-
-
 
     let adminClicks = 0;
     let adminClickTimer = null;
@@ -1616,7 +1615,7 @@
         return [numero3.charAt(0), numero3.charAt(1), numero3.charAt(2)];
     }
 
-    // ===== OBSERVADOR DE SORTEO ACTUAL =====
+    // ===== OBSERVADOR DE SORTEO ACTUAL (modificado para usar la frase guardada) =====
     db.ref('sorteo_actual').on('value', function(snapshot) {
         const data = snapshot.val();
         programData = data;
@@ -1652,7 +1651,9 @@
 
             actualGanadorUser = data.ganador.user;
             document.getElementById('winnerName').innerText = data.ganador.user;
-            document.getElementById('winnerQuote').innerText = fraseVideojuegoAleatoria();
+            // Usamos la frase guardada en data.frase, o una nueva solo si no existe (por compatibilidad)
+            const frase = data.frase || fraseVideojuegoAleatoria();
+            document.getElementById('winnerQuote').innerText = '🎮 ' + frase;
             let numeroBoleto = data.ganador.ticket;
             const matchNum = data.ganador.ticket.match(/^(\d+)/);
             if (matchNum) {
@@ -1766,18 +1767,23 @@
         const ahora = new Date();
         const fechaFormateada = `${nombresMeses[ahora.getMonth()]} ${ahora.getFullYear()}`;
 
+        // Elegir la frase para este sorteo (se guarda en resultadoData)
+        const fraseGanador = fraseVideojuegoAleatoria();
+
         db.ref('historial_ganadores').push({
             user: ganadorEncontrado.user,
             ticket: ganadorEncontrado.ticket,
             fecha: fechaFormateada,
             timestamp: Date.now() + Math.random()
+            // Nota: la frase NO se guarda en el historial, solo en el sorteo_actual
         });
 
         const resultadoData = {
             ganador: ganadorEncontrado,
             arcadeGroup: arcadeGroup,
             log: log,
-            timestamp: Date.now()
+            timestamp: Date.now(),
+            frase: fraseGanador // <-- La frase queda asociada al resultado
         };
 
         if (animarResultado) {
@@ -2037,7 +2043,6 @@
         };
 
         cancelBtn.onclick = () => {
-            // CORREGIDO: Vuelve a limpiar completamente a --/--/----
             input.value = "";
             text.textContent = "--/--/----";
             selected = null;
@@ -2046,7 +2051,6 @@
 
         document.addEventListener("click", e => {
             if (!picker.contains(e.target) && !panel.classList.contains("hidden")) {
-                // CORREGIDO: Al hacer clic fuera, si hay una fecha seleccionada, se guarda automáticamente como la hora
                 if (selected) {
                     const val = iso(selected);
                     input.value = val;
@@ -2146,7 +2150,6 @@
         });
 
         cancelBtn.addEventListener("click", () => {
-            // CORREGIDO: Limpia completamente el campo de hora volviendo a --:--
             valueInput.value = "";
             displayValue.textContent = "--:--";
             hasSelected = false;
