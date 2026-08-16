@@ -700,6 +700,7 @@
         <div class="winner-title">🎉 ¡Tenemos Ganador Oficial! 🎉</div>
         <div id="winnerName" class="winner-name">Cargando...</div>
         <div id="winnerTicket" class="winner-ticket"></div>
+        <div id="winnerQuote" class="winner-ticket" style="font-style: italic; margin-top: 6px;"></div>
 
         <div id="repeatNotice" class="repeat-winner-banner hidden">
             🚨 <b>¡Campeón!</b> ¡Teniendo ya la camiseta en el armario, es hora de repartir el botín!<br>Elige a un compañero de la lista de este mes para cederle el premio. 🚨
@@ -942,6 +943,32 @@
     let slotFinalizing = false;
     let slotRevealInterval = null;
     const SLOT_REVEAL_MS = 30000;
+
+    const FRASES_VIDEOJUEGOS = [
+        "¡Mamma mia!",
+        "¡Hadouken!",
+        "¡Finish Him!",
+        "¡Hazte con todos!",
+        "¡Pero qué clase de brujería es esta!",
+        "¡Allé voy!",
+        "¡Me alegron!",
+        "Preservativo de la Commonwealth",
+        "Salida al fósforo",
+        "¡Fuego en el agujero!",
+        "¿Quieres ir a ver el comida?",
+        "¿Qué es un hombre? Una pequeña pila miserable de secretos.",
+        "El espacio-tiempo está torcido",
+        "¡He sido herido en la rodilla por una flecha!",
+        "¡Detrás de ti, imbécil!",
+        "¡Fatality!",
+        "¡Es peligroso ir solo! ¡Coge esto!"
+    ];
+
+    function fraseVideojuegoAleatoria() {
+        return FRASES_VIDEOJUEGOS[Math.floor(Math.random() * FRASES_VIDEOJUEGOS.length)];
+    }
+
+
 
     let adminClicks = 0;
     let adminClickTimer = null;
@@ -1625,6 +1652,7 @@
 
             actualGanadorUser = data.ganador.user;
             document.getElementById('winnerName').innerText = data.ganador.user;
+            document.getElementById('winnerQuote').innerText = '🎮 ' + fraseVideojuegoAleatoria();
             let numeroBoleto = data.ganador.ticket;
             const matchNum = data.ganador.ticket.match(/^(\d+)/);
             if (matchNum) {
@@ -1905,7 +1933,7 @@
                 detenerTragaperras();
                 mostrarRecreativa(true);
                 document.getElementById('slotStatus').innerText = '🎰 SORTEO INMEDIATO...';
-                calcularYEjecutarTirada(rawLines, rawBlacklist, false);
+                calcularYEjecutarTirada(rawLines, rawBlacklist, true);
             }
             return;
         }
