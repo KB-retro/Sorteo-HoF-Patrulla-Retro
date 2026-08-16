@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sorteo HoF Patrulla Retro</title>
 
+    <!-- Meta etiquetas Open Graph / Redes Sociales -->
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="Patrulla Retro">
     <meta property="og:title" content="🏆 Sorteo HoF Patrulla Retro">
@@ -16,20 +17,22 @@
     <meta property="og:image:width" content="600">
     <meta property="og:image:height" content="600">
 
+    <!-- Twitter Cards -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="🏆 Sorteo HoF Patrulla Retro">
     <meta name="twitter:description" content="Entra para ver la cuenta atrás en directo y el resultado del sorteo de la Patrulla Retro.">
     <meta name="twitter:image" content="https://kb-retro.github.io/Sorteo-HoF-Patrulla-Retro/logo.png?v=2">
 
+    <!-- Favicon -->
     <link rel="icon" type="image/png" sizes="32x32" href="logo.png?v=2">
     <link rel="icon" type="image/png" sizes="16x16" href="logo.png?v=2">
     <link rel="apple-touch-icon" sizes="180x180" href="logo.png?v=2">
 
+    <!-- Firebase JS SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
     <style>
-        
         :root {
             --card: rgba(30, 41, 59, 0.92);
             --accent: #6366f1;
@@ -480,7 +483,7 @@
             from { opacity: 0; transform: translateY(-10px); }
             to { opacity: 1; transform: translateY(0); }
         }
-
+    
         #slotMachineCard {
             display: none;
             text-align: center;
@@ -666,10 +669,12 @@
     <img src="logo.png?v=2" alt="Logo Patrulla Retro" class="header-logo" onclick="contarClicksAdmin()">
     <h1 id="mainTitle">🏆 Sorteo HoF Patrulla Retro</h1>
 
+    <!-- BOTÓN SUPERIOR -->
     <div class="top-prob-btn-container">
         <button class="top-prob-btn" onclick="abrirProbabilidadesModal()">📊 Lista de Participantes</button>
     </div>
 
+    <!-- TRAGAPERRAS DEL SORTEO -->
     <div id="slotMachineCard" aria-live="polite">
         <div class="slot-marquee">★ 🕹️ SORTEO EN DIRECTO 🕹️ ★</div>
         <div class="slot-cabinet">
@@ -686,6 +691,7 @@
         </div>
     </div>
 
+    <!-- PANTALLA GANADOR -->
     <div id="winnerCard" class="winner-box">
         <div class="winner-title">🎉 ¡Tenemos Ganador Oficial! 🎉</div>
         <div id="winnerName" class="winner-name">Cargando...</div>
@@ -720,23 +726,27 @@
         <div class="log-box" id="publicLog"></div>
     </div>
 
+    <!-- MENSAJE ESPERA -->
     <div id="waitingCard" class="card hidden" style="text-align: center;">
         <h2>⏳ El sorteo aún no se ha realizado</h2>
         <p style="color: var(--muted); font-size: 0.85rem;">El administrador realizará o programará la tirada en breve. Esta página se actualizará automáticamente.</p>
     </div>
 
+    <!-- LISTA DE PREMIADOS -->
     <div id="winnersCountCard" class="card hidden">
         <h3>👾 Hall of Fame 👾</h3>
         <ul id="winnersCountList" class="custom-list"></ul>
         <button id="btnToggleWinners" class="btn-toggle-view hidden" onclick="toggleWinnersView()">⬇️ Ver todos los usuarios premiados</button>
     </div>
 
+    <!-- HISTORIAL DE SORTEOS -->
     <div id="historyCard" class="card hidden">
         <h3>📜 Historial de Ganadores Anteriores</h3>
         <ul id="historyList" class="custom-list"></ul>
         <button id="btnToggleHistory" class="btn-toggle-view hidden" onclick="toggleHistoryView()">⬇️ Ver todo el historial</button>
     </div>
 
+    <!-- PANEL ADMIN -->
     <div id="adminPanel" class="card admin-panel hidden">
         <h2>🛠️ Panel de Control (Administrador)</h2>
 
@@ -871,6 +881,7 @@
     </div>
 </div>
 
+<!-- VENTANA MODAL CRÉDITOS -->
 <div id="creditsModal" class="modal-overlay hidden">
     <div class="modal-card">
         <h2 style="color: var(--gold); margin-top: 0; margin-bottom: 15px;">Créditos</h2>
@@ -888,6 +899,7 @@
     </div>
 </div>
 
+<!-- VENTANA MODAL PARTICIPANTES -->
 <div id="probabilitiesModal" class="modal-overlay hidden">
     <div class="modal-card">
         <h2 style="color: var(--gold); margin-top: 0; margin-bottom: 10px;">📊 Lista de Participantes</h2>
@@ -929,6 +941,7 @@
     let adminClicks = 0;
     let adminClickTimer = null;
     const nombresMeses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+
     db.ref('sorteo_participantes_raw').on('value', function(snapshot) {
         const val = snapshot.val();
         const textarea = document.getElementById('listInput');
@@ -953,6 +966,7 @@
         initRetroDatePicker();
         initRetroTimePicker();
     });
+
     function abrirCreditos() {
         document.getElementById('creditsModal').classList.remove('hidden');
     }
@@ -1032,6 +1046,7 @@
             adminClickTimer = setTimeout(() => { adminClicks = 0; }, 800);
         }
     }
+
     function parseCSVLine(linea) {
         let resultado = [];
         let celda = '';
@@ -1164,6 +1179,7 @@
         inputEl.value = texto;
         await comprobarJuegoEnSheets();
     }
+
     function crearBackupManual() {
         const ahora = new Date();
         const horaTag = `${String(ahora.getHours()).padStart(2,'0')}${String(ahora.getMinutes()).padStart(2,'0')}`;
@@ -1293,6 +1309,7 @@
             if (this.src.includes('logo.png')) this.src = 'logo.jpg?v=2';
         };
     }
+
     async function importarDesdeTelegram(esManual = true) {
         const btn = document.querySelector('.telegram-btn');
         let originalText = "";
@@ -1347,6 +1364,7 @@
             }
         }
     }
+
     db.ref('mes_sorteo').on('value', function(snapshot) {
         const mes = snapshot.val();
         const titleEl = document.getElementById('mainTitle');
@@ -1365,6 +1383,7 @@
             db.ref('mes_sorteo').set(mes).then(() => alert("¡Mes actualizado con éxito!"));
         }
     }
+
     function agregarGanadorManual() {
         const inputVal = document.getElementById('manualUserAdmin').value.trim();
         const customMonthVal = document.getElementById('manualWinnerMonth').value;
@@ -1420,6 +1439,7 @@
             else noticeEl.classList.add('hidden');
         });
     }
+
     function mostrarRecreativa(activa) {
         const slot = document.getElementById('slotMachineCard');
         if (activa) slot.classList.add('active');
@@ -1477,7 +1497,7 @@
         } else {
             detenerRodillos();
             slotStatus.innerText = '⚡ ¡SORTEO EN MARCHA!';
-        }
+}
     }
 
     function iniciarRelojCuentaAtras(targetTime) {
@@ -1541,6 +1561,7 @@
         const numero3 = numero.slice(-3).padStart(3, '0');
         return [numero3.charAt(0), numero3.charAt(1), numero3.charAt(2)];
     }
+
     db.ref('sorteo_actual').on('value', function(snapshot) {
         const data = snapshot.val();
         programData = data;
@@ -1611,6 +1632,7 @@
         winnerCard.style.display = 'block';
         document.getElementById('slotMachineCard').classList.remove('active');
     }
+
     db.ref('historial_ganadores').on('value', function(snapshot) {
         const data = snapshot.val();
         let mapaConteo = {};
@@ -1694,6 +1716,7 @@
 
     function toggleWinnersView() { isWinnersExpanded = !isWinnersExpanded; renderWinnersList(); }
     function toggleHistoryView() { isHistoryExpanded = !isHistoryExpanded; renderHistoryList(); }
+
     function toggleAdminPanel() {
         const pass = prompt("Introduce la clave de administrador:");
         if (pass && btoa(pass) === "cGF0cnVsbGExMjM=") {
@@ -1735,6 +1758,7 @@
             alert("Todo borrado correctamente.");
         }
     }
+
     function programarOEjecutarSorteo() {
         const dateVal = document.getElementById('drawDateInput').value;
         const timeVal = document.getElementById('drawTimeInput').value;
@@ -1748,14 +1772,20 @@
 
         if (!timeVal || timeVal === "--:--" || timeVal.trim() === "") {
             if (!confirm("El sorteo se realizará de inmediato. ¿Continuar?")) return;
-            const targetTime = Date.now();
-            return db.ref('sorteo_actual').set({
+
+            db.ref('sorteo_actual').set({
                 status: 'programado',
-                targetTime,
+                targetTime: Date.now(),
                 rawLines,
                 rawBlacklist
-            }).then(() => alert("¡Sorteo iniciado! El Worker realizará la tirada."));
+            }).then(() => {
+                alert("¡Sorteo enviado al Worker para su ejecución!");
+            }).catch(() => {
+                alert("❌ No se pudo programar el sorteo.");
+            });
+            return;
         }
+
         const timeParts = timeVal.split(':');
         let targetDate = new Date();
 
@@ -1765,6 +1795,7 @@
         }
 
         targetDate.setHours(parseInt(timeParts[0], 10), parseInt(timeParts[1], 10), 0, 0);
+
         if (!dateVal && targetDate.getTime() <= Date.now()) {
             targetDate.setDate(targetDate.getDate() + 1);
         }
@@ -1776,6 +1807,7 @@
             rawBlacklist: rawBlacklist
         }).then(() => alert("¡Sorteo programado con éxito!"));
     }
+
     function initRetroDatePicker() {
         const input = document.getElementById("drawDateInput");
         const picker = document.getElementById("retroDatePicker");
