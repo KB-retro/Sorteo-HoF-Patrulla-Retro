@@ -1776,11 +1776,12 @@
             db.ref('sorteo_actual').set({
                 status: 'programado',
                 targetTime: Date.now(),
-                rawLines,
-                rawBlacklist
+                rawLines: rawLines,
+                rawBlacklist: rawBlacklist
             }).then(() => {
                 alert("¡Sorteo enviado al Worker para su ejecución!");
-            }).catch(() => {
+            }).catch(error => {
+                console.error("Error programando sorteo inmediato:", error);
                 alert("❌ No se pudo programar el sorteo.");
             });
             return;
