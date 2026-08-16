@@ -1738,12 +1738,12 @@
         const ahora = new Date();
         const fechaFormateada = `${nombresMeses[ahora.getMonth()]} ${ahora.getFullYear()}`;
 
-        const nuevoGanador = {
+        db.ref('historial_ganadores').push({
             user: ganadorEncontrado.user,
             ticket: ganadorEncontrado.ticket,
             fecha: fechaFormateada,
             timestamp: Date.now() + Math.random()
-        };
+        });
 
         const resultadoData = {
             ganador: ganadorEncontrado,
@@ -1756,52 +1756,7 @@
             resultadoData.revealAt = Date.now() + SLOT_REVEAL_MS;
         }
 
-        // Guardamos primero el resultado del sorteo. Una vez confirmado en Firebase,
-        // hacemos automáticamente una copia completa en GitHub mediante el mismo Worker
-        // de Cloudflare que ya utilizas para Telegram.
-        db.ref('historial_ganadores').push(nuevoGanador)
-            .then(function() {
-                return db.ref('sorteo_actual').set(resultadoData);
-            })
-            .then(function() {
-                return enviarBackupGitHubAutomatico();
-            })
-            .catch(function(error) {
-                console.error('Error guardando el sorteo o creando el backup automático:', error);
-            });
-    }
-
-    // ===== BACKUP AUTOMÁTICO EN GITHUB =====
-    async function enviarBackupGitHubAutomatico() {
-        try {
-            const results = await Promise.all([
-                db.ref('historial_ganadores').once('value'),
-                db.ref('sorteo_actual').once('value'),
-                db.ref('mes_sorteo').once('value')
-            ]);
-
-            const backupData = {
-                historial_ganadores: results[0].val() || null,
-                sorteo_actual: results[1].val() || null,
-                mes_sorteo: results[2].val() || null
-            };
-
-            const response = await fetch(`${MI_CLOUDFLARE_WORKER}/backup`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(backupData)
-            });
-
-            if (!response.ok) {
-                throw new Error(`Error del Worker de backup: ${response.status}`);
-            }
-
-            console.log('✅ Backup automático guardado en GitHub.');
-        } catch (error) {
-            console.error('❌ No se pudo realizar el backup automático en GitHub:', error);
-        }
+        db.ref('sorteo_actual').set(resultadoData);
     }
 
     // ===== HISTORIAL Y LISTAS =====
@@ -1950,7 +1905,7 @@
                 detenerTragaperras();
                 mostrarRecreativa(true);
                 document.getElementById('slotStatus').innerText = '🎰 SORTEO INMEDIATO...';
-                calcularYEjecutarTirada(rawLines, rawBlacklist, true);
+                calcularYEjecutarTirada(rawLines, rawBlacklist, false);
             }
             return;
         }
