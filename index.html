@@ -33,7 +33,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
     <style>
-        /* ===== CSS COMPLETO (sin cambios respecto a tu versión) ===== */
+        /* ===== CSS COMPLETO ===== */
         :root {
             --card: rgba(30, 41, 59, 0.92);
             --accent: #6366f1;
@@ -917,13 +917,18 @@
 </div>
 
 <script>
-    // ===== CONFIGURACIÓN DE FIREBASE =====
+    // ============================================================
+    //  CONFIGURACIÓN DE FIREBASE
+    // ============================================================
     const firebaseConfig = {
         databaseURL: "https://sorteo-hof-default-rtdb.europe-west1.firebasedatabase.app"
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
+    // ============================================================
+    //  VARIABLES GLOBALES
+    // ============================================================
     const MI_CLOUDFLARE_WORKER = "https://dawn-band-8bc8.microbiops.workers.dev";
     const GOOGLE_SHEETS_CSV_URL = "https://docs.google.com/spreadsheets/d/1JApebwPe9J_fbS_hnQBHHElSlELlWiAjxdvDJQ8yw2E/export?format=csv";
 
@@ -987,7 +992,6 @@
         "No hay más héroes en este maldito lugar",
         "¡Cuidado con los zombis, que muerden!",
         "¡Flawless Victory!"
-
     ];
 
     function fraseVideojuegoAleatoria() {
@@ -998,7 +1002,9 @@
     let adminClickTimer = null;
     const nombresMeses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
-    // ===== FUNCIONES DE FIREBASE Y PARTICIPANTES =====
+    // ============================================================
+    //  FUNCIONES DE FIREBASE Y PARTICIPANTES
+    // ============================================================
     db.ref('sorteo_participantes_raw').on('value', function(snapshot) {
         const val = snapshot.val();
         const textarea = document.getElementById('listInput');
@@ -1024,7 +1030,9 @@
         initRetroTimePicker();
     });
 
-    // ===== FUNCIONES DE MODALES =====
+    // ============================================================
+    //  FUNCIONES DE MODALES
+    // ============================================================
     function abrirCreditos() {
         document.getElementById('creditsModal').classList.remove('hidden');
     }
@@ -1118,7 +1126,9 @@
         return valorRandom % max;
     }
 
-    // ===== FUNCIONES DE GOOGLE SHEETS Y BÚSQUEDA =====
+    // ============================================================
+    //  FUNCIONES DE GOOGLE SHEETS Y BÚSQUEDA
+    // ============================================================
     function parseCSVLine(linea) {
         let resultado = [];
         let celda = '';
@@ -1252,7 +1262,9 @@
         await comprobarJuegoEnSheets();
     }
 
-    // ===== FUNCIONES DE BACKUP =====
+    // ============================================================
+    //  FUNCIONES DE BACKUP
+    // ============================================================
     function crearBackupManual() {
         const ahora = new Date();
         const horaTag = `${String(ahora.getHours()).padStart(2,'0')}${String(ahora.getMinutes()).padStart(2,'0')}`;
@@ -1383,7 +1395,9 @@
         };
     }
 
-    // ===== IMPORTAR DESDE TELEGRAM =====
+    // ============================================================
+    //  IMPORTAR DESDE TELEGRAM
+    // ============================================================
     async function importarDesdeTelegram(esManual = true) {
         const btn = document.querySelector('.telegram-btn');
         let originalText = "";
@@ -1439,7 +1453,9 @@
         }
     }
 
-    // ===== MES DEL SORTEO =====
+    // ============================================================
+    //  MES DEL SORTEO
+    // ============================================================
     db.ref('mes_sorteo').on('value', function(snapshot) {
         const mes = snapshot.val();
         const titleEl = document.getElementById('mainTitle');
@@ -1459,7 +1475,9 @@
         }
     }
 
-    // ===== AÑADIR GANADOR MANUAL =====
+    // ============================================================
+    //  AÑADIR GANADOR MANUAL
+    // ============================================================
     function agregarGanadorManual() {
         const inputVal = document.getElementById('manualUserAdmin').value.trim();
         const customMonthVal = document.getElementById('manualWinnerMonth').value;
@@ -1516,7 +1534,9 @@
         });
     }
 
-    // ===== LÓGICA DE LA RECREATIVA =====
+    // ============================================================
+    //  LÓGICA DE LA RECREATIVA
+    // ============================================================
     function mostrarRecreativa(activa) {
         const slot = document.getElementById('slotMachineCard');
         if (activa) slot.classList.add('active');
@@ -1640,7 +1660,9 @@
         return [numero3.charAt(0), numero3.charAt(1), numero3.charAt(2)];
     }
 
-    // ===== OBSERVADOR DE SORTEO ACTUAL (modificado para usar la frase guardada) =====
+    // ============================================================
+    //  OBSERVADOR DE SORTEO ACTUAL
+    // ============================================================
     db.ref('sorteo_actual').on('value', function(snapshot) {
         const data = snapshot.val();
         programData = data;
@@ -1676,7 +1698,6 @@
 
             actualGanadorUser = data.ganador.user;
             document.getElementById('winnerName').innerText = data.ganador.user;
-            // Usamos la frase guardada en data.frase, o una nueva solo si no existe (por compatibilidad)
             const frase = data.frase || fraseVideojuegoAleatoria();
             document.getElementById('winnerQuote').innerText = frase;
             let numeroBoleto = data.ganador.ticket;
@@ -1800,7 +1821,6 @@
             ticket: ganadorEncontrado.ticket,
             fecha: fechaFormateada,
             timestamp: Date.now() + Math.random()
-            // Nota: la frase NO se guarda en el historial, solo en el sorteo_actual
         });
 
         const resultadoData = {
@@ -1808,7 +1828,7 @@
             arcadeGroup: arcadeGroup,
             log: log,
             timestamp: Date.now(),
-            frase: fraseGanador // <-- La frase queda asociada al resultado
+            frase: fraseGanador
         };
 
         if (animarResultado) {
@@ -1818,7 +1838,9 @@
         db.ref('sorteo_actual').set(resultadoData);
     }
 
-    // ===== HISTORIAL Y LISTAS =====
+    // ============================================================
+    //  HISTORIAL Y LISTAS
+    // ============================================================
     db.ref('historial_ganadores').on('value', function(snapshot) {
         const data = snapshot.val();
         let mapaConteo = {};
@@ -1903,7 +1925,9 @@
     function toggleWinnersView() { isWinnersExpanded = !isWinnersExpanded; renderWinnersList(); }
     function toggleHistoryView() { isHistoryExpanded = !isHistoryExpanded; renderHistoryList(); }
 
-    // ===== ADMIN =====
+    // ============================================================
+    //  ADMIN
+    // ============================================================
     function toggleAdminPanel() {
         const pass = prompt("Introduce la clave de administrador:");
         if (pass && btoa(pass) === "cGF0cnVsbGExMjM=") {
@@ -1946,7 +1970,9 @@
         }
     }
 
-    // ===== FUNCIÓN PRINCIPAL DE PROGRAMACIÓN =====
+    // ============================================================
+    //  FUNCIÓN PRINCIPAL DE PROGRAMACIÓN
+    // ============================================================
     function programarOEjecutarSorteo() {
         const dateVal = document.getElementById('drawDateInput').value;
         const timeVal = document.getElementById('drawTimeInput').value;
@@ -1959,17 +1985,18 @@
         if (!rawLines) return alert("Pega o importa la lista de participantes.");
 
         // Si NO hay hora seleccionada (cadena vacía o "--:--") → SORTEO INMEDIATO
+        // IMPORTANTE: para inmediato NO se debe animar (animarResultado = false)
         if (!timeVal || timeVal === "--:--" || timeVal.trim() === "") {
             if (confirm("El sorteo se realizará de inmediato. ¿Continuar?")) {
                 detenerTragaperras();
                 mostrarRecreativa(true);
                 document.getElementById('slotStatus').innerText = '🎰 SORTEO INMEDIATO...';
-                calcularYEjecutarTirada(rawLines, rawBlacklist, true);
+                calcularYEjecutarTirada(rawLines, rawBlacklist, false); // <-- false = sin espera
             }
             return;
         }
 
-        // Si hay hora, se programa
+        // Si hay hora, se programa (con animación de 30 segundos)
         const timeParts = timeVal.split(':');
         let targetDate = new Date();
 
@@ -1993,7 +2020,9 @@
         }).then(() => alert("¡Sorteo programado con éxito!"));
     }
 
-    // ===== INICIALIZADORES DE SELECTORES (CORREGIDOS) =====
+    // ============================================================
+    //  INICIALIZADORES DE SELECTORES
+    // ============================================================
     function initRetroDatePicker() {
         const input = document.getElementById("drawDateInput");
         const picker = document.getElementById("retroDatePicker");
@@ -2217,6 +2246,5 @@
         valueInput.value = "";
     }
 </script>
-
 </body>
 </html>
