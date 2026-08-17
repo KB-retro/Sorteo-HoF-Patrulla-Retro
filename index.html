@@ -991,7 +991,7 @@
         "Un héroe no necesita hablar",
         "No hay más héroes en este maldito lugar",
         "¡Cuidado con los zombis, que muerden!",
-        "¡Flawless Victory!"
+        "¡Flawless Victory!",
         "¡INSERT COIN!"
     ];
 
@@ -1699,8 +1699,17 @@
 
             actualGanadorUser = data.ganador.user;
             document.getElementById('winnerName').innerText = data.ganador.user;
-            const frase = data.frase || fraseVideojuegoAleatoria();
-            document.getElementById('winnerQuote').innerText = frase;
+            
+            // --- FIX: FRASE FIJA Y DETERMINISTA ---
+            let fraseFinal = data.frase;
+            if (!fraseFinal) {
+                // Si el sorteo es anterior y no tiene frase guardada, calculamos una fija usando su timestamp
+                const seed = data.timestamp ? Math.floor(data.timestamp) : 0;
+                fraseFinal = FRASES_VIDEOJUEGOS[seed % FRASES_VIDEOJUEGOS.length];
+            }
+            document.getElementById('winnerQuote').innerText = fraseFinal;
+            // --------------------------------------
+            
             let numeroBoleto = data.ganador.ticket;
             const matchNum = data.ganador.ticket.match(/^(\d+)/);
             if (matchNum) {
