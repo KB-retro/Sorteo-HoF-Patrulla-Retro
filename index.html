@@ -317,6 +317,7 @@
         .winner-title { color: var(--gold); font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px; }
         .winner-name { font-size: 2rem; font-weight: bold; margin: 10px 0 5px; color: #fff; word-break: break-word; }
         .winner-ticket { font-size: 1.05rem; font-weight: bold; color: var(--muted); word-break: break-word; margin-bottom: 5px; }
+        .winner-quote { font-size: 1.2rem; font-style: italic; color: var(--gold); margin-top: 6px; }
 
         .repeat-winner-banner {
             background: rgba(245, 158, 11, 0.2);
@@ -700,6 +701,7 @@
         <div class="winner-title">🎉 ¡Tenemos Ganador Oficial! 🎉</div>
         <div id="winnerName" class="winner-name">Cargando...</div>
         <div id="winnerTicket" class="winner-ticket"></div>
+        <div id="winnerQuote" class="winner-quote"></div>
 
         <div id="repeatNotice" class="repeat-winner-banner hidden">
             🚨 <b>¡Campeón!</b> ¡Teniendo ya la camiseta en el armario, es hora de repartir el botín!<br>Elige a un compañero de la lista de este mes para cederle el premio. 🚨
@@ -929,30 +931,6 @@
     // ============================================================
     const MI_CLOUDFLARE_WORKER = "https://dawn-band-8bc8.microbiops.workers.dev";
     const GOOGLE_SHEETS_CSV_URL = "https://docs.google.com/spreadsheets/d/1JApebwPe9J_fbS_hnQBHHElSlELlWiAjxdvDJQ8yw2E/export?format=csv";
-
-    // ============================================================
-    //  FUNCIÓN PARA ACTUALIZAR VISTA PREVIA DE TELEGRAM
-    // ============================================================
-    async function actualizarPreviewTelegram(targetTime) {
-        try {
-            const response = await fetch(`${MI_CLOUDFLARE_WORKER}/actualizar-preview`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ targetTime: Number(targetTime) })
-            });
-
-            if (!response.ok) {
-                const texto = await response.text();
-                throw new Error(`Worker de vista previa: ${response.status} ${texto}`);
-            }
-
-            console.log('✅ Vista previa de Telegram actualizada con la fecha y hora del sorteo.');
-        } catch (error) {
-            console.error('⚠️ El sorteo quedó programado, pero no se pudo actualizar la vista previa de Telegram:', error);
-        }
-    }
 
     let actualGanadorUser = "";
     let isWinnersExpanded = false;
@@ -2003,7 +1981,7 @@
     }
 
     // ============================================================
-    //  FUNCIÓN PRINCIPAL DE PROGRAMACIÓN (con preview de Telegram)
+    //  FUNCIÓN PRINCIPAL DE PROGRAMACIÓN
     // ============================================================
     function programarOEjecutarSorteo() {
         const dateVal = document.getElementById('drawDateInput').value;
@@ -2017,17 +1995,18 @@
         if (!rawLines) return alert("Pega o importa la lista de participantes.");
 
         // Si NO hay hora seleccionada (cadena vacía o "--:--") → SORTEO INMEDIATO
+        // IMPORTANTE: para inmediato NO se debe animar (animarResultado = false)
         if (!timeVal || timeVal === "--:--" || timeVal.trim() === "") {
             if (confirm("El sorteo se realizará de inmediato. ¿Continuar?")) {
                 detenerTragaperras();
                 mostrarRecreativa(true);
                 document.getElementById('slotStatus').innerText = '🎰 SORTEO INMEDIATO...';
-                calcularYEjecutarTirada(rawLines, rawBlacklist, false);
+                calcularYEjecutarTirada(rawLines, rawBlacklist, false); // <-- false = sin espera
             }
             return;
         }
 
-        // Si hay hora, se programa
+        // Si hay hora, se programa (con animación de 30 segundos)
         const timeParts = timeVal.split(':');
         let targetDate = new Date();
 
@@ -2043,20 +2022,12 @@
             targetDate.setDate(targetDate.getDate() + 1);
         }
 
-        const targetTime = targetDate.getTime();
-
         db.ref('sorteo_actual').set({
             status: 'programado',
-            targetTime: targetTime,
+            targetTime: targetDate.getTime(),
             rawLines: rawLines,
             rawBlacklist: rawBlacklist
-        }).then(async () => {
-            await actualizarPreviewTelegram(targetTime);
-            alert("¡Sorteo programado con éxito!");
-        }).catch(error => {
-            console.error("Error programando el sorteo:", error);
-            alert("❌ No se pudo programar el sorteo. Revisa la consola para más detalles.");
-        });
+        }).then(() => alert("¡Sorteo programado con éxito!"));
     }
 
     // ============================================================
