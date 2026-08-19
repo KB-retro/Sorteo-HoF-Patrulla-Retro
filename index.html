@@ -10,7 +10,6 @@
     <meta property="og:site_name" content="Patrulla Retro">
     <meta property="og:title" content="🏆 Sorteo HoF Patrulla Retro">
     <meta property="og:description" content="Entra para ver la cuenta atrás en directo y el resultado del sorteo de la Patrulla Retro.">
-    <meta name="description" content="Entra para ver la cuenta atrás en directo y el resultado del sorteo de la Patrulla Retro.">
     <meta property="og:url" content="https://kb-retro.github.io/Sorteo-HoF-Patrulla-Retro/">
     <meta property="og:image" content="https://kb-retro.github.io/Sorteo-HoF-Patrulla-Retro/logo.png?v=2">
     <meta property="og:image:secure_url" content="https://kb-retro.github.io/Sorteo-HoF-Patrulla-Retro/logo.png?v=2">
@@ -916,16 +915,24 @@
 </div>
 
 <script>
-    // ===== CONFIGURACIÓN DE FIREBASE =====
+    // ============================================================
+    //  CONFIGURACIÓN DE FIREBASE
+    // ============================================================
     const firebaseConfig = {
         databaseURL: "https://sorteo-hof-default-rtdb.europe-west1.firebasedatabase.app"
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
+    // ============================================================
+    //  VARIABLES GLOBALES
+    // ============================================================
     const MI_CLOUDFLARE_WORKER = "https://dawn-band-8bc8.microbiops.workers.dev";
     const GOOGLE_SHEETS_CSV_URL = "https://docs.google.com/spreadsheets/d/1JApebwPe9J_fbS_hnQBHHElSlELlWiAjxdvDJQ8yw2E/export?format=csv";
 
+    // ============================================================
+    //  FUNCIÓN PARA ACTUALIZAR VISTA PREVIA DE TELEGRAM
+    // ============================================================
     async function actualizarPreviewTelegram(targetTime) {
         try {
             const response = await fetch(`${MI_CLOUDFLARE_WORKER}/actualizar-preview`, {
@@ -965,11 +972,62 @@
     let slotRevealInterval = null;
     const SLOT_REVEAL_MS = 30000;
 
+    const FRASES_VIDEOJUEGOS = [
+        "¡Mamma mia!",
+        "¡Hadouken!",
+        "¡Finish Him!",
+        "¡Hazte con todos!",
+        "¡Pero qué clase de brujería es esta!",
+        "¡Allé voy!",
+        "¡Me alegron!",
+        "Preservativo de la Commonwealth",
+        "Salida al fósforo",
+        "¡Fuego en el agujero!",
+        "¿Quieres ir a ver el comida?",
+        "¿Qué es un hombre? Una pequeña pila miserable de secretos.",
+        "El espacio-tiempo está torcido",
+        "¡He sido herido en la rodilla por una flecha!",
+        "¡Detrás de ti, imbécil!",
+        "¡Fatality!",
+        "¡Es peligroso ir solo! ¡Coge esto!",
+        "¡Get over here!",
+        "¡Wololo!",
+        "El pastel es una mentira",
+        "¡Alabad al sol!",
+        "La guerra no cambia nunca",
+        "¡Snake! ¡Snaaaaake!",
+        "El hombre elige, el esclavo obedece",
+        "¿Te he contado la definición de locura?",
+        "Despierta y huele las cenizas",
+        "No te disculpes, sé mejor",
+        "Mantente alerta y escucha",
+        "¡Saaaaaluuuuudos, buscador de la Cámara!",
+        "Toda tu base nos pertenece",
+        "¡Wasted!",
+        "Eres un maldito desastre, John Marston",
+        "¡No pasará nada malo por usar el cañón magnético!",
+        "¡Congelación!",
+        "Siento que mi cuerpo está listo",
+        "¿Quieres pasar un mal rato?",
+        "¡Objection!",
+        "Un héroe no necesita hablar",
+        "No hay más héroes en este maldito lugar",
+        "¡Cuidado con los zombis, que muerden!",
+        "¡Flawless Victory!",
+        "¡INSERT COIN!"
+    ];
+
+    function fraseVideojuegoAleatoria() {
+        return FRASES_VIDEOJUEGOS[Math.floor(Math.random() * FRASES_VIDEOJUEGOS.length)];
+    }
+
     let adminClicks = 0;
     let adminClickTimer = null;
     const nombresMeses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
-    // ===== FUNCIONES DE FIREBASE Y PARTICIPANTES =====
+    // ============================================================
+    //  FUNCIONES DE FIREBASE Y PARTICIPANTES
+    // ============================================================
     db.ref('sorteo_participantes_raw').on('value', function(snapshot) {
         const val = snapshot.val();
         const textarea = document.getElementById('listInput');
@@ -995,7 +1053,9 @@
         initRetroTimePicker();
     });
 
-    // ===== FUNCIONES DE MODALES =====
+    // ============================================================
+    //  FUNCIONES DE MODALES
+    // ============================================================
     function abrirCreditos() {
         document.getElementById('creditsModal').classList.remove('hidden');
     }
@@ -1089,7 +1149,9 @@
         return valorRandom % max;
     }
 
-    // ===== FUNCIONES DE GOOGLE SHEETS Y BÚSQUEDA =====
+    // ============================================================
+    //  FUNCIONES DE GOOGLE SHEETS Y BÚSQUEDA
+    // ============================================================
     function parseCSVLine(linea) {
         let resultado = [];
         let celda = '';
@@ -1223,7 +1285,9 @@
         await comprobarJuegoEnSheets();
     }
 
-    // ===== FUNCIONES DE BACKUP =====
+    // ============================================================
+    //  FUNCIONES DE BACKUP
+    // ============================================================
     function crearBackupManual() {
         const ahora = new Date();
         const horaTag = `${String(ahora.getHours()).padStart(2,'0')}${String(ahora.getMinutes()).padStart(2,'0')}`;
@@ -1354,7 +1418,9 @@
         };
     }
 
-    // ===== IMPORTAR DESDE TELEGRAM =====
+    // ============================================================
+    //  IMPORTAR DESDE TELEGRAM
+    // ============================================================
     async function importarDesdeTelegram(esManual = true) {
         const btn = document.querySelector('.telegram-btn');
         let originalText = "";
@@ -1410,7 +1476,9 @@
         }
     }
 
-    // ===== MES DEL SORTEO =====
+    // ============================================================
+    //  MES DEL SORTEO
+    // ============================================================
     db.ref('mes_sorteo').on('value', function(snapshot) {
         const mes = snapshot.val();
         const titleEl = document.getElementById('mainTitle');
@@ -1430,7 +1498,9 @@
         }
     }
 
-    // ===== AÑADIR GANADOR MANUAL =====
+    // ============================================================
+    //  AÑADIR GANADOR MANUAL
+    // ============================================================
     function agregarGanadorManual() {
         const inputVal = document.getElementById('manualUserAdmin').value.trim();
         const customMonthVal = document.getElementById('manualWinnerMonth').value;
@@ -1487,7 +1557,9 @@
         });
     }
 
-    // ===== LÓGICA DE LA RECREATIVA =====
+    // ============================================================
+    //  LÓGICA DE LA RECREATIVA
+    // ============================================================
     function mostrarRecreativa(activa) {
         const slot = document.getElementById('slotMachineCard');
         if (activa) slot.classList.add('active');
@@ -1611,7 +1683,9 @@
         return [numero3.charAt(0), numero3.charAt(1), numero3.charAt(2)];
     }
 
-    // ===== OBSERVADOR DE SORTEO ACTUAL =====
+    // ============================================================
+    //  OBSERVADOR DE SORTEO ACTUAL
+    // ============================================================
     db.ref('sorteo_actual').on('value', function(snapshot) {
         const data = snapshot.val();
         programData = data;
@@ -1647,6 +1721,17 @@
 
             actualGanadorUser = data.ganador.user;
             document.getElementById('winnerName').innerText = data.ganador.user;
+            
+            // --- FIX: FRASE FIJA Y DETERMINISTA ---
+            let fraseFinal = data.frase;
+            if (!fraseFinal) {
+                // Si el sorteo es anterior y no tiene frase guardada, calculamos una fija usando su timestamp
+                const seed = data.timestamp ? Math.floor(data.timestamp) : 0;
+                fraseFinal = FRASES_VIDEOJUEGOS[seed % FRASES_VIDEOJUEGOS.length];
+            }
+            document.getElementById('winnerQuote').innerText = fraseFinal;
+            // --------------------------------------
+            
             let numeroBoleto = data.ganador.ticket;
             const matchNum = data.ganador.ticket.match(/^(\d+)/);
             if (matchNum) {
@@ -1760,73 +1845,34 @@
         const ahora = new Date();
         const fechaFormateada = `${nombresMeses[ahora.getMonth()]} ${ahora.getFullYear()}`;
 
-        const nuevoGanador = {
+        // Elegir la frase para este sorteo (se guarda en resultadoData)
+        const fraseGanador = fraseVideojuegoAleatoria();
+
+        db.ref('historial_ganadores').push({
             user: ganadorEncontrado.user,
             ticket: ganadorEncontrado.ticket,
             fecha: fechaFormateada,
             timestamp: Date.now() + Math.random()
-        };
+        });
 
         const resultadoData = {
             ganador: ganadorEncontrado,
             arcadeGroup: arcadeGroup,
             log: log,
-            timestamp: Date.now()
+            timestamp: Date.now(),
+            frase: fraseGanador
         };
 
         if (animarResultado) {
             resultadoData.revealAt = Date.now() + SLOT_REVEAL_MS;
         }
 
-        // Guardamos primero el resultado del sorteo. Una vez confirmado en Firebase,
-        // hacemos automáticamente una copia completa en GitHub mediante el mismo Worker
-        // de Cloudflare que ya utilizas para Telegram.
-        db.ref('historial_ganadores').push(nuevoGanador)
-            .then(function() {
-                return db.ref('sorteo_actual').set(resultadoData);
-            })
-            .then(function() {
-                return enviarBackupGitHubAutomatico();
-            })
-            .catch(function(error) {
-                console.error('Error guardando el sorteo o creando el backup automático:', error);
-            });
+        db.ref('sorteo_actual').set(resultadoData);
     }
 
-    // ===== BACKUP AUTOMÁTICO EN GITHUB =====
-    async function enviarBackupGitHubAutomatico() {
-        try {
-            const results = await Promise.all([
-                db.ref('historial_ganadores').once('value'),
-                db.ref('sorteo_actual').once('value'),
-                db.ref('mes_sorteo').once('value')
-            ]);
-
-            const backupData = {
-                historial_ganadores: results[0].val() || null,
-                sorteo_actual: results[1].val() || null,
-                mes_sorteo: results[2].val() || null
-            };
-
-            const response = await fetch(`${MI_CLOUDFLARE_WORKER}/backup`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(backupData)
-            });
-
-            if (!response.ok) {
-                throw new Error(`Error del Worker de backup: ${response.status}`);
-            }
-
-            console.log('✅ Backup automático guardado en GitHub.');
-        } catch (error) {
-            console.error('❌ No se pudo realizar el backup automático en GitHub:', error);
-        }
-    }
-
-    // ===== HISTORIAL Y LISTAS =====
+    // ============================================================
+    //  HISTORIAL Y LISTAS
+    // ============================================================
     db.ref('historial_ganadores').on('value', function(snapshot) {
         const data = snapshot.val();
         let mapaConteo = {};
@@ -1911,7 +1957,9 @@
     function toggleWinnersView() { isWinnersExpanded = !isWinnersExpanded; renderWinnersList(); }
     function toggleHistoryView() { isHistoryExpanded = !isHistoryExpanded; renderHistoryList(); }
 
-    // ===== ADMIN =====
+    // ============================================================
+    //  ADMIN
+    // ============================================================
     function toggleAdminPanel() {
         const pass = prompt("Introduce la clave de administrador:");
         if (pass && btoa(pass) === "cGF0cnVsbGExMjM=") {
@@ -1954,7 +2002,9 @@
         }
     }
 
-    // ===== FUNCIÓN PRINCIPAL DE PROGRAMACIÓN =====
+    // ============================================================
+    //  FUNCIÓN PRINCIPAL DE PROGRAMACIÓN (con preview de Telegram)
+    // ============================================================
     function programarOEjecutarSorteo() {
         const dateVal = document.getElementById('drawDateInput').value;
         const timeVal = document.getElementById('drawTimeInput').value;
@@ -1972,7 +2022,7 @@
                 detenerTragaperras();
                 mostrarRecreativa(true);
                 document.getElementById('slotStatus').innerText = '🎰 SORTEO INMEDIATO...';
-                calcularYEjecutarTirada(rawLines, rawBlacklist, true);
+                calcularYEjecutarTirada(rawLines, rawBlacklist, false);
             }
             return;
         }
@@ -2009,7 +2059,9 @@
         });
     }
 
-    // ===== INICIALIZADORES DE SELECTORES (CORREGIDOS) =====
+    // ============================================================
+    //  INICIALIZADORES DE SELECTORES
+    // ============================================================
     function initRetroDatePicker() {
         const input = document.getElementById("drawDateInput");
         const picker = document.getElementById("retroDatePicker");
@@ -2084,7 +2136,6 @@
         };
 
         cancelBtn.onclick = () => {
-            // CORREGIDO: Vuelve a limpiar completamente a --/--/----
             input.value = "";
             text.textContent = "--/--/----";
             selected = null;
@@ -2093,7 +2144,6 @@
 
         document.addEventListener("click", e => {
             if (!picker.contains(e.target) && !panel.classList.contains("hidden")) {
-                // CORREGIDO: Al hacer clic fuera, si hay una fecha seleccionada, se guarda automáticamente como la hora
                 if (selected) {
                     const val = iso(selected);
                     input.value = val;
@@ -2193,7 +2243,6 @@
         });
 
         cancelBtn.addEventListener("click", () => {
-            // CORREGIDO: Limpia completamente el campo de hora volviendo a --:--
             valueInput.value = "";
             displayValue.textContent = "--:--";
             hasSelected = false;
@@ -2236,6 +2285,5 @@
         valueInput.value = "";
     }
 </script>
-
 </body>
 </html>
