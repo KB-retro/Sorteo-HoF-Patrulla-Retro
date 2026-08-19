@@ -2034,6 +2034,7 @@
             try {
                 const response = await fetch(`${MI_CLOUDFLARE_WORKER}/actualizar-preview`, {
                     method: 'POST',
+                    cache: 'no-store',
                     headers: {
                         'Content-Type': 'application/json'
                     },
