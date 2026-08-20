@@ -861,6 +861,8 @@
 
             <button style="background-color: #0284c7; margin-bottom: 10px;" onclick="crearBackupManual()">📸 CREAR COPIA DE SEGURIDAD AHORA</button>
 
+            <button style="background-color: #22c55e; margin-bottom: 10px;" onclick="crearBackupGitHubManual()">🐙 CREAR COPIA EN GITHUB AHORA</button>
+
             <label style="font-size: 0.85rem; margin-top: 8px; display: block;"><b>📅 Seleccionar Copia para Restaurar o Borrar:</b></label>
             <select id="backupSelect" style="margin-top: 4px; margin-bottom: 8px;">
                 <option value="">-- Cargando copias disponibles... --</option>
@@ -1292,6 +1294,55 @@
                 alert("❌ No se pudo guardar el backup.");
             });
         });
+    }
+
+    // ============================================================
+    //  BACKUP MANUAL EN GITHUB MEDIANTE CLOUDFLARE WORKER
+    // ============================================================
+    async function crearBackupGitHubManual() {
+        if (!isAdminLoggedIn) {
+            alert("❌ No tienes permisos de administrador.");
+            return;
+        }
+
+        if (!confirm("¿Crear una copia de seguridad de los datos actuales en GitHub?")) {
+            return;
+        }
+
+        try {
+            const resultados = await Promise.all([
+                db.ref('historial_ganadores').once('value'),
+                db.ref('sorteo_actual').once('value'),
+                db.ref('mes_sorteo').once('value')
+            ]);
+
+            const backupData = {
+                historial_ganadores: resultados[0].val() || null,
+                sorteo_actual: resultados[1].val() || null,
+                mes_sorteo: resultados[2].val() || null,
+                tipoBackup: "Backup manual desde la web"
+            };
+
+            const response = await fetch(`${MI_CLOUDFLARE_WORKER}/backup`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(backupData)
+            });
+
+            const resultado = await response.json();
+
+            if (!response.ok || !resultado.ok) {
+                throw new Error(resultado.error || `Cloudflare respondió ${response.status}`);
+            }
+
+            alert("✅ Copia guardada correctamente en GitHub.\n\nArchivo: " + resultado.archivo);
+
+        } catch (error) {
+            console.error("Error creando backup manual en GitHub:", error);
+            alert("❌ No se pudo crear la copia en GitHub.\n\n" + error.message);
+        }
     }
 
     function cargarListaBackups() {
