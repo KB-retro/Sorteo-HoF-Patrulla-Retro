@@ -9,7 +9,7 @@
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="Patrulla Retro">
     <meta property="og:title" content="🏆 Sorteo HoF Patrulla Retro">
-    <meta property="og:description" content="Fecha del sorteo: 20/08/2026 17:55. Entra para ver la cuenta atrás en directo y el resultado del sorteo de la Patrulla Retro.">
+    <meta property="og:description" content="Entra para ver la cuenta atrás en directo y el resultado del sorteo de la Patrulla Retro.">
     <meta property="og:url" content="https://kb-retro.github.io/Sorteo-HoF-Patrulla-Retro/">
     <meta property="og:image" content="https://kb-retro.github.io/Sorteo-HoF-Patrulla-Retro/logo.png?v=2">
     <meta property="og:image:secure_url" content="https://kb-retro.github.io/Sorteo-HoF-Patrulla-Retro/logo.png?v=2">
@@ -20,7 +20,7 @@
     <!-- Twitter Cards -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="🏆 Sorteo HoF Patrulla Retro">
-    <meta name="twitter:description" content="Fecha del sorteo: 20/08/2026 17:55. Entra para ver la cuenta atrás en directo y el resultado del sorteo de la Patrulla Retro.">
+    <meta name="twitter:description" content="Entra para ver la cuenta atrás en directo y el resultado del sorteo de la Patrulla Retro.">
     <meta name="twitter:image" content="https://kb-retro.github.io/Sorteo-HoF-Patrulla-Retro/logo.png?v=2">
 
     <!-- Favicon -->
@@ -2027,53 +2027,7 @@
             targetTime: targetDate.getTime(),
             rawLines: rawLines,
             rawBlacklist: rawBlacklist
-        }).then(async () => {
-            // Firebase ya tiene el sorteo programado. Ahora actualizamos
-            // las etiquetas Open Graph del index mediante el Worker para
-            // que Telegram muestre la fecha y hora del sorteo en la vista previa.
-            try {
-                const response = await fetch(`${MI_CLOUDFLARE_WORKER}/actualizar-preview`, {
-                    method: 'POST',
-                    cache: 'no-store',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        targetTime: targetDate.getTime()
-                    })
-                });
-
-                let resultado = null;
-                try {
-                    resultado = await response.json();
-                } catch (_) {
-                    resultado = null;
-                }
-
-                if (!response.ok || !resultado || !resultado.ok) {
-                    throw new Error(
-                        (resultado && resultado.error) ||
-                        `Error del Worker: ${response.status}`
-                    );
-                }
-
-                alert(`¡Sorteo programado con éxito!\n\nLa vista previa de Telegram se ha actualizado para el ${resultado.fechaHora}.`);
-
-            } catch (error) {
-                console.error('Error actualizando la vista previa de Telegram:', error);
-
-                // El sorteo YA está guardado en Firebase, así que no lo anulamos
-                // si únicamente falla la actualización de la vista previa.
-                alert(
-                    '¡Sorteo programado con éxito!\n\n' +
-                    '⚠️ No se pudo actualizar la vista previa de Telegram.\n' +
-                    'El sorteo sigue correctamente programado en Firebase.'
-                );
-            }
-        }).catch(error => {
-            console.error('Error guardando el sorteo:', error);
-            alert('❌ No se pudo programar el sorteo.');
-        });
+        }).then(() => alert("¡Sorteo programado con éxito!"));
     }
 
     // ============================================================
