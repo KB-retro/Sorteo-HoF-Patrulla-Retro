@@ -423,23 +423,6 @@
         .result-found { background: rgba(239, 68, 68, 0.2); border: 1px solid var(--danger); color: #fca5a5; }
         .result-not-found { background: rgba(34, 197, 94, 0.2); border: 1px solid var(--success); color: #86efac; }
 
-        .log-box {
-            background: #090d16;
-            border: 1px solid #334155;
-            border-radius: 6px;
-            padding: 10px;
-            max-height: 120px;
-            overflow-y: auto;
-            font-family: monospace;
-            font-size: 0.8rem;
-            color: var(--muted);
-            margin-top: 12px;
-            text-align: left;
-            word-break: break-all;
-            scrollbar-width: none;
-        }
-        .log-box::-webkit-scrollbar { width: 0px; background: transparent; }
-
         .custom-list { list-style: none; padding: 0; margin: 0; }
 
         .custom-item {
@@ -711,8 +694,6 @@
             <div class="arcade-title">🕹️ Eligen el Arcade del Mes (5 Usuarios):</div>
             <ul id="arcadeList" class="custom-list"></ul>
         </div>
-
-        <div class="log-box" id="publicLog"></div>
     </div>
 
     <!-- MENSAJE ESPERA -->
@@ -1808,8 +1789,7 @@
             }
             document.getElementById('winnerTicket').innerText = numeroBoleto;
             verificarRepetidoVisual();
-            const logBox = document.getElementById('publicLog');
-            logBox.innerHTML = "<b>Historial de tiradas:</b><br>" + data.log.join('<br>');
+            
             const arcadeList = document.getElementById('arcadeList');
             arcadeList.innerHTML = '';
             if (data.arcadeGroup && data.arcadeGroup.length > 0) {
