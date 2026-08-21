@@ -1284,6 +1284,15 @@
     //  FUNCIONES DE BACKUP
     // ============================================================
     function crearBackupManual() {
+        if (!isAdminLoggedIn) {
+            alert("❌ No tienes permisos de administrador.");
+            return;
+        }
+
+        if (!confirm("¿Crear una copia de seguridad estándar de los datos actuales en Firebase?")) {
+            return;
+        }
+
         const ahora = new Date();
         const horaTag = `${String(ahora.getHours()).padStart(2,'0')}${String(ahora.getMinutes()).padStart(2,'0')}`;
         const clave = `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, '0')}-${String(ahora.getDate()).padStart(2, '0')}_${horaTag}`;
