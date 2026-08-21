@@ -597,7 +597,7 @@
             .slot-reel { height: 68px; font-size: 2rem; }
         }
 
-        /* ===== SELECTOR DE HORA RETRO ===== */
+        /* ===== SELECTOR DE HORA Y MES RETRO ===== */
         .retro-time-picker { position:relative; width:100%; }
         .retro-time-display {
             width:100%; min-height:44px; padding:10px 14px;
@@ -848,7 +848,32 @@
             <textarea id="manualUserAdmin" placeholder="@usuario1&#10;@usuario2, @usuario3" style="height: 60px;"></textarea>
             
             <label style="margin-top: 8px; display: block; font-size: 0.85rem;"><b>📅 Mes y Año del Premio (opcional):</b></label>
-            <input type="month" id="manualWinnerMonth" style="margin-top: 4px; margin-bottom: 8px;">
+            
+            <!-- NUEVO SELECTOR RETRO DE MES Y AÑO -->
+            <input type="hidden" id="manualWinnerMonth" value="">
+            <div class="retro-time-picker" id="retroMonthPicker" style="margin-top: 4px; margin-bottom: 8px;">
+                <button type="button" class="retro-time-display" id="retroMonthDisplay" aria-haspopup="dialog" aria-expanded="false">
+                    <span id="retroMonthDisplayValue">-- / ----</span>
+                    <span class="retro-time-chevron">▾</span>
+                </button>
+                <div class="retro-time-panel hidden" id="retroMonthPanel">
+                    <div class="retro-time-title">SELECCIONA MES Y AÑO</div>
+                    <div class="retro-time-wheels">
+                        <div class="retro-time-wheel-wrap">
+                            <div class="retro-time-wheel-label">MES</div>
+                            <div class="retro-time-wheel" id="retroMonthWheel" tabindex="0" aria-label="Mes"></div>
+                        </div>
+                        <div class="retro-time-colon">-</div>
+                        <div class="retro-time-wheel-wrap">
+                            <div class="retro-time-wheel-label">AÑO</div>
+                            <div class="retro-time-wheel" id="retroYearWheel" tabindex="0" aria-label="Año"></div>
+                        </div>
+                    </div>
+                    <div class="retro-time-help">Rueda del ratón o ▲ ▼</div>
+                    <button type="button" class="retro-time-confirm" id="retroMonthConfirm">CONFIRMAR FECHA</button>
+                    <button type="button" class="retro-time-cancel" id="retroMonthCancel">CANCELAR</button>
+                </div>
+            </div>
 
             <button style="background-color: #0284c7;" onclick="agregarGanadorManual()">➕ AÑADIR AL HISTORIAL</button>
         </div>
@@ -1033,8 +1058,10 @@
     });
 
     window.addEventListener('DOMContentLoaded', function() {
+        importarDesdeTelegram(false);
         initRetroDatePicker();
         initRetroTimePicker();
+        initRetroMonthPicker(); // Inicializar el nuevo selector de mes retro
     });
 
     // ============================================================
@@ -1565,7 +1592,10 @@
         });
         alert("¡" + añadidos + " usuario(s) añadido(s) al historial!");
         document.getElementById('manualUserAdmin').value = '';
+        
+        // Limpiar el selector retro después de guardar
         document.getElementById('manualWinnerMonth').value = '';
+        document.getElementById('retroMonthDisplayValue').textContent = '-- / ----';
     }
 
     function borrarGanadorEspecifico(key, usuario, fecha) {
@@ -2314,6 +2344,143 @@
         });
 
         displayValue.textContent = "--:--";
+        valueInput.value = "";
+    }
+
+    // ============================================================
+    //  NUEVO SELECTOR RETRO DE MES Y AÑO
+    // ============================================================
+    function initRetroMonthPicker() {
+        const valueInput = document.getElementById("manualWinnerMonth");
+        const display = document.getElementById("retroMonthDisplay");
+        const displayValue = document.getElementById("retroMonthDisplayValue");
+        const panel = document.getElementById("retroMonthPanel");
+        const monthWheel = document.getElementById("retroMonthWheel");
+        const yearWheel = document.getElementById("retroYearWheel");
+        const confirmBtn = document.getElementById("retroMonthConfirm");
+        const cancelBtn = document.getElementById("retroMonthCancel");
+        const picker = document.getElementById("retroMonthPicker");
+        if (!valueInput || !display || !displayValue || !panel || !monthWheel || !yearWheel || !confirmBtn || !picker) return;
+
+        let month = 0, year = 0;
+        let hasSelected = false;
+        const pad = n => String(n).padStart(2, "0");
+
+        const currentYear = new Date().getFullYear();
+        const minYear = 2020;
+        const maxYear = 2040;
+        
+        const mesesAbbr = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
+
+        function renderWheel(element, min, max, selectedVal, onSelect, isMonth = false) {
+            element.innerHTML = "";
+            for (let n = min; n <= max; n++) {
+                const item = document.createElement("div");
+                item.className = "retro-time-option" + (n === selectedVal ? " selected" : "");
+                item.dataset.value = String(n);
+                item.textContent = isMonth ? mesesAbbr[n - 1] : n;
+                item.addEventListener("click", () => {
+                    onSelect(n);
+                    render();
+                });
+                element.appendChild(item);
+            }
+            requestAnimationFrame(() => {
+                const selectedItem = element.querySelector(".selected");
+                if (selectedItem) {
+                    element.scrollTop = selectedItem.offsetTop - (element.clientHeight - selectedItem.offsetHeight) / 2;
+                }
+            });
+        }
+
+        function render() {
+            renderWheel(monthWheel, 1, 12, month, n => month = n, true);
+            renderWheel(yearWheel, minYear, maxYear, year, n => year = n, false);
+            if (hasSelected) {
+                const valueStr = `${year}-${pad(month)}`;
+                displayValue.textContent = `${mesesAbbr[month - 1]} / ${year}`;
+                valueInput.value = valueStr;
+            }
+        }
+
+        function setFromCurrentDate() {
+            const now = new Date();
+            month = now.getMonth() + 1; // 1-12
+            year = now.getFullYear();
+            hasSelected = true;
+        }
+
+        display.addEventListener("click", event => {
+            event.stopPropagation();
+            if (!hasSelected) setFromCurrentDate();
+            else {
+                const match = /^(\d{4})-(\d{2})$/.exec(valueInput.value || "");
+                if (match) {
+                    year = Number(match[1]);
+                    month = Number(match[2]);
+                    hasSelected = true;
+                } else {
+                    setFromCurrentDate();
+                }
+            }
+            render();
+            panel.classList.remove("hidden");
+            display.setAttribute("aria-expanded", "true");
+        });
+
+        confirmBtn.addEventListener("click", () => {
+            if (!hasSelected) setFromCurrentDate();
+            const valueStr = `${year}-${pad(month)}`;
+            displayValue.textContent = `${mesesAbbr[month - 1]} / ${year}`;
+            valueInput.value = valueStr;
+            panel.classList.add("hidden");
+            display.setAttribute("aria-expanded", "false");
+        });
+
+        cancelBtn.addEventListener("click", () => {
+            valueInput.value = "";
+            displayValue.textContent = "-- / ----";
+            hasSelected = false;
+            panel.classList.add("hidden");
+            display.setAttribute("aria-expanded", "false");
+        });
+
+        monthWheel.addEventListener("wheel", e => {
+            e.preventDefault();
+            if (!hasSelected) setFromCurrentDate();
+            month = month + (e.deltaY > 0 ? 1 : -1);
+            if (month > 12) month = 1;
+            if (month < 1) month = 12;
+            render();
+        }, { passive: false });
+
+        yearWheel.addEventListener("wheel", e => {
+            e.preventDefault();
+            if (!hasSelected) setFromCurrentDate();
+            year = year + (e.deltaY > 0 ? 1 : -1);
+            if (year > maxYear) year = minYear;
+            if (year < minYear) year = maxYear;
+            render();
+        }, { passive: false });
+
+        monthWheel.addEventListener("keydown", e => {
+            if (e.key === "ArrowDown") { e.preventDefault(); if (!hasSelected) setFromCurrentDate(); month = month + 1 > 12 ? 1 : month + 1; render(); }
+            if (e.key === "ArrowUp") { e.preventDefault(); if (!hasSelected) setFromCurrentDate(); month = month - 1 < 1 ? 12 : month - 1; render(); }
+        });
+
+        yearWheel.addEventListener("keydown", e => {
+            if (e.key === "ArrowDown") { e.preventDefault(); if (!hasSelected) setFromCurrentDate(); year = year + 1 > maxYear ? minYear : year + 1; render(); }
+            if (e.key === "ArrowUp") { e.preventDefault(); if (!hasSelected) setFromCurrentDate(); year = year - 1 < minYear ? maxYear : year - 1; render(); }
+        });
+
+        document.addEventListener("click", e => {
+            if (!picker.contains(e.target)) {
+                panel.classList.add("hidden");
+                display.setAttribute("aria-expanded", "false");
+            }
+        });
+
+        displayValue.textContent = "-- / ----";
         valueInput.value = "";
     }
 </script>
