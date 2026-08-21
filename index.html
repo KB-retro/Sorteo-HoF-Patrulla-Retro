@@ -343,6 +343,41 @@
 
         .arcade-title { font-size: 0.95rem; font-weight: bold; color: var(--gold); margin-bottom: 8px; text-align: center; }
 
+        /* ===== INSTRUCCIONES RETRO ===== */
+        .retro-info-box {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 12px 14px 12px 20px;
+            margin-bottom: 15px;
+            font-size: 0.85rem;
+            color: var(--muted);
+            line-height: 1.5;
+            position: relative;
+            overflow: hidden;
+            text-align: left;
+        }
+        .retro-info-box::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--gold);
+        }
+        .retro-info-box strong {
+            color: var(--text);
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 6px;
+        }
+        .highlight-green {
+            color: #86efac;
+            font-weight: bold;
+        }
+
         .search-container {
             margin-top: 15px;
             padding: 10px;
@@ -422,6 +457,23 @@
         }
         .result-found { background: rgba(239, 68, 68, 0.2); border: 1px solid var(--danger); color: #fca5a5; }
         .result-not-found { background: rgba(34, 197, 94, 0.2); border: 1px solid var(--success); color: #86efac; }
+
+        .log-box {
+            background: #090d16;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            padding: 10px;
+            max-height: 120px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 0.8rem;
+            color: var(--muted);
+            margin-top: 12px;
+            text-align: left;
+            word-break: break-all;
+            scrollbar-width: none;
+        }
+        .log-box::-webkit-scrollbar { width: 0px; background: transparent; }
 
         .custom-list { list-style: none; padding: 0; margin: 0; }
 
@@ -704,6 +756,13 @@
 
     <!-- BUSCADOR DE JUEGOS SIEMPRE VISIBLE -->
     <div class="card">
+        
+        <!-- INSTRUCCIONES ESTILO RETRO -->
+        <div class="retro-info-box">
+            <strong>👾 Instrucciones para los elegidos:</strong>
+            Si tu nombre ha salido premiado, usa este buscador para verificar que tu propuesta de juego no haya sido elegida en ediciones anteriores. Escribe el título y si el resultado se ilumina en <span class="highlight-green">verde</span>, ¡tienes vía libre para proponerlo!
+        </div>
+
         <div class="search-container" style="margin-top: 0; background: transparent; border: none; padding: 0;">
             <label style="font-size: 0.95rem; color: var(--gold); display: block; margin-bottom: 10px; text-align: center;">
                 🔍 <b>Comprobar si un juego ya ha sido elegido:</b>
