@@ -1716,9 +1716,9 @@
                 slotStatus.innerText = '🎰 PRÓXIMO SORTEO · ' + texto;
             }
         } else {
-            detenerRodillos();
-            slotStatus.innerText = '⚡ ¡SORTEO EN MARCHA!';
-            ejecutarTiradaProgramada();
+            // El navegador NO hace la tirada. Solo espera que el Worker la haga.
+            iniciarRodillos(); // Que sigan girando
+            slotStatus.innerText = '⚡ ¡PROCESANDO SORTEO EN EL SERVIDOR!...';
         }
     }
 
@@ -1866,11 +1866,6 @@
         const winnerCard = document.getElementById('winnerCard');
         winnerCard.style.display = 'block';
         document.getElementById('slotMachineCard').classList.remove('active');
-    }
-
-    function ejecutarTiradaProgramada() {
-        if (!programData || programData.status !== 'programado') return;
-        calcularYEjecutarTirada(programData.rawLines, programData.rawBlacklist, true);
     }
 
     function calcularYEjecutarTirada(rawLinesStr, rawBlacklistStr, animarResultado = true) {
@@ -2117,13 +2112,12 @@
         if (!rawLines) return alert("Pega o importa la lista de participantes.");
 
         // Si NO hay hora seleccionada (cadena vacía o "--:--") → SORTEO INMEDIATO
-        // IMPORTANTE: para inmediato NO se debe animar (animarResultado = false)
         if (!timeVal || timeVal === "--:--" || timeVal.trim() === "") {
             if (confirm("El sorteo se realizará de inmediato. ¿Continuar?")) {
                 detenerTragaperras();
                 mostrarRecreativa(true);
                 document.getElementById('slotStatus').innerText = '🎰 SORTEO INMEDIATO...';
-                calcularYEjecutarTirada(rawLines, rawBlacklist, false); // <-- false = sin espera
+                calcularYEjecutarTirada(rawLines, rawBlacklist, false);
             }
             return;
         }
