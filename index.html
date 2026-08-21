@@ -940,6 +940,7 @@
     let rawHistoryItems = [];
     let rawWinnersCount = [];
     let isAdminLoggedIn = false;
+    let isUserEditingList = false;
     
     let cacheJuegosSheets = null;
     let ultimaCargaSheets = 0;
@@ -1009,6 +1010,7 @@
     //  FUNCIONES DE FIREBASE Y PARTICIPANTES
     // ============================================================
     db.ref('sorteo_participantes_raw').on('value', function(snapshot) {
+        if (isUserEditingList) return;
         const val = snapshot.val();
         const textarea = document.getElementById('listInput');
         if (val !== null && textarea) {
@@ -1022,13 +1024,15 @@
         db.ref('sorteo_participantes_raw').set(val);
     }
 
-    document.getElementById('listInput').addEventListener('input', function() {
+    const listInputEl = document.getElementById('listInput');
+    listInputEl.addEventListener('focus', function() { isUserEditingList = true; });
+    listInputEl.addEventListener('blur', function() { isUserEditingList = false; guardarParticipantesFirebase(); });
+    listInputEl.addEventListener('input', function() {
         calcularYMostrarProbabilidades();
         db.ref('sorteo_participantes_raw').set(this.value);
     });
 
     window.addEventListener('DOMContentLoaded', function() {
-        importarDesdeTelegram(false);
         initRetroDatePicker();
         initRetroTimePicker();
     });
@@ -1453,7 +1457,7 @@
     async function importarDesdeTelegram(esManual = true) {
         const btn = document.querySelector('.telegram-btn');
         let originalText = "";
-        if (esManual) {
+        if (esManual && btn) {
             originalText = btn.innerText;
             btn.innerText = "⏳ Cargando lista en vivo desde Telegram...";
             btn.disabled = true;
@@ -1489,6 +1493,7 @@
             if (ultimaListaEncontrada) {
                 document.getElementById('listInput').value = ultimaListaEncontrada;
                 guardarParticipantesFirebase();
+                calcularYMostrarProbabilidades();
                 const totalCargados = ultimaListaEncontrada.split('\n').filter(l => regexPatronLista.test(l)).length;
                 if (esManual) alert(`¡Éxito! Se ha cargado la última lista con ${totalCargados} participantes.`);
             } else if (esManual) {
@@ -1498,7 +1503,7 @@
             console.error("Error Telegram:", error);
             if (esManual) alert("⚠️ No se pudo cargar la lista desde Telegram.");
         } finally {
-            if (esManual) {
+            if (esManual && btn) {
                 btn.innerText = originalText;
                 btn.disabled = false;
             }
@@ -2078,7 +2083,12 @@
             targetTime: targetDate.getTime(),
             rawLines: rawLines,
             rawBlacklist: rawBlacklist
-        }).then(() => alert("¡Sorteo programado con éxito!"));
+        }).then(() => {
+            alert("¡Sorteo programado con éxito!");
+        }).catch(error => {
+            console.error('Error guardando el sorteo:', error);
+            alert('❌ No se pudo programar el sorteo.');
+        });
     }
 
     // ============================================================
