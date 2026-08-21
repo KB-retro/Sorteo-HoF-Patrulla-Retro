@@ -2163,7 +2163,8 @@
                 if (iso(d) === iso(now)) b.classList.add("today");
                 if (selected && iso(d) === iso(selected)) b.classList.add("selected");
                 b.textContent = d.getDate();
-                b.onclick = () => {
+                b.onclick = (e) => {
+                    e.stopPropagation(); // Evita que se cierre al hacer click
                     selected = new Date(d.getFullYear(), d.getMonth(), d.getDate());
                     render();
                 };
@@ -2183,10 +2184,11 @@
             panel.classList.remove("hidden");
         };
 
-        prev.onclick = () => { view.setMonth(view.getMonth() - 1); render(); };
-        next.onclick = () => { view.setMonth(view.getMonth() + 1); render(); };
+        prev.onclick = (e) => { e.stopPropagation(); view.setMonth(view.getMonth() - 1); render(); };
+        next.onclick = (e) => { e.stopPropagation(); view.setMonth(view.getMonth() + 1); render(); };
 
-        confirmBtn.onclick = () => {
+        confirmBtn.onclick = (e) => {
+            e.stopPropagation();
             if (selected) {
                 const val = iso(selected);
                 input.value = val;
@@ -2195,7 +2197,8 @@
             }
         };
 
-        cancelBtn.onclick = () => {
+        cancelBtn.onclick = (e) => {
+            e.stopPropagation();
             input.value = "";
             text.textContent = "--/--/----";
             selected = null;
@@ -2238,7 +2241,8 @@
                 item.className = "retro-time-option" + (n === selectedVal ? " selected" : "");
                 item.dataset.value = String(n);
                 item.textContent = pad(n);
-                item.addEventListener("click", () => {
+                item.addEventListener("click", (e) => {
+                    e.stopPropagation(); // Evita que se cierre al hacer click
                     onSelect(n);
                     render();
                 });
@@ -2255,7 +2259,6 @@
         function render() {
             renderWheel(hourWheel, 23, hour, n => hour = n);
             renderWheel(minuteWheel, 59, minute, n => minute = n);
-            // No guardamos el valor aquí visualmente hasta que se confirme
         }
 
         function setFromCurrentTime() {
@@ -2283,7 +2286,8 @@
             display.setAttribute("aria-expanded", "true");
         });
 
-        confirmBtn.addEventListener("click", () => {
+        confirmBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
             if (!hasSelected) setFromCurrentTime();
             const value = pad(hour) + ":" + pad(minute);
             displayValue.textContent = value;
@@ -2294,7 +2298,8 @@
             display.setAttribute("aria-expanded", "false");
         });
 
-        cancelBtn.addEventListener("click", () => {
+        cancelBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
             valueInput.value = "";
             displayValue.textContent = "--:--";
             hasSelected = false;
@@ -2328,7 +2333,7 @@
 
         document.addEventListener("click", e => {
             if (!picker.contains(e.target) && !panel.classList.contains("hidden")) {
-                // Al hacer click fuera: revertimos variables usando el último valor guardado (o false)
+                // Al hacer click fuera: revertimos variables usando el último valor guardado
                 const match = /^(\d{2}):(\d{2})$/.exec(valueInput.value || "");
                 if (match) {
                     hour = Number(match[1]);
@@ -2378,7 +2383,8 @@
                 item.className = "retro-time-option" + (n === selectedVal ? " selected" : "");
                 item.dataset.value = String(n);
                 item.textContent = isMonth ? mesesAbbr[n - 1] : n;
-                item.addEventListener("click", () => {
+                item.addEventListener("click", (e) => {
+                    e.stopPropagation(); // Evita que se cierre al hacer click
                     onSelect(n);
                     render();
                 });
@@ -2395,7 +2401,6 @@
         function render() {
             renderWheel(monthWheel, 1, 12, month, n => month = n, true);
             renderWheel(yearWheel, minYear, maxYear, year, n => year = n, false);
-            // No guardamos el valor aquí visualmente hasta que se confirme
         }
 
         function setFromCurrentDate() {
@@ -2423,7 +2428,8 @@
             display.setAttribute("aria-expanded", "true");
         });
 
-        confirmBtn.addEventListener("click", () => {
+        confirmBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
             if (!hasSelected) setFromCurrentDate();
             const valueStr = `${year}-${pad(month)}`;
             displayValue.textContent = `${mesesAbbr[month - 1]} / ${year}`;
@@ -2433,7 +2439,8 @@
             display.setAttribute("aria-expanded", "false");
         });
 
-        cancelBtn.addEventListener("click", () => {
+        cancelBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
             valueInput.value = "";
             displayValue.textContent = "-- / ----";
             hasSelected = false;
