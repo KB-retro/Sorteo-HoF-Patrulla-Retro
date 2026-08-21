@@ -710,23 +710,6 @@
         <div class="arcade-box">
             <div class="arcade-title">🕹️ Eligen el Arcade del Mes (5 Usuarios):</div>
             <ul id="arcadeList" class="custom-list"></ul>
-
-            <div class="search-container">
-                <label style="font-size: 0.8rem; color: var(--gold); display: block; margin-bottom: 4px; text-align: center;">
-                    🔍 <b>Comprobar si un juego ya ha sido elegido:</b>
-                </label>
-                <div class="search-input-wrapper">
-                    <input type="text" id="gameSearchInput" placeholder="Escribe al menos 4 caracteres o usa el micro..." oninput="comprobarJuegoEnSheets()" autocomplete="off">
-                    <button type="button" id="micBtn" class="mic-btn" onclick="activarBusquedaVoz()" title="Búsqueda por voz">🎤</button>
-                    <div id="customSuggestions" class="custom-suggestions-dropdown"></div>
-                </div>
-                <div id="searchResult" class="search-result-box"></div>
-                <div style="text-align: center; margin-top: 8px;">
-                    <a href="https://docs.google.com/spreadsheets/d/1JApebwPe9J_fbS_hnQBHHElSlELlWiAjxdvDJQ8yw2E/edit?gid=0#gid=0" target="_blank" rel="noopener noreferrer" style="color: var(--muted); text-decoration: underline; font-size: 0.75rem;">
-                        📄 Abrir hoja de cálculo completa ↗️
-                    </a>
-                </div>
-            </div>
         </div>
 
         <div class="log-box" id="publicLog"></div>
@@ -736,6 +719,26 @@
     <div id="waitingCard" class="card hidden" style="text-align: center;">
         <h2>⏳ El sorteo aún no se ha realizado</h2>
         <p style="color: var(--muted); font-size: 0.85rem;">El administrador realizará o programará la tirada en breve. Esta página se actualizará automáticamente.</p>
+    </div>
+
+    <!-- BUSCADOR DE JUEGOS SIEMPRE VISIBLE -->
+    <div class="card">
+        <div class="search-container" style="margin-top: 0; background: transparent; border: none; padding: 0;">
+            <label style="font-size: 0.95rem; color: var(--gold); display: block; margin-bottom: 10px; text-align: center;">
+                🔍 <b>Comprobar si un juego ya ha sido elegido:</b>
+            </label>
+            <div class="search-input-wrapper">
+                <input type="text" id="gameSearchInput" placeholder="Escribe al menos 4 caracteres o usa el micro..." oninput="comprobarJuegoEnSheets()" autocomplete="off">
+                <button type="button" id="micBtn" class="mic-btn" onclick="activarBusquedaVoz()" title="Búsqueda por voz">🎤</button>
+                <div id="customSuggestions" class="custom-suggestions-dropdown"></div>
+            </div>
+            <div id="searchResult" class="search-result-box"></div>
+            <div style="text-align: center; margin-top: 10px;">
+                <a href="https://docs.google.com/spreadsheets/d/1JApebwPe9J_fbS_hnQBHHElSlELlWiAjxdvDJQ8yw2E/edit?gid=0#gid=0" target="_blank" rel="noopener noreferrer" style="color: var(--muted); text-decoration: underline; font-size: 0.8rem;">
+                    📄 Abrir hoja de cálculo completa ↗️
+                </a>
+            </div>
+        </div>
     </div>
 
     <!-- LISTA DE PREMIADOS -->
