@@ -1317,23 +1317,11 @@
             let boletosPorUsuario = {};
             let totalBoletosValidos = 0;
             
-            let sumandoParaHoF = true; 
-            
             rawLines.forEach(function(line) {
                 let lineaLimpia = line.trim();
                 if (!lineaLimpia) return;
                 
-                // EXPRESIÓN REGULAR CORREGIDA: [\w_.-]
                 const matchUser = lineaLimpia.match(/@[\w_.-]+/i);
-                
-                let textoSinUsuario = lineaLimpia.toUpperCase();
-                if (matchUser) {
-                    textoSinUsuario = textoSinUsuario.replace(matchUser[0].toUpperCase(), '');
-                }
-                
-                if (textoSinUsuario.includes('EXTRA')) {
-                    sumandoParaHoF = false; 
-                }
                 
                 if (matchUser) {
                     let user = matchUser[0];
@@ -1746,7 +1734,7 @@
     }
 
     // ============================================================
-    //  IMPORTAR DESDE TELEGRAM (SOLUCIÓN DEFINITIVA CACHÉ Y CORS)
+    //  IMPORTAR DESDE TELEGRAM (CON PARÁMETROS ANTI-CACHÉ)
     // ============================================================
     async function importarDesdeTelegram(esManual = true) {
         const btn = document.querySelector('.telegram-btn');
@@ -1757,14 +1745,11 @@
             btn.disabled = true;
         }
         
-        // CÓDIGO CORREGIDO: Usamos el parámetro "?v=" para evadir caché
-        // y HEMOS ELIMINADO LAS CABECERAS PERSONALIZADAS que causaban el error de CORS.
         const timestamp = Date.now();
         const targetUrl = `https://t.me/s/retrojuegodelmes?v=${timestamp}`;
         const workerUrl = `${MI_CLOUDFLARE_WORKER}?url=${encodeURIComponent(targetUrl)}&nocache=${timestamp}`;
         
         try {
-            // Petición de fetch simple para no provocar bloqueos de seguridad del navegador
             const response = await fetch(workerUrl, { cache: "no-store" });
             
             if (!response.ok) throw new Error(`Error Cloudflare: ${response.status}`);
@@ -1842,12 +1827,7 @@
     // ============================================================
     function sumarJuegosAlHoF(isAuto = false) {
         const rawLinesStr = document.getElementById('listInput').value.trim();
-        if (!rawLinesStr) {
-            if (!isAuto) alert("La lista de participantes está vacía.");
-            return;
-        }
-        
-        if (!isAuto && !confirm("⚠️ ¿Seguro que quieres SUMAR los juegos de la lista actual al histórico general?\n\nATENCIÓN: Solo debes hacer esto 1 vez al final de cada mes. Los 'Puntos Extra' serán ignorados automáticamente.")) return;
+        if (!rawLinesStr) return;
 
         const rawLines = rawLinesStr.split('\n');
         let juegosASumar = {};
@@ -1892,11 +1872,7 @@
             });
 
             db.ref('hall_of_fame_juegos').set(currentHoF).then(() => {
-                if (!isAuto) {
-                    alert("¡" + Object.keys(juegosASumar).length + " usuarios actualizados correctamente en el Hall of Fame histórico!");
-                } else {
-                    console.log("HoF Histórico actualizado automáticamente.");
-                }
+                console.log("HoF Histórico actualizado automáticamente.");
             });
         });
     }
@@ -2496,7 +2472,7 @@
     function toggleHoFView() { isHoFExpanded = !isHoFExpanded; refrescarHistorialAntiSpoiler(); }
 
     // ============================================================
-    //  ADMIN
+    //  ADMIN - BORRADOS BLINDADOS
     // ============================================================
     function toggleAdminPanel() {
         const pass = prompt("Introduce la clave de administrador:");
@@ -2512,36 +2488,95 @@
         }
     }
 
+    // BOTÓN 1: Borrar último sorteo (Y deshacer los puntos del Hall of Fame de esa lista)
     function borrarUltimoSorteo() {
-        if (confirm("⚠️ ¿Deseas borrar la tirada actual o la programación activa?")) {
-            db.ref('sorteo_actual').remove();
-            db.ref('historial_ganadores').limitToLast(1).once('value', function(snapshot) {
+        if (confirm("⚠️ ¿Deseas BORRAR el último sorteo (o la programación actual)?\n\nEsto también RESTARÁ los juegos sumados al Hall of Fame en esa tirada.")) {
+            db.ref('sorteo_actual').once('value', function(snapshot) {
                 const data = snapshot.val();
-                if (data) {
-                    const keyBorrar = Object.keys(data)[0];
-                    db.ref('historial_ganadores/' + keyBorrar).remove();
-                    alert("Último sorteo borrado.");
-                } else {
-                    alert("Estado actual borrado.");
+                
+                // 1. Restar los puntos del Hall of Fame
+                if (data && data.rawLines) {
+                    const rawLines = data.rawLines.split('\n');
+                    let juegosARestar = {};
+                    let sumandoParaHoF = true;
+
+                    rawLines.forEach(line => {
+                        let lineaLimpia = line.trim();
+                        if (!lineaLimpia) return;
+                        
+                        const matchUser = lineaLimpia.match(/@[\w_.-]+/i);
+                        let textoSinUsuario = lineaLimpia.toUpperCase();
+                        if (matchUser) {
+                            textoSinUsuario = textoSinUsuario.replace(matchUser[0].toUpperCase(), '');
+                        }
+                        
+                        if (textoSinUsuario.includes('EXTRA')) {
+                            sumandoParaHoF = false; 
+                        }
+
+                        if (matchUser && sumandoParaHoF) {
+                            let userKey = matchUser[0].toLowerCase();
+                            if (!juegosARestar[userKey]) juegosARestar[userKey] = 0;
+                            juegosARestar[userKey]++;
+                        }
+                    });
+
+                    db.ref('hall_of_fame_juegos').once('value', function(hofSnap) {
+                        let currentHoF = hofSnap.val() || {};
+                        let modificado = false;
+
+                        Object.keys(juegosARestar).forEach(userKey => {
+                            if (currentHoF[userKey]) {
+                                currentHoF[userKey].total -= juegosARestar[userKey];
+                                modificado = true;
+                                if (currentHoF[userKey].total <= 0) {
+                                    delete currentHoF[userKey];
+                                }
+                            }
+                        });
+
+                        if (modificado) {
+                            db.ref('hall_of_fame_juegos').set(currentHoF);
+                        }
+                    });
                 }
+
+                // 2. Borrar Sorteo Actual
+                db.ref('sorteo_actual').remove();
+
+                // 3. Borrar del historial
+                db.ref('historial_ganadores').limitToLast(1).once('value', function(snapGan) {
+                    const dataGanador = snapGan.val();
+                    if (dataGanador) {
+                        const keyBorrar = Object.keys(dataGanador)[0];
+                        db.ref('historial_ganadores/' + keyBorrar).remove();
+                        alert("Último sorteo borrado y Hall of Fame revertido con éxito.");
+                    } else {
+                        alert("Programación borrada y Hall of Fame revertido con éxito.");
+                    }
+                });
             });
         }
     }
 
+    // BOTÓN 2: Borrar TODO al estilo "Nuclear"
     function borrarTodo() {
-        if (confirm("⚠️ ¿Deseas BORRAR TODO el historial de ganadores y el sorteo actual?\n\n(No te preocupes, la lista de participantes se recargará automáticamente para no romper el Hall of Fame).")) {
+        if (confirm("⚠️ ¿Deseas BORRAR TODO? Esto eliminará:\n- El sorteo actual\n- El historial de ganadores\n- El Hall of Fame al completo\n- La lista de participantes\n\nEsta acción es irreversible.")) {
+            const el1 = document.getElementById('listInput');
             const el2 = document.getElementById('blacklistInput');
             const el3 = document.getElementById('drawDateInput');
             const el4 = document.getElementById('drawTimeInput');
+            if(el1) el1.value = '';
             if(el2) el2.value = '';
             if(el3) el3.value = '';
             if(el4) el4.value = '';
             
             db.ref('sorteo_actual').remove();
             db.ref('historial_ganadores').remove();
+            db.ref('hall_of_fame_juegos').remove(); 
+            db.ref('sorteo_participantes_raw').remove();
             
-            alert("Historial limpiado. Refrescando la lista de participantes...");
-            importarDesdeTelegram(false);
+            alert("🧹 Todo ha sido borrado y reiniciado de fábrica.");
         }
     }
 
@@ -2693,7 +2728,6 @@
 
         document.addEventListener("click", e => {
             if (!picker.contains(e.target) && !panel.classList.contains("hidden")) {
-                // Al hacer click fuera: revertimos el estado al último valor guardado (o nulo)
                 selected = parse(input.value); 
                 panel.classList.add("hidden");
             }
