@@ -788,7 +788,7 @@
         <button id="btnToggleWinners" class="btn-toggle-view hidden" onclick="toggleWinnersView()">⬇️ Ver todos los usuarios premiados</button>
     </div>
 
-    <!-- HALL OF FAME: JUEGOS COMPLETADOS -->
+    <!-- HALL OF FAME: JUEGOS COMPLETADOS HISTÓRICO -->
     <div id="hallOfFameCard" class="card hidden">
         <h3>👾 Hall of Fame 👾</h3>
         
@@ -932,6 +932,19 @@
             <button style="background-color: #0284c7;" onclick="agregarGanadorManual()">➕ AÑADIR AL HISTORIAL</button>
         </div>
 
+        <!-- SECCIÓN DE GESTIÓN DEL HALL OF FAME (HISTÓRICO) -->
+        <div class="admin-section" style="border: 1px solid var(--gold); background: rgba(245, 158, 11, 0.05);">
+            <label style="color: var(--gold);"><b>👾 Gestión del Hall of Fame (Histórico):</b></label>
+            <p style="font-size: 0.8rem; color: var(--muted); margin: 4px 0 8px 0;">
+                Los juegos de la lista se sumarán automáticamente al ranking histórico al momento de programar o ejecutar el sorteo.
+            </p>
+            
+            <label style="margin-top: 15px; display: block; font-size: 0.85rem;"><b>✏️ Edición manual del Hall of Fame:</b></label>
+            <p style="font-size: 0.75rem; color: var(--danger); margin: 2px 0 6px 0;">Formato obligatorio: @usuario = cantidad</p>
+            <textarea id="hofManualInput" placeholder="@M_1_c_h_3_l = 15&#10;@cerebrosolido = 8" style="height: 80px;" onfocus="isHoFEditing = true;" onblur="isHoFEditing = false;"></textarea>
+            <button style="background-color: var(--accent); margin-top: 5px;" onclick="guardarHoFManual()">💾 SOBRESCRIBIR HALL OF FAME</button>
+        </div>
+
         <div class="admin-section" style="border: 1px solid var(--accent); background: rgba(99, 102, 241, 0.08);">
             <label><b>💾 Copias de Seguridad y Restauración:</b></label>
             <p style="font-size: 0.8rem; color: var(--muted); margin: 4px 0 10px 0;">
@@ -1023,10 +1036,11 @@
     let winnersSearchQuery = ""; // Término de búsqueda en Ganadores
     
     let rawHistoryItems = [];
-    let liveHoFItems = []; 
+    let rawHoFItems = []; // Array que viene de Firebase
     
     let isAdminLoggedIn = false;
     let isUserEditingList = false;
+    let isHoFEditing = false;
     
     let lastRenderedWinnersState = "";
     let lastRenderedHistoryState = "";
@@ -1102,7 +1116,7 @@
     function refrescarHistorialAntiSpoiler() {
         try {
             let historyToRender = rawHistoryItems || [];
-            let hofToRender = liveHoFItems || [];
+            let hofToRender = rawHoFItems || [];
 
             const ahora = Date.now();
             let enCongelacion = false;
@@ -1197,7 +1211,7 @@
     }
 
     // ============================================================
-    //  FUNCIONES DE FIREBASE Y PARTICIPANTES
+    //  FUNCIONES DE FIREBASE (Participantes y HoF)
     // ============================================================
     db.ref('sorteo_participantes_raw').on('value', function(snapshot) {
         if (isUserEditingList) return;
@@ -1207,6 +1221,32 @@
             textarea.value = val;
             calcularYMostrarProbabilidades();
         }
+    });
+
+    db.ref('hall_of_fame_juegos').on('value', function(snapshot) {
+        const data = snapshot.val();
+        rawHoFItems = [];
+        let manualText = "";
+        
+        if (data) {
+            Object.keys(data).forEach(function(key) {
+                rawHoFItems.push(data[key]);
+            });
+            // Ordenar por total de juegos mayor a menor
+            rawHoFItems.sort((a, b) => b.total - a.total);
+            
+            rawHoFItems.forEach(item => {
+                manualText += `${item.user} = ${item.total}\n`;
+            });
+        }
+        
+        // Rellenar la caja del admin solo si no está escribiendo en ella
+        if (!isHoFEditing) {
+            const manualInput = document.getElementById('hofManualInput');
+            if (manualInput) manualInput.value = manualText.trim();
+        }
+        
+        refrescarHistorialAntiSpoiler();
     });
 
     function guardarParticipantesFirebase() {
@@ -1270,33 +1310,18 @@
             if (!rawLinesStr) {
                 modalListEl.innerHTML = '<li class="custom-item" style="justify-content: center; color: var(--muted);">No hay participantes cargados actualmente.</li>';
                 if(uniqueCountEl) uniqueCountEl.innerText = "Total usuarios únicos: 0";
-                liveHoFItems = []; 
-                refrescarHistorialAntiSpoiler();
                 return;
             }
             
             const rawLines = rawLinesStr.split('\n');
             let boletosPorUsuario = {};
-            let hofCounts = {}; 
             let totalBoletosValidos = 0;
-            
-            let sumandoParaHoF = true; 
             
             rawLines.forEach(function(line) {
                 let lineaLimpia = line.trim();
                 if (!lineaLimpia) return;
                 
-                // EXPRESIÓN REGULAR CORREGIDA: [\w_.-]
                 const matchUser = lineaLimpia.match(/@[\w_.-]+/i);
-                
-                let textoSinUsuario = lineaLimpia.toUpperCase();
-                if (matchUser) {
-                    textoSinUsuario = textoSinUsuario.replace(matchUser[0].toUpperCase(), '');
-                }
-                
-                if (textoSinUsuario.includes('EXTRA')) {
-                    sumandoParaHoF = false; 
-                }
                 
                 if (matchUser) {
                     let user = matchUser[0];
@@ -1306,15 +1331,8 @@
                     if (!boletosPorUsuario[user]) boletosPorUsuario[user] = [];
                     boletosPorUsuario[user].push(numeroBoleto);
                     totalBoletosValidos++;
-                    
-                    if (sumandoParaHoF) {
-                        if (!hofCounts[user]) hofCounts[user] = 0;
-                        hofCounts[user]++;
-                    }
                 }
             });
-            
-            liveHoFItems = Object.keys(hofCounts).map(usr => ({ user: usr, total: hofCounts[usr] })).sort((a, b) => b.total - a.total);
             
             const numUsuariosUnicos = Object.keys(boletosPorUsuario).length;
             
@@ -1345,7 +1363,6 @@
                 modalListEl.appendChild(li);
             });
 
-            refrescarHistorialAntiSpoiler();
         } catch(e) {
             console.error("Error renderizando lista participantes:", e);
         }
@@ -1539,14 +1556,16 @@
         Promise.all([
             db.ref('historial_ganadores').once('value'),
             db.ref('sorteo_actual').once('value'),
-            db.ref('mes_sorteo').once('value')
+            db.ref('mes_sorteo').once('value'),
+            db.ref('hall_of_fame_juegos').once('value')
         ]).then(function(results) {
             const backupPayload = {
                 fechaCopia: new Date().toLocaleString('es-ES'),
                 etiqueta: etiqueta,
                 historial_ganadores: results[0].val() || null,
                 sorteo_actual: results[1].val() || null,
-                mes_sorteo: results[2].val() || null
+                mes_sorteo: results[2].val() || null,
+                hall_of_fame_juegos: results[3].val() || null
             };
             db.ref('backups/' + clave).set(backupPayload).then(function() {
                 if (notificar) alert("✅ Copia de seguridad guardada con éxito bajo la clave: " + clave);
@@ -1573,13 +1592,15 @@
             const resultados = await Promise.all([
                 db.ref('historial_ganadores').once('value'),
                 db.ref('sorteo_actual').once('value'),
-                db.ref('mes_sorteo').once('value')
+                db.ref('mes_sorteo').once('value'),
+                db.ref('hall_of_fame_juegos').once('value')
             ]);
 
             const backupData = {
                 historial_ganadores: resultados[0].val() || null,
                 sorteo_actual: resultados[1].val() || null,
                 mes_sorteo: resultados[2].val() || null,
+                hall_of_fame_juegos: resultados[3].val() || null,
                 tipoBackup: "Backup manual desde la web"
             };
 
@@ -1637,7 +1658,8 @@
                 }
                 db.ref('historial_ganadores').set(data.historial_ganadores || null);
                 db.ref('sorteo_actual').set(data.sorteo_actual || null);
-                db.ref('mes_sorteo').set(data.mes_sorteo || null).then(function() {
+                db.ref('mes_sorteo').set(data.mes_sorteo || null);
+                db.ref('hall_of_fame_juegos').set(data.hall_of_fame_juegos || null).then(function() {
                     alert("🎉 ¡Datos restaurados correctamente desde la copia " + clave + "!");
                 });
             });
@@ -1663,12 +1685,14 @@
         Promise.all([
             db.ref('historial_ganadores').once('value'),
             db.ref('sorteo_actual').once('value'),
-            db.ref('mes_sorteo').once('value')
+            db.ref('mes_sorteo').once('value'),
+            db.ref('hall_of_fame_juegos').once('value')
         ]).then(function(results) {
             const backupData = {
                 historial_ganadores: results[0].val() || null,
                 sorteo_actual: results[1].val() || null,
                 mes_sorteo: results[2].val() || null,
+                hall_of_fame_juegos: results[3].val() || null,
                 exportadoEl: new Date().toLocaleString('es-ES')
             };
             const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
@@ -1692,6 +1716,7 @@
                     if ('historial_ganadores' in data) db.ref('historial_ganadores').set(data.historial_ganadores);
                     if ('sorteo_actual' in data) db.ref('sorteo_actual').set(data.sorteo_actual);
                     if ('mes_sorteo' in data) db.ref('mes_sorteo').set(data.mes_sorteo);
+                    if ('hall_of_fame_juegos' in data) db.ref('hall_of_fame_juegos').set(data.hall_of_fame_juegos);
                     alert("✅ ¡Copia de seguridad local restaurada con éxito!");
                 }
             } catch (err) {
@@ -1802,6 +1827,96 @@
         if (confirm("¿Confirmas que deseas cambiar el título del sorteo al mes de " + mes + "?")) {
             db.ref('mes_sorteo').set(mes).then(() => alert("¡Mes actualizado con éxito!"));
         }
+    }
+
+    // ============================================================
+    //  NUEVO: HALL OF FAME DE JUEGOS COMPLETADOS AUTOMÁTICO
+    // ============================================================
+    function sumarJuegosAlHoF(isAuto = false) {
+        const rawLinesStr = document.getElementById('listInput').value.trim();
+        if (!rawLinesStr) {
+            if (!isAuto) alert("La lista de participantes está vacía.");
+            return;
+        }
+        
+        if (!isAuto && !confirm("⚠️ ¿Seguro que quieres SUMAR los juegos de la lista actual al histórico general?\n\nATENCIÓN: Solo debes hacer esto 1 vez al final de cada mes. Los 'Puntos Extra' serán ignorados automáticamente.")) return;
+
+        const rawLines = rawLinesStr.split('\n');
+        let juegosASumar = {};
+        let sumandoParaHoF = true;
+
+        rawLines.forEach(line => {
+            let lineaLimpia = line.trim();
+            if (!lineaLimpia) return;
+            
+            const matchUser = lineaLimpia.match(/@[\w_.-]+/i);
+            
+            let textoSinUsuario = lineaLimpia.toUpperCase();
+            if (matchUser) {
+                textoSinUsuario = textoSinUsuario.replace(matchUser[0].toUpperCase(), '');
+            }
+            
+            if (textoSinUsuario.includes('EXTRA')) {
+                sumandoParaHoF = false; 
+            }
+
+            if (matchUser && sumandoParaHoF) {
+                let user = matchUser[0].toLowerCase();
+                let userReal = matchUser[0];
+                
+                if (!juegosASumar[user]) juegosASumar[user] = { realName: userReal, count: 0 };
+                juegosASumar[user].count++; 
+            }
+        });
+
+        db.ref('hall_of_fame_juegos').once('value', snapshot => {
+            let currentHoF = snapshot.val() || {};
+            
+            Object.keys(juegosASumar).forEach(userKey => {
+                if (currentHoF[userKey]) {
+                    currentHoF[userKey].total += juegosASumar[userKey].count;
+                } else {
+                    currentHoF[userKey] = {
+                        user: juegosASumar[userKey].realName,
+                        total: juegosASumar[userKey].count
+                    };
+                }
+            });
+
+            db.ref('hall_of_fame_juegos').set(currentHoF).then(() => {
+                if (!isAuto) {
+                    alert("¡" + Object.keys(juegosASumar).length + " usuarios actualizados correctamente en el Hall of Fame histórico!");
+                } else {
+                    console.log("HoF Histórico actualizado automáticamente.");
+                }
+            });
+        });
+    }
+
+    function guardarHoFManual() {
+        const inputStr = document.getElementById('hofManualInput').value.trim();
+        if (!confirm("⚠️ ¿Estás seguro de SOBRESCRIBIR todo el Hall of Fame con este texto?")) return;
+        
+        let newHoF = {};
+        if (inputStr) {
+            const lineas = inputStr.split('\n');
+            lineas.forEach(line => {
+                let partes = line.split('=');
+                if (partes.length === 2) {
+                    let userReal = partes[0].trim();
+                    let count = parseInt(partes[1].trim(), 10);
+                    let userKey = userReal.toLowerCase();
+                    
+                    if (userReal.startsWith('@') && !isNaN(count)) {
+                        newHoF[userKey] = { user: userReal, total: count };
+                    }
+                }
+            });
+        }
+        
+        db.ref('hall_of_fame_juegos').set(newHoF).then(() => {
+            alert("Hall of Fame actualizado manualmente.");
+        });
     }
 
     // ============================================================
@@ -2442,12 +2557,14 @@
 
         // Si NO hay hora seleccionada (cadena vacía o "--:--") → SORTEO INMEDIATO
         if (!timeVal || timeVal === "--:--" || timeVal.trim() === "") {
-            if (confirm("El sorteo se realizará de inmediato. ¿Continuar?")) {
+            if (confirm("El sorteo se realizará de inmediato y se consolidará el Hall of Fame Histórico. ¿Continuar?")) {
                 detenerTragaperras();
                 mostrarRecreativa(true);
                 const slotStatus = document.getElementById('slotStatus');
                 if(slotStatus) slotStatus.innerText = '🎰 SORTEO INMEDIATO...';
                 calcularYEjecutarTirada(rawLines, rawBlacklist, false);
+                sumarJuegosAlHoF(true); // <--- Actualiza HoF automático
+                alert("¡Sorteo finalizado y Hall of Fame actualizado!");
             }
             return;
         }
@@ -2474,7 +2591,8 @@
             rawLines: rawLines,
             rawBlacklist: rawBlacklist
         }).then(() => {
-            alert("¡Sorteo programado con éxito!");
+            sumarJuegosAlHoF(true); // <--- Actualiza HoF automático
+            alert("¡Sorteo programado con éxito y Hall of Fame histórico actualizado!");
         }).catch(error => {
             console.error('Error guardando el sorteo:', error);
             alert('❌ No se pudo programar el sorteo.');
