@@ -783,17 +783,23 @@
         <button id="btnToggleWinners" class="btn-toggle-view hidden" onclick="toggleWinnersView()">⬇️ Ver todos los usuarios premiados</button>
     </div>
 
-    <!-- HALL OF FAME: JUEGOS COMPLETADOS -->
+    <!-- HALL OF FAME: JUEGOS COMPLETADOS (CON BUSCADOR Y TOP 3) -->
     <div id="hallOfFameCard" class="card hidden">
         <h3>👾 Hall of Fame 👾</h3>
-        <p style="text-align: center; color: var(--muted); font-size: 0.8rem; margin: -5px 0 10px 0;">Juegos completados</p>
+        <p style="text-align: center; color: var(--muted); font-size: 0.8rem; margin: -5px 0 10px 0;">Juegos completados en esta lista</p>
+        
+        <!-- Buscador integrado en el Hall of Fame -->
+        <div style="margin-bottom: 10px;">
+            <input type="text" id="hofSearchInput" placeholder="🔍 Buscar usuario (@usuario)..." oninput="buscarEnHoF()" autocomplete="off" style="font-size: 0.85rem; padding: 8px 12px;">
+        </div>
+
         <ul id="hallOfFameList" class="custom-list"></ul>
         <button id="btnToggleHoF" class="btn-toggle-view hidden" onclick="toggleHoFView()">⬇️ Ver todo el Hall of Fame</button>
     </div>
 
     <!-- HISTORIAL DE SORTEOS -->
     <div id="historyCard" class="card hidden">
-        <h3>📜 Historial de Ganadores</h3>
+        <h3>📜 Historial de Ganadores Anteriores</h3>
         <ul id="historyList" class="custom-list"></ul>
         <button id="btnToggleHistory" class="btn-toggle-view hidden" onclick="toggleHistoryView()">⬇️ Ver todo el historial</button>
     </div>
@@ -1009,6 +1015,7 @@
     let isWinnersExpanded = false;
     let isHistoryExpanded = false;
     let isHoFExpanded = false; 
+    let hofSearchQuery = ""; // Término de búsqueda en el Hall of Fame
     
     let rawHistoryItems = [];
     let liveHoFItems = []; 
@@ -1116,6 +1123,7 @@
                 });
             }
 
+            // Cálculo de Ganadores de sorteos
             let mapaConteo = {};
             historyToRender.forEach(function(item) {
                 if(item && item.user) {
@@ -1127,7 +1135,7 @@
 
             const newStateWinners = JSON.stringify({ exp: isWinnersExpanded, list: winnersCountToRender });
             const newStateHistory = JSON.stringify({ exp: isHistoryExpanded, list: historyToRender });
-            const newStateHoF = JSON.stringify({ exp: isHoFExpanded, list: hofToRender });
+            const newStateHoF = JSON.stringify({ exp: isHoFExpanded, list: hofToRender, query: hofSearchQuery });
 
             if (lastRenderedWinnersState !== newStateWinners) {
                 renderWinnersList(winnersCountToRender);
@@ -1163,7 +1171,7 @@
             }
             
         } catch (e) {
-            console.error("Error silencioso en anti-spoiler (ignorado para no bloquear):", e);
+            console.error("Error silencioso en anti-spoiler:", e);
         }
     }
 
@@ -1242,6 +1250,7 @@
                 modalListEl.innerHTML = '<li class="custom-item" style="justify-content: center; color: var(--muted);">No hay participantes cargados actualmente.</li>';
                 if(uniqueCountEl) uniqueCountEl.innerText = "Total usuarios únicos: 0";
                 liveHoFItems = []; 
+                refrescarHistorialAntiSpoiler();
                 return;
             }
             
@@ -1250,22 +1259,19 @@
             let hofCounts = {}; 
             let totalBoletosValidos = 0;
             
-            let sumandoParaHoF = true; // Interruptor mágico para contar los juegos completados
+            let sumandoParaHoF = true; 
             
             rawLines.forEach(function(line) {
                 let lineaLimpia = line.trim();
                 if (!lineaLimpia) return;
                 
-                // Expresión regular que admite letras, números, _, puntos y guiones
                 const matchUser = lineaLimpia.match(/@[\w_.-]+/);
                 
-                // Comprobamos si hemos cruzado la línea de los "EXTRA"
                 let textoSinUsuario = lineaLimpia.toUpperCase();
                 if (matchUser) {
                     textoSinUsuario = textoSinUsuario.replace(matchUser[0].toUpperCase(), '');
                 }
                 
-                // Si la línea contiene la palabra EXTRA y no estamos ya apagados, lo apagamos
                 if (textoSinUsuario.includes('EXTRA')) {
                     sumandoParaHoF = false; 
                 }
@@ -1279,8 +1285,6 @@
                     boletosPorUsuario[user].push(numeroBoleto);
                     totalBoletosValidos++;
                     
-                    // --- CÁLCULO DEL HALL OF FAME EN VIVO ---
-                    // Solo sumamos este juego si el interruptor sigue encendido (es decir, antes de llegar a los EXTRA)
                     if (sumandoParaHoF) {
                         if (!hofCounts[user]) hofCounts[user] = 0;
                         hofCounts[user]++;
@@ -1318,6 +1322,8 @@
                                `<span style="color: var(--gold); font-family: monospace; font-size: 0.9rem; white-space: nowrap;">${porcentajeStr}</span>`;
                 modalListEl.appendChild(li);
             });
+
+            refrescarHistorialAntiSpoiler();
         } catch(e) {
             console.error("Error renderizando lista participantes:", e);
         }
@@ -2222,6 +2228,12 @@
         }
     }
 
+    function buscarEnHoF() {
+        const input = document.getElementById('hofSearchInput');
+        hofSearchQuery = input ? input.value.trim().toLowerCase() : "";
+        refrescarHistorialAntiSpoiler();
+    }
+
     function renderHoFList(list) {
         const listEl = document.getElementById('hallOfFameList');
         const btn = document.getElementById('btnToggleHoF');
@@ -2233,31 +2245,46 @@
             if(btn) btn.classList.add('hidden');
             return;
         }
+
+        // Mapear con ranking original (#1, #2, etc.)
+        const listWithRank = list.map((item, idx) => ({ ...item, rank: idx + 1 }));
         
-        const visibleItems = isHoFExpanded ? list : list.slice(0, 5); 
-        visibleItems.forEach(function(item, index) {
+        let itemsToDisplay = [];
+        const isSearching = hofSearchQuery.length > 0;
+
+        if (isSearching) {
+            itemsToDisplay = listWithRank.filter(item => item.user.toLowerCase().includes(hofSearchQuery));
+            if (btn) btn.classList.add('hidden'); // Ocultar botón "ver todo" mientras busca
+            if (itemsToDisplay.length === 0) {
+                listEl.innerHTML = '<li style="text-align: center; color: var(--muted); padding: 6px;">No se encontró a ningún participante con ese nombre.</li>';
+                return;
+            }
+        } else {
+            itemsToDisplay = isHoFExpanded ? listWithRank : listWithRank.slice(0, 3); // TOP 3 POR DEFECTO
+            if (btn) {
+                if (list.length > 3) {
+                    btn.classList.remove('hidden');
+                    btn.innerText = isHoFExpanded ? '⬆️ Mostrar solo el Top 3' : '⬇️ Ver todo el Hall of Fame (' + list.length + ')';
+                } else {
+                    btn.classList.add('hidden');
+                }
+            }
+        }
+
+        itemsToDisplay.forEach(function(item) {
             const li = document.createElement('li');
             li.className = 'custom-item';
             
             const textoJuegos = item.total === 1 ? 'juego' : 'juegos';
-            let medallaIcono = '';
-            if (index === 0) medallaIcono = '🥇 ';
-            else if (index === 1) medallaIcono = '🥈 ';
-            else if (index === 2) medallaIcono = '🥉 ';
-            else medallaIcono = '👾 ';
+            let iconoOId = '';
+            if (item.rank === 1) iconoOId = '🥇 ';
+            else if (item.rank === 2) iconoOId = '🥈 ';
+            else if (item.rank === 3) iconoOId = '🥉 ';
+            else iconoOId = `<span style="color: var(--muted); font-size: 0.8rem; margin-right: 4px;">#${item.rank}</span>👾 `;
             
-            li.innerHTML = '<div class="custom-item-text"><strong>' + medallaIcono + item.user + '</strong></div><span class="item-badge" style="background: var(--success);">' + item.total + ' ' + textoJuegos + '</span>';
+            li.innerHTML = '<div class="custom-item-text"><strong>' + iconoOId + item.user + '</strong></div><span class="item-badge" style="background: var(--success);">' + item.total + ' ' + textoJuegos + '</span>';
             listEl.appendChild(li);
         });
-        
-        if (list.length > 5) {
-            if(btn) {
-                btn.classList.remove('hidden');
-                btn.innerText = isHoFExpanded ? '⬆️ Mostrar solo el Top 5' : '⬇️ Ver todo el Hall of Fame (' + list.length + ')';
-            }
-        } else {
-            if(btn) btn.classList.add('hidden');
-        }
     }
 
     function renderHistoryList(list) {
@@ -2367,7 +2394,6 @@
 
         if (!rawLines) return alert("Pega o importa la lista de participantes.");
 
-        // Si NO hay hora seleccionada (cadena vacía o "--:--") → SORTEO INMEDIATO
         if (!timeVal || timeVal === "--:--" || timeVal.trim() === "") {
             if (confirm("El sorteo se realizará de inmediato. ¿Continuar?")) {
                 detenerTragaperras();
@@ -2379,7 +2405,6 @@
             return;
         }
 
-        // Si hay hora, se programa (con animación de 30 segundos)
         const timeParts = timeVal.split(':');
         let targetDate = new Date();
 
@@ -2390,7 +2415,6 @@
 
         targetDate.setHours(parseInt(timeParts[0], 10), parseInt(timeParts[1], 10), 0, 0);
 
-        // Si no hay fecha y la hora ya pasó, se programa para mañana
         if (!dateVal && targetDate.getTime() <= Date.now()) {
             targetDate.setDate(targetDate.getDate() + 1);
         }
@@ -2494,7 +2518,6 @@
 
         document.addEventListener("click", e => {
             if (!picker.contains(e.target) && !panel.classList.contains("hidden")) {
-                // Al hacer click fuera: revertimos el estado al último valor guardado (o nulo)
                 selected = parse(input.value); 
                 panel.classList.add("hidden");
             }
