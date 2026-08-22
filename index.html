@@ -776,20 +776,23 @@
         </div>
     </div>
 
-    <!-- LISTA DE PREMIADOS -->
+    <!-- LISTA DE PREMIADOS (CON BUSCADOR) -->
     <div id="winnersCountCard" class="card hidden">
         <h3>🏆 Ganadores 🏆</h3>
+        
+        <div style="margin-top: 10px; margin-bottom: 10px;">
+            <input type="text" id="winnersSearchInput" placeholder="🔍 Buscar usuario (@usuario)..." oninput="buscarEnWinners()" autocomplete="off" style="font-size: 0.85rem; padding: 8px 12px;">
+        </div>
+
         <ul id="winnersCountList" class="custom-list"></ul>
         <button id="btnToggleWinners" class="btn-toggle-view hidden" onclick="toggleWinnersView()">⬇️ Ver todos los usuarios premiados</button>
     </div>
 
-    <!-- HALL OF FAME: JUEGOS COMPLETADOS (CON BUSCADOR Y TOP 3) -->
+    <!-- HALL OF FAME: JUEGOS COMPLETADOS (CON BUSCADOR) -->
     <div id="hallOfFameCard" class="card hidden">
         <h3>👾 Hall of Fame 👾</h3>
-        <p style="text-align: center; color: var(--muted); font-size: 0.8rem; margin: -5px 0 10px 0;">Juegos completados</p>
         
-        <!-- Buscador integrado en el Hall of Fame -->
-        <div style="margin-bottom: 10px;">
+        <div style="margin-top: 10px; margin-bottom: 10px;">
             <input type="text" id="hofSearchInput" placeholder="🔍 Buscar usuario (@usuario)..." oninput="buscarEnHoF()" autocomplete="off" style="font-size: 0.85rem; padding: 8px 12px;">
         </div>
 
@@ -1015,7 +1018,9 @@
     let isWinnersExpanded = false;
     let isHistoryExpanded = false;
     let isHoFExpanded = false; 
+    
     let hofSearchQuery = ""; // Término de búsqueda en el Hall of Fame
+    let winnersSearchQuery = ""; // Término de búsqueda en Ganadores
     
     let rawHistoryItems = [];
     let liveHoFItems = []; 
@@ -1123,7 +1128,7 @@
                 });
             }
 
-            // Cálculo de Ganadores de sorteos
+            // Calculo de Ganadores de sorteos
             let mapaConteo = {};
             historyToRender.forEach(function(item) {
                 if(item && item.user) {
@@ -1133,7 +1138,8 @@
             });
             let winnersCountToRender = Object.keys(mapaConteo).map(usr => ({ user: usr, total: mapaConteo[usr] })).sort((a, b) => b.total - a.total);
 
-            const newStateWinners = JSON.stringify({ exp: isWinnersExpanded, list: winnersCountToRender });
+            // Generamos las huellas de estado (incluyendo las queries de búsqueda)
+            const newStateWinners = JSON.stringify({ exp: isWinnersExpanded, list: winnersCountToRender, query: winnersSearchQuery });
             const newStateHistory = JSON.stringify({ exp: isHistoryExpanded, list: historyToRender });
             const newStateHoF = JSON.stringify({ exp: isHoFExpanded, list: hofToRender, query: hofSearchQuery });
 
@@ -1173,6 +1179,21 @@
         } catch (e) {
             console.error("Error silencioso en anti-spoiler:", e);
         }
+    }
+
+    // ============================================================
+    //  FUNCIONES DE BÚSQUEDA EN LISTAS
+    // ============================================================
+    function buscarEnWinners() {
+        const input = document.getElementById('winnersSearchInput');
+        winnersSearchQuery = input ? input.value.trim().toLowerCase() : "";
+        refrescarHistorialAntiSpoiler();
+    }
+
+    function buscarEnHoF() {
+        const input = document.getElementById('hofSearchInput');
+        hofSearchQuery = input ? input.value.trim().toLowerCase() : "";
+        refrescarHistorialAntiSpoiler();
     }
 
     // ============================================================
@@ -2206,32 +2227,44 @@
             if(btn) btn.classList.add('hidden');
             return;
         }
-        const visibleItems = isWinnersExpanded ? list : list.slice(0, 3);
-        visibleItems.forEach(function(item, index) {
+
+        const listWithRank = list.map((item, idx) => ({ ...item, rank: idx + 1 }));
+        let itemsToDisplay = [];
+        const isSearching = winnersSearchQuery.length > 0;
+
+        if (isSearching) {
+            itemsToDisplay = listWithRank.filter(item => item.user.toLowerCase().includes(winnersSearchQuery));
+            if (btn) btn.classList.add('hidden');
+            if (itemsToDisplay.length === 0) {
+                listEl.innerHTML = '<li style="text-align: center; color: var(--muted); padding: 6px;">No se encontró a ningún ganador con ese nombre.</li>';
+                return;
+            }
+        } else {
+            itemsToDisplay = isWinnersExpanded ? listWithRank : listWithRank.slice(0, 3);
+            if (btn) {
+                if (list.length > 3) {
+                    btn.classList.remove('hidden');
+                    btn.innerText = isWinnersExpanded ? '⬆️ Mostrar solo los 3 principales' : '⬇️ Ver todos los usuarios premiados (' + list.length + ')';
+                } else {
+                    btn.classList.add('hidden');
+                }
+            }
+        }
+
+        itemsToDisplay.forEach(function(item) {
             const li = document.createElement('li');
             li.className = 'custom-item';
             const textoVez = item.total === 1 ? 'vez premiado' : 'veces premiado';
+            
             let medallaIcono = '';
-            if (index === 0) medallaIcono = '🥇 ';
-            else if (index === 1) medallaIcono = '🥈 ';
-            else if (index === 2) medallaIcono = '🥉 ';
+            if (item.rank === 1) medallaIcono = '🥇 ';
+            else if (item.rank === 2) medallaIcono = '🥈 ';
+            else if (item.rank === 3) medallaIcono = '🥉 ';
+            else medallaIcono = `<span style="color: var(--muted); font-size: 0.8rem; margin-right: 4px;">#${item.rank}</span>`;
+            
             li.innerHTML = '<div class="custom-item-text"><strong>' + medallaIcono + item.user + '</strong></div><span class="item-badge">' + item.total + ' ' + textoVez + '</span>';
             listEl.appendChild(li);
         });
-        if (list.length > 3) {
-            if(btn) {
-                btn.classList.remove('hidden');
-                btn.innerText = isWinnersExpanded ? '⬆️ Mostrar solo los 3 principales' : '⬇️ Ver todos los usuarios premiados (' + list.length + ')';
-            }
-        } else {
-            if(btn) btn.classList.add('hidden');
-        }
-    }
-
-    function buscarEnHoF() {
-        const input = document.getElementById('hofSearchInput');
-        hofSearchQuery = input ? input.value.trim().toLowerCase() : "";
-        refrescarHistorialAntiSpoiler();
     }
 
     function renderHoFList(list) {
@@ -2245,8 +2278,7 @@
             if(btn) btn.classList.add('hidden');
             return;
         }
-
-        // Mapear con ranking original (#1, #2, etc.)
+        
         const listWithRank = list.map((item, idx) => ({ ...item, rank: idx + 1 }));
         
         let itemsToDisplay = [];
@@ -2254,13 +2286,13 @@
 
         if (isSearching) {
             itemsToDisplay = listWithRank.filter(item => item.user.toLowerCase().includes(hofSearchQuery));
-            if (btn) btn.classList.add('hidden'); // Ocultar botón "ver todo" mientras busca
+            if (btn) btn.classList.add('hidden'); 
             if (itemsToDisplay.length === 0) {
                 listEl.innerHTML = '<li style="text-align: center; color: var(--muted); padding: 6px;">No se encontró a ningún participante con ese nombre.</li>';
                 return;
             }
         } else {
-            itemsToDisplay = isHoFExpanded ? listWithRank : listWithRank.slice(0, 3); // TOP 3 POR DEFECTO
+            itemsToDisplay = isHoFExpanded ? listWithRank : listWithRank.slice(0, 3);
             if (btn) {
                 if (list.length > 3) {
                     btn.classList.remove('hidden');
@@ -2276,11 +2308,12 @@
             li.className = 'custom-item';
             
             const textoJuegos = item.total === 1 ? 'juego' : 'juegos';
+            
             let iconoOId = '';
             if (item.rank === 1) iconoOId = '🥇 ';
             else if (item.rank === 2) iconoOId = '🥈 ';
             else if (item.rank === 3) iconoOId = '🥉 ';
-            else iconoOId = `<span style="color: var(--muted); font-size: 0.8rem; margin-right: 4px;">#${item.rank}</span>👾 `;
+            else iconoOId = `<span style="color: var(--muted); font-size: 0.8rem; margin-right: 4px;">#${item.rank}</span>`;
             
             li.innerHTML = '<div class="custom-item-text"><strong>' + iconoOId + item.user + '</strong></div><span class="item-badge" style="background: var(--success);">' + item.total + ' ' + textoJuegos + '</span>';
             listEl.appendChild(li);
@@ -2307,6 +2340,7 @@
                 deleteBtnHtml = `<button class="delete-item-btn" onclick="borrarGanadorEspecifico('${item.key}', '${item.user}', '${item.fecha}')">🗑️ Borrar</button>`;
             }
             
+            // Historial limpio, sin rastro del boleto
             li.innerHTML = '<div class="custom-item-text"><strong>' + item.user + '</strong></div>' +
                            '<div style="display:flex; align-items:center; gap:6px;"><div style="font-size: 0.75rem; color: var(--muted);">' + item.fecha + '</div>' + deleteBtnHtml + '</div>';
             listEl.appendChild(li);
@@ -2394,6 +2428,7 @@
 
         if (!rawLines) return alert("Pega o importa la lista de participantes.");
 
+        // Si NO hay hora seleccionada (cadena vacía o "--:--") → SORTEO INMEDIATO
         if (!timeVal || timeVal === "--:--" || timeVal.trim() === "") {
             if (confirm("El sorteo se realizará de inmediato. ¿Continuar?")) {
                 detenerTragaperras();
@@ -2405,6 +2440,7 @@
             return;
         }
 
+        // Si hay hora, se programa (con animación de 30 segundos)
         const timeParts = timeVal.split(':');
         let targetDate = new Date();
 
@@ -2415,6 +2451,7 @@
 
         targetDate.setHours(parseInt(timeParts[0], 10), parseInt(timeParts[1], 10), 0, 0);
 
+        // Si no hay fecha y la hora ya pasó, se programa para mañana
         if (!dateVal && targetDate.getTime() <= Date.now()) {
             targetDate.setDate(targetDate.getDate() + 1);
         }
@@ -2518,6 +2555,7 @@
 
         document.addEventListener("click", e => {
             if (!picker.contains(e.target) && !panel.classList.contains("hidden")) {
+                // Al hacer click fuera: revertimos el estado al último valor guardado (o nulo)
                 selected = parse(input.value); 
                 panel.classList.add("hidden");
             }
