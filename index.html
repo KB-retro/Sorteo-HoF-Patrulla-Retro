@@ -675,7 +675,7 @@
         .retro-date-weekdays,.retro-date-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
         .retro-date-weekdays{margin-bottom:5px}
         .retro-date-weekdays span{text-align:center;font-size:.72rem;opacity:.6}
-        .retro-date-cell{min-height:36px;border:0;border-radius:9px;background:transparent;color:#e2e8f0;cursor:pointer;font:inherit;font-weight:700}
+        .retro-date-cell{min-height:36px;border:0;border-radius:9px;background:transparent;color:#e2e8f0;cursor:pointer;font-weight:700}
         .retro-date-cell:hover{background:rgba(139,92,246,.22)}
         .retro-date-cell.other-month{opacity:.25}
         .retro-date-cell.today{outline:1px solid rgba(167,139,250,.7)}
@@ -994,6 +994,7 @@
     let rawWinnersCount = [];
     let isAdminLoggedIn = false;
     let isUserEditingList = false;
+    let suspenderRenderHistorial = false; // Bandera para pausar el historial durante el suspense
     
     let cacheJuegosSheets = null;
     let ultimaCargaSheets = 0;
@@ -1800,6 +1801,10 @@
         if (data && data.status === 'programado' && data.targetTime) {
             winnerCard.style.display = 'none';
             waitingCard.classList.add('hidden');
+            
+            // Aseguramos que el historial se actualice normalmente si hay algo programado a futuro
+            suspenderRenderHistorial = false;
+            
             iniciarRelojCuentaAtras(data.targetTime);
         } else if (data && data.ganador) {
             waitingCard.classList.add('hidden');
@@ -1807,6 +1812,9 @@
             const restante = revealAt - Date.now();
 
             if (restante > 0) {
+                // MODO SUSPENSE ACTIVO: Congelamos el renderizado del historial
+                suspenderRenderHistorial = true;
+                
                 winnerCard.style.display = 'none';
                 finalizarTragaperras(data.ganador, revealAt);
                 setTimeout(() => {
@@ -1816,6 +1824,8 @@
                     }
                 }, restante + 100);
             } else {
+                // NO HAY SUSPENSE O YA PASÓ
+                suspenderRenderHistorial = false;
                 detenerTragaperras();
                 mostrarGanador(data);
             }
@@ -1826,7 +1836,6 @@
             // --- FIX: FRASE FIJA Y DETERMINISTA ---
             let fraseFinal = data.frase;
             if (!fraseFinal) {
-                // Si el sorteo es anterior y no tiene frase guardada, calculamos una fija usando su timestamp
                 const seed = data.timestamp ? Math.floor(data.timestamp) : 0;
                 fraseFinal = FRASES_VIDEOJUEGOS[seed % FRASES_VIDEOJUEGOS.length];
             }
@@ -1856,16 +1865,43 @@
                 });
             }
         } else {
+            // NO HAY SORTEO
             slot.classList.remove('active');
             winnerCard.style.display = 'none';
             waitingCard.classList.remove('hidden');
+            
+            // Nos aseguramos de volver a mostrar el historial si alguien borra el sorteo en curso
+            suspenderRenderHistorial = false;
+            if (rawHistoryItems.length > 0) {
+                renderWinnersList();
+                renderHistoryList();
+                document.getElementById('winnersCountCard').classList.remove('hidden');
+                document.getElementById('historyCard').classList.remove('hidden');
+            }
         }
     });
 
     function mostrarGanador(data) {
+        // Al terminar el suspense, mostramos las cartas ganadoras y actualizamos el historial
+        suspenderRenderHistorial = false;
+        
         const winnerCard = document.getElementById('winnerCard');
         winnerCard.style.display = 'block';
         document.getElementById('slotMachineCard').classList.remove('active');
+        
+        // Renderizamos y mostramos el historial con el nuevo ganador
+        if (rawHistoryItems.length > 0) {
+            renderWinnersList();
+            renderHistoryList();
+            verificarRepetidoVisual();
+            document.getElementById('winnersCountCard').classList.remove('hidden');
+            document.getElementById('historyCard').classList.remove('hidden');
+        }
+    }
+
+    function ejecutarTiradaProgramada() {
+        if (!programData || programData.status !== 'programado') return;
+        calcularYEjecutarTirada(programData.rawLines, programData.rawBlacklist, true);
     }
 
     function calcularYEjecutarTirada(rawLinesStr, rawBlacklistStr, animarResultado = true) {
@@ -1984,11 +2020,17 @@
         }
         rawWinnersCount = Object.keys(mapaConteo).map(usr => ({ user: usr, total: mapaConteo[usr] }))
             .sort((a, b) => b.total - a.total);
-        renderWinnersList();
-        renderHistoryList();
-        verificarRepetidoVisual();
-        document.getElementById('winnersCountCard').classList.remove('hidden');
-        document.getElementById('historyCard').classList.remove('hidden');
+            
+        // Si NO estamos en modo suspense, lo renderizamos y actualizamos la vista
+        if (!suspenderRenderHistorial) {
+            renderWinnersList();
+            renderHistoryList();
+            verificarRepetidoVisual();
+            if (rawHistoryItems.length > 0) {
+                document.getElementById('winnersCountCard').classList.remove('hidden');
+                document.getElementById('historyCard').classList.remove('hidden');
+            }
+        }
     });
 
     function renderWinnersList() {
