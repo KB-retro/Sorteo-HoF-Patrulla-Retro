@@ -317,7 +317,6 @@
         .winner-title { color: var(--gold); font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px; }
         .winner-name { font-size: 2rem; font-weight: bold; margin: 10px 0 5px; color: #fff; word-break: break-word; }
         
-        /* Color verde radiactivo y sombra de neón */
         .winner-ticket { 
             font-size: 1.15rem; 
             font-weight: bold; 
@@ -779,9 +778,17 @@
 
     <!-- LISTA DE PREMIADOS -->
     <div id="winnersCountCard" class="card hidden">
-        <h3>👾 Hall of Fame 👾</h3>
+        <h3>🏆 Ganadores 🏆</h3>
         <ul id="winnersCountList" class="custom-list"></ul>
         <button id="btnToggleWinners" class="btn-toggle-view hidden" onclick="toggleWinnersView()">⬇️ Ver todos los usuarios premiados</button>
+    </div>
+
+    <!-- HALL OF FAME: JUEGOS COMPLETADOS -->
+    <div id="hallOfFameCard" class="card hidden">
+        <h3>👾 Hall of Fame 👾</h3>
+        <p style="text-align: center; color: var(--muted); font-size: 0.8rem; margin: -5px 0 10px 0;">Juegos completados en esta lista</p>
+        <ul id="hallOfFameList" class="custom-list"></ul>
+        <button id="btnToggleHoF" class="btn-toggle-view hidden" onclick="toggleHoFView()">⬇️ Ver todo el Hall of Fame</button>
     </div>
 
     <!-- HISTORIAL DE SORTEOS -->
@@ -888,7 +895,6 @@
             
             <label style="margin-top: 8px; display: block; font-size: 0.85rem;"><b>📅 Mes y Año del Premio (opcional):</b></label>
             
-            <!-- NUEVO SELECTOR RETRO DE MES Y AÑO -->
             <input type="hidden" id="manualWinnerMonth" value="">
             <div class="retro-time-picker" id="retroMonthPicker" style="margin-top: 4px; margin-bottom: 8px;">
                 <button type="button" class="retro-time-display" id="retroMonthDisplay" aria-haspopup="dialog" aria-expanded="false">
@@ -975,7 +981,6 @@
 <div id="probabilitiesModal" class="modal-overlay hidden">
     <div class="modal-card">
         <h2 style="color: var(--gold); margin-top: 0; margin-bottom: 5px;">📊 Lista de Participantes</h2>
-        <!-- Nuevo contador de usuarios únicos -->
         <div id="uniqueUsersCount" style="color: var(--success); font-size: 0.9rem; font-weight: bold; margin-bottom: 10px;">Calculando...</div>
         <ul id="participantsListModal" class="credits-list" style="margin: 5px 0 15px 0; max-height: 50vh;">
             <li class="custom-item" style="justify-content: center; color: var(--muted);">Cargando participantes...</li>
@@ -1003,19 +1008,23 @@
     let actualGanadorUser = "";
     let isWinnersExpanded = false;
     let isHistoryExpanded = false;
+    let isHoFExpanded = false; 
+    
     let rawHistoryItems = [];
+    let liveHoFItems = []; 
+    
     let isAdminLoggedIn = false;
     let isUserEditingList = false;
     
-    // Variables para el sistema anti-parpadeo
     let lastRenderedWinnersState = "";
     let lastRenderedHistoryState = "";
+    let lastRenderedHoFState = "";
     
     let cacheJuegosSheets = null;
     let ultimaCargaSheets = 0;
 
     let timerInterval = null;
-    let programData = null; // Guarda el estado actual del sorteo para comprobar bloqueos
+    let programData = null; 
     let slotAnimationInterval = null;
     let slotAnimationActive = false;
     let slotFinalizing = false;
@@ -1076,11 +1085,12 @@
     const nombresMeses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
     // ============================================================
-    //  FUNCIONES DE CONGELACIÓN (ANTI-SPOILER 2 MINUTOS + ANTI PARPADEO)
+    //  FUNCIONES DE CONGELACIÓN (ANTI-SPOILER + ANTI PARPADEO)
     // ============================================================
     function refrescarHistorialAntiSpoiler() {
         try {
             let historyToRender = rawHistoryItems || [];
+            let hofToRender = liveHoFItems || [];
 
             const ahora = Date.now();
             let enCongelacion = false;
@@ -1113,11 +1123,11 @@
                     mapaConteo[userKey] = (mapaConteo[userKey] || 0) + 1;
                 }
             });
-            
             let winnersCountToRender = Object.keys(mapaConteo).map(usr => ({ user: usr, total: mapaConteo[usr] })).sort((a, b) => b.total - a.total);
 
             const newStateWinners = JSON.stringify({ exp: isWinnersExpanded, list: winnersCountToRender });
             const newStateHistory = JSON.stringify({ exp: isHistoryExpanded, list: historyToRender });
+            const newStateHoF = JSON.stringify({ exp: isHoFExpanded, list: hofToRender });
 
             if (lastRenderedWinnersState !== newStateWinners) {
                 renderWinnersList(winnersCountToRender);
@@ -1128,9 +1138,15 @@
                 renderHistoryList(historyToRender);
                 lastRenderedHistoryState = newStateHistory;
             }
+            
+            if (lastRenderedHoFState !== newStateHoF) {
+                renderHoFList(hofToRender);
+                lastRenderedHoFState = newStateHoF;
+            }
 
             const cardWinners = document.getElementById('winnersCountCard');
             const cardHistory = document.getElementById('historyCard');
+            const cardHoF = document.getElementById('hallOfFameCard');
 
             if (historyToRender.length > 0) {
                 if (cardWinners && cardWinners.classList.contains('hidden')) cardWinners.classList.remove('hidden');
@@ -1139,6 +1155,13 @@
                 if (cardWinners && !cardWinners.classList.contains('hidden')) cardWinners.classList.add('hidden');
                 if (cardHistory && !cardHistory.classList.contains('hidden')) cardHistory.classList.add('hidden');
             }
+            
+            if (hofToRender.length > 0) {
+                if (cardHoF && cardHoF.classList.contains('hidden')) cardHoF.classList.remove('hidden');
+            } else {
+                if (cardHoF && !cardHoF.classList.contains('hidden')) cardHoF.classList.add('hidden');
+            }
+            
         } catch (e) {
             console.error("Error silencioso en anti-spoiler (ignorado para no bloquear):", e);
         }
@@ -1218,18 +1241,35 @@
             if (!rawLinesStr) {
                 modalListEl.innerHTML = '<li class="custom-item" style="justify-content: center; color: var(--muted);">No hay participantes cargados actualmente.</li>';
                 if(uniqueCountEl) uniqueCountEl.innerText = "Total usuarios únicos: 0";
+                liveHoFItems = []; 
                 return;
             }
             
             const rawLines = rawLinesStr.split('\n');
             let boletosPorUsuario = {};
+            let hofCounts = {}; 
             let totalBoletosValidos = 0;
+            
+            let sumandoParaHoF = true; // Interruptor mágico para contar los juegos completados
             
             rawLines.forEach(function(line) {
                 let lineaLimpia = line.trim();
                 if (!lineaLimpia) return;
                 
+                // Expresión regular que admite letras, números, _, puntos y guiones
                 const matchUser = lineaLimpia.match(/@[\w_.-]+/);
+                
+                // Comprobamos si hemos cruzado la línea de los "EXTRA"
+                let textoSinUsuario = lineaLimpia.toUpperCase();
+                if (matchUser) {
+                    textoSinUsuario = textoSinUsuario.replace(matchUser[0].toUpperCase(), '');
+                }
+                
+                // Si la línea contiene la palabra EXTRA y no estamos ya apagados, lo apagamos
+                if (textoSinUsuario.includes('EXTRA')) {
+                    sumandoParaHoF = false; 
+                }
+                
                 if (matchUser) {
                     let user = matchUser[0];
                     let numBoletoMatch = lineaLimpia.match(/^(\d+)/);
@@ -1238,8 +1278,17 @@
                     if (!boletosPorUsuario[user]) boletosPorUsuario[user] = [];
                     boletosPorUsuario[user].push(numeroBoleto);
                     totalBoletosValidos++;
+                    
+                    // --- CÁLCULO DEL HALL OF FAME EN VIVO ---
+                    // Solo sumamos este juego si el interruptor sigue encendido (es decir, antes de llegar a los EXTRA)
+                    if (sumandoParaHoF) {
+                        if (!hofCounts[user]) hofCounts[user] = 0;
+                        hofCounts[user]++;
+                    }
                 }
             });
+            
+            liveHoFItems = Object.keys(hofCounts).map(usr => ({ user: usr, total: hofCounts[usr] })).sort((a, b) => b.total - a.total);
             
             const numUsuariosUnicos = Object.keys(boletosPorUsuario).length;
             
@@ -2123,7 +2172,7 @@
     }
 
     // ============================================================
-    //  HISTORIAL Y LISTAS
+    //  RENDERIZADO DE LISTAS
     // ============================================================
     db.ref('historial_ganadores').on('value', function(snapshot) {
         const data = snapshot.val();
@@ -2173,6 +2222,44 @@
         }
     }
 
+    function renderHoFList(list) {
+        const listEl = document.getElementById('hallOfFameList');
+        const btn = document.getElementById('btnToggleHoF');
+        if(!listEl) return;
+        
+        listEl.innerHTML = '';
+        if (list.length === 0) {
+            listEl.innerHTML = '<li style="text-align: center; color: var(--muted);">Aún no hay datos de juegos pasados.</li>';
+            if(btn) btn.classList.add('hidden');
+            return;
+        }
+        
+        const visibleItems = isHoFExpanded ? list : list.slice(0, 5); 
+        visibleItems.forEach(function(item, index) {
+            const li = document.createElement('li');
+            li.className = 'custom-item';
+            
+            const textoJuegos = item.total === 1 ? 'juego' : 'juegos';
+            let medallaIcono = '';
+            if (index === 0) medallaIcono = '🥇 ';
+            else if (index === 1) medallaIcono = '🥈 ';
+            else if (index === 2) medallaIcono = '🥉 ';
+            else medallaIcono = '👾 ';
+            
+            li.innerHTML = '<div class="custom-item-text"><strong>' + medallaIcono + item.user + '</strong></div><span class="item-badge" style="background: var(--success);">' + item.total + ' ' + textoJuegos + '</span>';
+            listEl.appendChild(li);
+        });
+        
+        if (list.length > 5) {
+            if(btn) {
+                btn.classList.remove('hidden');
+                btn.innerText = isHoFExpanded ? '⬆️ Mostrar solo el Top 5' : '⬇️ Ver todo el Hall of Fame (' + list.length + ')';
+            }
+        } else {
+            if(btn) btn.classList.add('hidden');
+        }
+    }
+
     function renderHistoryList(list) {
         const listEl = document.getElementById('historyList');
         const btn = document.getElementById('btnToggleHistory');
@@ -2193,7 +2280,6 @@
                 deleteBtnHtml = `<button class="delete-item-btn" onclick="borrarGanadorEspecifico('${item.key}', '${item.user}', '${item.fecha}')">🗑️ Borrar</button>`;
             }
             
-            // ELIMINADO TODO RASTRO DEL BOLETO
             li.innerHTML = '<div class="custom-item-text"><strong>' + item.user + '</strong></div>' +
                            '<div style="display:flex; align-items:center; gap:6px;"><div style="font-size: 0.75rem; color: var(--muted);">' + item.fecha + '</div>' + deleteBtnHtml + '</div>';
             listEl.appendChild(li);
@@ -2210,6 +2296,7 @@
 
     function toggleWinnersView() { isWinnersExpanded = !isWinnersExpanded; refrescarHistorialAntiSpoiler(); }
     function toggleHistoryView() { isHistoryExpanded = !isHistoryExpanded; refrescarHistorialAntiSpoiler(); }
+    function toggleHoFView() { isHoFExpanded = !isHoFExpanded; refrescarHistorialAntiSpoiler(); }
 
     // ============================================================
     //  ADMIN
@@ -2322,7 +2409,7 @@
     }
 
     // ============================================================
-    //  INICIALIZADORES DE SELECTORES
+    //  INICIALIZADORES DE SELECTORES RETRO
     // ============================================================
     function initRetroDatePicker() {
         const input = document.getElementById("drawDateInput");
@@ -2364,7 +2451,7 @@
                 if (selected && iso(d) === iso(selected)) b.classList.add("selected");
                 b.textContent = d.getDate();
                 b.onclick = (e) => {
-                    e.stopPropagation(); // Evita que se cierre al hacer click
+                    e.stopPropagation(); 
                     selected = new Date(d.getFullYear(), d.getMonth(), d.getDate());
                     render();
                 };
@@ -2442,7 +2529,7 @@
                 item.dataset.value = String(n);
                 item.textContent = pad(n);
                 item.addEventListener("click", (e) => {
-                    e.stopPropagation(); // Evita que se cierre al hacer click
+                    e.stopPropagation();
                     onSelect(n);
                     render();
                 });
@@ -2533,7 +2620,6 @@
 
         document.addEventListener("click", e => {
             if (!picker.contains(e.target) && !panel.classList.contains("hidden")) {
-                // Al hacer click fuera: revertimos variables usando el último valor guardado
                 const match = /^(\d{2}):(\d{2})$/.exec(valueInput.value || "");
                 if (match) {
                     hour = Number(match[1]);
@@ -2551,9 +2637,6 @@
         valueInput.value = "";
     }
 
-    // ============================================================
-    //  NUEVO SELECTOR RETRO DE MES Y AÑO
-    // ============================================================
     function initRetroMonthPicker() {
         const valueInput = document.getElementById("manualWinnerMonth");
         const display = document.getElementById("retroMonthDisplay");
@@ -2570,7 +2653,6 @@
         let hasSelected = false;
         const pad = n => String(n).padStart(2, "0");
 
-        const currentYear = new Date().getFullYear();
         const minYear = 2020;
         const maxYear = 2040;
         
@@ -2584,7 +2666,7 @@
                 item.dataset.value = String(n);
                 item.textContent = isMonth ? mesesAbbr[n - 1] : n;
                 item.addEventListener("click", (e) => {
-                    e.stopPropagation(); // Evita que se cierre al hacer click
+                    e.stopPropagation();
                     onSelect(n);
                     render();
                 });
@@ -2605,7 +2687,7 @@
 
         function setFromCurrentDate() {
             const now = new Date();
-            month = now.getMonth() + 1; // 1-12
+            month = now.getMonth() + 1; 
             year = now.getFullYear();
             hasSelected = true;
         }
@@ -2678,7 +2760,6 @@
 
         document.addEventListener("click", e => {
             if (!picker.contains(e.target) && !panel.classList.contains("hidden")) {
-                // Al hacer click fuera: revertimos variables usando el último valor guardado
                 const match = /^(\d{4})-(\d{2})$/.exec(valueInput.value || "");
                 if (match) {
                     year = Number(match[1]);
