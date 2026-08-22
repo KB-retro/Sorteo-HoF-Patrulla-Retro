@@ -317,7 +317,6 @@
         .winner-title { color: var(--gold); font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px; }
         .winner-name { font-size: 2rem; font-weight: bold; margin: 10px 0 5px; color: #fff; word-break: break-word; }
         
-        /* Modificado: Color verde radiactivo y sombra de neón */
         .winner-ticket { 
             font-size: 1.15rem; 
             font-weight: bold; 
@@ -779,9 +778,26 @@
 
     <!-- LISTA DE PREMIADOS -->
     <div id="winnersCountCard" class="card hidden">
-        <h3>👾 Hall of Fame 👾</h3>
+        <h3>🏆 Ganadores 🏆</h3>
+        
+        <div style="margin-top: 10px; margin-bottom: 10px;">
+            <input type="text" id="winnersSearchInput" placeholder="🔍 Buscar usuario (@usuario)..." oninput="buscarEnWinners()" autocomplete="off" style="font-size: 0.85rem; padding: 8px 12px;">
+        </div>
+
         <ul id="winnersCountList" class="custom-list"></ul>
         <button id="btnToggleWinners" class="btn-toggle-view hidden" onclick="toggleWinnersView()">⬇️ Ver todos los usuarios premiados</button>
+    </div>
+
+    <!-- HALL OF FAME: JUEGOS COMPLETADOS -->
+    <div id="hallOfFameCard" class="card hidden">
+        <h3>👾 Hall of Fame 👾</h3>
+        
+        <div style="margin-top: 10px; margin-bottom: 10px;">
+            <input type="text" id="hofSearchInput" placeholder="🔍 Buscar usuario (@usuario)..." oninput="buscarEnHoF()" autocomplete="off" style="font-size: 0.85rem; padding: 8px 12px;">
+        </div>
+
+        <ul id="hallOfFameList" class="custom-list"></ul>
+        <button id="btnToggleHoF" class="btn-toggle-view hidden" onclick="toggleHoFView()">⬇️ Ver todo el Hall of Fame</button>
     </div>
 
     <!-- HISTORIAL DE SORTEOS -->
@@ -888,7 +904,6 @@
             
             <label style="margin-top: 8px; display: block; font-size: 0.85rem;"><b>📅 Mes y Año del Premio (opcional):</b></label>
             
-            <!-- NUEVO SELECTOR RETRO DE MES Y AÑO -->
             <input type="hidden" id="manualWinnerMonth" value="">
             <div class="retro-time-picker" id="retroMonthPicker" style="margin-top: 4px; margin-bottom: 8px;">
                 <button type="button" class="retro-time-display" id="retroMonthDisplay" aria-haspopup="dialog" aria-expanded="false">
@@ -974,7 +989,8 @@
 <!-- VENTANA MODAL PARTICIPANTES -->
 <div id="probabilitiesModal" class="modal-overlay hidden">
     <div class="modal-card">
-        <h2 style="color: var(--gold); margin-top: 0; margin-bottom: 10px;">📊 Lista de Participantes</h2>
+        <h2 style="color: var(--gold); margin-top: 0; margin-bottom: 5px;">📊 Lista de Participantes</h2>
+        <div id="uniqueUsersCount" style="color: var(--success); font-size: 0.9rem; font-weight: bold; margin-bottom: 10px;">Calculando...</div>
         <ul id="participantsListModal" class="credits-list" style="margin: 5px 0 15px 0; max-height: 50vh;">
             <li class="custom-item" style="justify-content: center; color: var(--muted);">Cargando participantes...</li>
         </ul>
@@ -1001,19 +1017,26 @@
     let actualGanadorUser = "";
     let isWinnersExpanded = false;
     let isHistoryExpanded = false;
+    let isHoFExpanded = false; 
+    
+    let hofSearchQuery = ""; // Término de búsqueda en el Hall of Fame
+    let winnersSearchQuery = ""; // Término de búsqueda en Ganadores
+    
     let rawHistoryItems = [];
+    let liveHoFItems = []; 
+    
     let isAdminLoggedIn = false;
     let isUserEditingList = false;
     
-    // Variables para el sistema anti-parpadeo
     let lastRenderedWinnersState = "";
     let lastRenderedHistoryState = "";
+    let lastRenderedHoFState = "";
     
     let cacheJuegosSheets = null;
     let ultimaCargaSheets = 0;
 
     let timerInterval = null;
-    let programData = null; // Guarda el estado actual del sorteo para comprobar bloqueos
+    let programData = null; 
     let slotAnimationInterval = null;
     let slotAnimationActive = false;
     let slotFinalizing = false;
@@ -1074,73 +1097,103 @@
     const nombresMeses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
     // ============================================================
-    //  FUNCIONES DE CONGELACIÓN (ANTI-SPOILER 2 MINUTOS + ANTI PARPADEO)
+    //  FUNCIONES DE CONGELACIÓN (ANTI-SPOILER + ANTI PARPADEO)
     // ============================================================
     function refrescarHistorialAntiSpoiler() {
-        let historyToRender = rawHistoryItems;
+        try {
+            let historyToRender = rawHistoryItems || [];
+            let hofToRender = liveHoFItems || [];
 
-        const ahora = Date.now();
-        let enCongelacion = false;
-        let freezeUntil = 0;
+            const ahora = Date.now();
+            let enCongelacion = false;
+            let freezeUntil = 0;
 
-        if (programData) {
-            // ¿Es un sorteo con suspense/programado?
-            const tieneSuspense = programData.revealAt !== undefined;
-            const esProgramado = programData.status === 'programado' || programData.status === 'procesando';
+            if (programData && typeof programData === 'object') {
+                const tieneSuspense = programData.revealAt !== undefined;
+                const esProgramado = programData.status === 'programado' || programData.status === 'procesando';
 
-            if (esProgramado && programData.targetTime) {
-                freezeUntil = programData.targetTime + 120000; // 2 minutos de congelación
-                if (ahora > (programData.targetTime - 60000) && ahora < freezeUntil) enCongelacion = true;
-            } else if (tieneSuspense && programData.timestamp) {
-                freezeUntil = programData.timestamp + 120000;
-                if (ahora < freezeUntil) enCongelacion = true;
+                if (esProgramado && programData.targetTime) {
+                    freezeUntil = programData.targetTime + 120000;
+                    if (ahora > (programData.targetTime - 60000) && ahora < freezeUntil) enCongelacion = true;
+                } else if (tieneSuspense && programData.timestamp) {
+                    freezeUntil = programData.timestamp + 120000;
+                    if (ahora < freezeUntil) enCongelacion = true;
+                }
             }
-        }
 
-        if (enCongelacion) {
-            // Ocultamos todos los historiales creados en los últimos 2 minutos.
-            historyToRender = rawHistoryItems.filter(item => {
-                const itemTime = item.timestamp || 0;
-                return itemTime < (ahora - 120000); 
+            if (enCongelacion) {
+                historyToRender = historyToRender.filter(item => {
+                    const itemTime = item.timestamp || 0;
+                    return itemTime < (ahora - 120000); 
+                });
+            }
+
+            // Calculo de Ganadores de sorteos
+            let mapaConteo = {};
+            historyToRender.forEach(function(item) {
+                if(item && item.user) {
+                    const userKey = item.user;
+                    mapaConteo[userKey] = (mapaConteo[userKey] || 0) + 1;
+                }
             });
+            let winnersCountToRender = Object.keys(mapaConteo).map(usr => ({ user: usr, total: mapaConteo[usr] })).sort((a, b) => b.total - a.total);
+
+            // Generamos las huellas de estado (incluyendo las queries de búsqueda)
+            const newStateWinners = JSON.stringify({ exp: isWinnersExpanded, list: winnersCountToRender, query: winnersSearchQuery });
+            const newStateHistory = JSON.stringify({ exp: isHistoryExpanded, list: historyToRender });
+            const newStateHoF = JSON.stringify({ exp: isHoFExpanded, list: hofToRender, query: hofSearchQuery });
+
+            if (lastRenderedWinnersState !== newStateWinners) {
+                renderWinnersList(winnersCountToRender);
+                lastRenderedWinnersState = newStateWinners;
+            }
+
+            if (lastRenderedHistoryState !== newStateHistory) {
+                renderHistoryList(historyToRender);
+                lastRenderedHistoryState = newStateHistory;
+            }
+            
+            if (lastRenderedHoFState !== newStateHoF) {
+                renderHoFList(hofToRender);
+                lastRenderedHoFState = newStateHoF;
+            }
+
+            const cardWinners = document.getElementById('winnersCountCard');
+            const cardHistory = document.getElementById('historyCard');
+            const cardHoF = document.getElementById('hallOfFameCard');
+
+            if (historyToRender.length > 0) {
+                if (cardWinners && cardWinners.classList.contains('hidden')) cardWinners.classList.remove('hidden');
+                if (cardHistory && cardHistory.classList.contains('hidden')) cardHistory.classList.remove('hidden');
+            } else {
+                if (cardWinners && !cardWinners.classList.contains('hidden')) cardWinners.classList.add('hidden');
+                if (cardHistory && !cardHistory.classList.contains('hidden')) cardHistory.classList.add('hidden');
+            }
+            
+            if (hofToRender.length > 0) {
+                if (cardHoF && cardHoF.classList.contains('hidden')) cardHoF.classList.remove('hidden');
+            } else {
+                if (cardHoF && !cardHoF.classList.contains('hidden')) cardHoF.classList.add('hidden');
+            }
+            
+        } catch (e) {
+            console.error("Error silencioso en anti-spoiler:", e);
         }
+    }
 
-        // Recalculamos el Hall of Fame basado SOLO en el historial filtrado
-        let mapaConteo = {};
-        historyToRender.forEach(function(item) {
-            const userKey = item.user;
-            mapaConteo[userKey] = (mapaConteo[userKey] || 0) + 1;
-        });
-        
-        let winnersCountToRender = Object.keys(mapaConteo).map(usr => ({ user: usr, total: mapaConteo[usr] })).sort((a, b) => b.total - a.total);
+    // ============================================================
+    //  FUNCIONES DE BÚSQUEDA EN LISTAS
+    // ============================================================
+    function buscarEnWinners() {
+        const input = document.getElementById('winnersSearchInput');
+        winnersSearchQuery = input ? input.value.trim().toLowerCase() : "";
+        refrescarHistorialAntiSpoiler();
+    }
 
-        // --- SISTEMA ANTI-PARPADEO ---
-        // Generamos una "huella" de los datos y el estado del botón "Ver más"
-        const newStateWinners = JSON.stringify({ exp: isWinnersExpanded, list: winnersCountToRender });
-        const newStateHistory = JSON.stringify({ exp: isHistoryExpanded, list: historyToRender });
-
-        // Solo borramos y dibujamos si la huella ha cambiado respecto a lo que ya hay en pantalla
-        if (lastRenderedWinnersState !== newStateWinners) {
-            renderWinnersList(winnersCountToRender);
-            lastRenderedWinnersState = newStateWinners;
-        }
-
-        if (lastRenderedHistoryState !== newStateHistory) {
-            renderHistoryList(historyToRender);
-            lastRenderedHistoryState = newStateHistory;
-        }
-        // ------------------------------
-
-        const cardWinners = document.getElementById('winnersCountCard');
-        const cardHistory = document.getElementById('historyCard');
-
-        if (historyToRender.length > 0) {
-            if (cardWinners.classList.contains('hidden')) cardWinners.classList.remove('hidden');
-            if (cardHistory.classList.contains('hidden')) cardHistory.classList.remove('hidden');
-        } else {
-            if (!cardWinners.classList.contains('hidden')) cardWinners.classList.add('hidden');
-            if (!cardHistory.classList.contains('hidden')) cardHistory.classList.add('hidden');
-        }
+    function buscarEnHoF() {
+        const input = document.getElementById('hofSearchInput');
+        hofSearchQuery = input ? input.value.trim().toLowerCase() : "";
+        refrescarHistorialAntiSpoiler();
     }
 
     // ============================================================
@@ -1175,7 +1228,6 @@
         initRetroTimePicker();
         initRetroMonthPicker();
         
-        // Iniciamos el Guardia de Seguridad que vigila el historial cada segundo (ahora con anti-parpadeo)
         setInterval(refrescarHistorialAntiSpoiler, 1000);
     });
 
@@ -1204,51 +1256,99 @@
     });
 
     function calcularYMostrarProbabilidades() {
-        const rawLinesStr = document.getElementById('listInput').value.trim();
-        const modalListEl = document.getElementById('participantsListModal');
-        if (!modalListEl) return;
-        modalListEl.innerHTML = '';
-        if (!rawLinesStr) {
-            modalListEl.innerHTML = '<li class="custom-item" style="justify-content: center; color: var(--muted);">No hay participantes cargados actualmente.</li>';
-            return;
-        }
-        const rawLines = rawLinesStr.split('\n');
-        let boletosPorUsuario = {};
-        let totalBoletosValidos = 0;
-        rawLines.forEach(function(line) {
-            let lineaLimpia = line.trim();
-            if (!lineaLimpia) return;
-            const matchUser = lineaLimpia.match(/@[\w_]+/);
-            if (matchUser) {
-                let user = matchUser[0];
-                let numBoletoMatch = lineaLimpia.match(/^(\d+)/);
-                let numeroBoleto = numBoletoMatch ? numBoletoMatch[1] : (boletosPorUsuario[user] ? boletosPorUsuario[user].length + 1 : 1);
-                if (!boletosPorUsuario[user]) boletosPorUsuario[user] = [];
-                boletosPorUsuario[user].push(numeroBoleto);
-                totalBoletosValidos++;
+        try {
+            const listInputDOM = document.getElementById('listInput');
+            if(!listInputDOM) return;
+            const rawLinesStr = listInputDOM.value.trim();
+            
+            const modalListEl = document.getElementById('participantsListModal');
+            const uniqueCountEl = document.getElementById('uniqueUsersCount');
+            
+            if (!modalListEl) return;
+            modalListEl.innerHTML = '';
+            
+            if (!rawLinesStr) {
+                modalListEl.innerHTML = '<li class="custom-item" style="justify-content: center; color: var(--muted);">No hay participantes cargados actualmente.</li>';
+                if(uniqueCountEl) uniqueCountEl.innerText = "Total usuarios únicos: 0";
+                liveHoFItems = []; 
+                refrescarHistorialAntiSpoiler();
+                return;
             }
-        });
-        if (totalBoletosValidos === 0) {
-            modalListEl.innerHTML = '<li class="custom-item" style="justify-content: center; color: var(--muted);">No se encontraron participantes válidos.</li>';
-            return;
+            
+            const rawLines = rawLinesStr.split('\n');
+            let boletosPorUsuario = {};
+            let hofCounts = {}; 
+            let totalBoletosValidos = 0;
+            
+            let sumandoParaHoF = true; 
+            
+            rawLines.forEach(function(line) {
+                let lineaLimpia = line.trim();
+                if (!lineaLimpia) return;
+                
+                // EXPRESIÓN REGULAR CORREGIDA: [\w_.-]
+                const matchUser = lineaLimpia.match(/@[\w_.-]+/i);
+                
+                let textoSinUsuario = lineaLimpia.toUpperCase();
+                if (matchUser) {
+                    textoSinUsuario = textoSinUsuario.replace(matchUser[0].toUpperCase(), '');
+                }
+                
+                if (textoSinUsuario.includes('EXTRA')) {
+                    sumandoParaHoF = false; 
+                }
+                
+                if (matchUser) {
+                    let user = matchUser[0];
+                    let numBoletoMatch = lineaLimpia.match(/^(\d+)/);
+                    let numeroBoleto = numBoletoMatch ? numBoletoMatch[1] : (boletosPorUsuario[user] ? (boletosPorUsuario[user].length + 1).toString() : "1");
+                    
+                    if (!boletosPorUsuario[user]) boletosPorUsuario[user] = [];
+                    boletosPorUsuario[user].push(numeroBoleto);
+                    totalBoletosValidos++;
+                    
+                    if (sumandoParaHoF) {
+                        if (!hofCounts[user]) hofCounts[user] = 0;
+                        hofCounts[user]++;
+                    }
+                }
+            });
+            
+            liveHoFItems = Object.keys(hofCounts).map(usr => ({ user: usr, total: hofCounts[usr] })).sort((a, b) => b.total - a.total);
+            
+            const numUsuariosUnicos = Object.keys(boletosPorUsuario).length;
+            
+            if (totalBoletosValidos === 0) {
+                modalListEl.innerHTML = '<li class="custom-item" style="justify-content: center; color: var(--muted);">No se encontraron participantes válidos.</li>';
+                if(uniqueCountEl) uniqueCountEl.innerText = "Total usuarios únicos: 0";
+                return;
+            }
+            
+            if(uniqueCountEl) uniqueCountEl.innerText = `Total usuarios únicos: ${numUsuariosUnicos}`;
+            
+            let listaParticipantes = Object.keys(boletosPorUsuario).map(user => {
+                let listaB = boletosPorUsuario[user];
+                let probabilidad = (listaB.length / totalBoletosValidos) * 100;
+                return { user: user, boletos: listaB, count: listaB.length, prob: probabilidad };
+            });
+            
+            listaParticipantes.sort((a, b) => b.count - a.count);
+            listaParticipantes.forEach(p => {
+                const li = document.createElement('li');
+                li.className = 'custom-item';
+                let porcentajeStr = isNaN(p.prob) ? "0.000%" : p.prob.toFixed(3) + "%";
+                li.innerHTML = `<div class="custom-item-text">
+                                    <strong>${p.user}</strong> <span style="font-size:0.75rem; color:var(--muted);">(${p.count} ${p.count === 1 ? 'boleto' : 'boletos'})</span>
+                                    <div style="font-size: 0.75rem; color: #aaa; margin-top: 2px; word-break: break-all;">Números: ${p.boletos.join(', ')}</div>
+                               </div>` +
+                               `<span style="color: var(--gold); font-family: monospace; font-size: 0.9rem; white-space: nowrap;">${porcentajeStr}</span>`;
+                modalListEl.appendChild(li);
+            });
+
+            refrescarHistorialAntiSpoiler();
+        } catch(e) {
+            console.error("Error renderizando lista participantes:", e);
         }
-        let listaParticipantes = Object.keys(boletosPorUsuario).map(user => {
-            let listaB = boletosPorUsuario[user];
-            let probabilidad = (listaB.length / totalBoletosValidos) * 100;
-            return { user: user, boletos: listaB, count: listaB.length, prob: probabilidad };
-        });
-        listaParticipantes.sort((a, b) => b.count - a.count);
-        listaParticipantes.forEach(p => {
-            const li = document.createElement('li');
-            li.className = 'custom-item';
-            let porcentajeStr = p.prob.toFixed(3) + "%";
-            li.innerHTML = `<div class="custom-item-text">
-                                <strong>${p.user}</strong> <span style="font-size:0.75rem; color:var(--muted);">(${p.count} ${p.count === 1 ? 'boleto' : 'boletos'})</span>
-                                <div style="font-size: 0.75rem; color: #aaa; margin-top: 2px; word-break: break-all;">Números: ${p.boletos.join(', ')}</div>
-                           </div>` +
-                           `<span style="color: var(--gold); font-family: monospace; font-size: 0.9rem; white-space: nowrap;">${porcentajeStr}</span>`;
-            modalListEl.appendChild(li);
-        });
     }
 
     function contarClicksAdmin() {
@@ -1370,7 +1470,8 @@
     document.addEventListener('click', function(e) {
         const container = document.querySelector('.search-container');
         if (container && !container.contains(e.target)) {
-            document.getElementById('customSuggestions').style.display = 'none';
+            const sugg = document.getElementById('customSuggestions');
+            if(sugg) sugg.style.display = 'none';
         }
     });
 
@@ -1387,27 +1488,31 @@
         recognition.interimResults = false;
         recognition.maxAlternatives = 1;
         recognition.onstart = function() {
-            micBtn.classList.add('listening');
-            micBtn.title = "Escuchando voz...";
+            if(micBtn) {
+                micBtn.classList.add('listening');
+                micBtn.title = "Escuchando voz...";
+            }
         };
         recognition.onresult = function(event) {
             const speechResult = event.results[0][0].transcript;
-            inputEl.value = speechResult;
+            if(inputEl) inputEl.value = speechResult;
             comprobarJuegoInmediato(speechResult);
         };
         recognition.onerror = function(event) {
             console.error("Error en reconocimiento de voz:", event.error);
         };
         recognition.onend = function() {
-            micBtn.classList.remove('listening');
-            micBtn.title = "Búsqueda por voz";
+            if(micBtn) {
+                micBtn.classList.remove('listening');
+                micBtn.title = "Búsqueda por voz";
+            }
         };
         recognition.start();
     }
 
     async function comprobarJuegoInmediato(texto) {
         const inputEl = document.getElementById('gameSearchInput');
-        inputEl.value = texto;
+        if(inputEl) inputEl.value = texto;
         await comprobarJuegoEnSheets();
     }
 
@@ -1503,6 +1608,7 @@
     function cargarListaBackups() {
         db.ref('backups').on('value', function(snapshot) {
             const select = document.getElementById('backupSelect');
+            if(!select) return;
             select.innerHTML = '<option value="">-- Selecciona una copia para restaurar o borrar --</option>';
             const backups = snapshot.val();
             if (!backups) return;
@@ -1603,7 +1709,7 @@
     }
 
     // ============================================================
-    //  IMPORTAR DESDE TELEGRAM
+    //  IMPORTAR DESDE TELEGRAM (CON PARÁMETROS ANTI-CACHÉ)
     // ============================================================
     async function importarDesdeTelegram(esManual = true) {
         const btn = document.querySelector('.telegram-btn');
@@ -1613,20 +1719,33 @@
             btn.innerText = "⏳ Cargando lista en vivo desde Telegram...";
             btn.disabled = true;
         }
+        
         const timestamp = Date.now();
         const targetUrl = `https://t.me/s/retrojuegodelmes?before=${timestamp}`;
-        const workerUrl = `${MI_CLOUDFLARE_WORKER}?url=${encodeURIComponent(targetUrl)}`;
+        const workerUrl = `${MI_CLOUDFLARE_WORKER}?url=${encodeURIComponent(targetUrl)}&nocache=${timestamp}`;
+        
         try {
-            const response = await fetch(workerUrl, { cache: "no-store" });
+            const response = await fetch(workerUrl, { 
+                cache: "no-store",
+                headers: {
+                    'Cache-Control': 'no-cache, no-store, must-revalidate',
+                    'Pragma': 'no-cache',
+                    'Expires': '0'
+                }
+            });
+            
             if (!response.ok) throw new Error(`Error Cloudflare: ${response.status}`);
             const htmlContent = await response.text();
             if (!htmlContent || !htmlContent.includes('tgme_widget_message_text')) throw new Error("Sin resultados.");
+            
             const parser = new DOMParser();
             const doc = parser.parseFromString(htmlContent, 'text/html');
             const messages = doc.querySelectorAll('.tgme_widget_message_text');
             if (!messages || messages.length === 0) return;
+            
             let ultimaListaEncontrada = "";
-            const regexPatronLista = /\d+[\s-]*@[\w_]+/i;
+            const regexPatronLista = /\d+[\s-]*@[\w_.-]+/i; 
+            
             for (let i = messages.length - 1; i >= 0; i--) {
                 let htmlTemp = messages[i].innerHTML.replace(/<br\s*[\/]?>/gi, "\n");
                 let tempDiv = document.createElement("div");
@@ -1642,7 +1761,8 @@
                 }
             }
             if (ultimaListaEncontrada) {
-                document.getElementById('listInput').value = ultimaListaEncontrada;
+                const listInput = document.getElementById('listInput');
+                if(listInput) listInput.value = ultimaListaEncontrada;
                 guardarParticipantesFirebase();
                 calcularYMostrarProbabilidades();
                 const totalCargados = ultimaListaEncontrada.split('\n').filter(l => regexPatronLista.test(l)).length;
@@ -1667,11 +1787,12 @@
     db.ref('mes_sorteo').on('value', function(snapshot) {
         const mes = snapshot.val();
         const titleEl = document.getElementById('mainTitle');
+        const monthSelect = document.getElementById('monthSelect');
         if (mes) {
-            titleEl.innerText = "🏆 Sorteo HoF Patrulla Retro de " + mes;
-            document.getElementById('monthSelect').value = mes;
+            if(titleEl) titleEl.innerText = "🏆 Sorteo HoF Patrulla Retro de " + mes;
+            if(monthSelect) monthSelect.value = mes;
         } else {
-            titleEl.innerText = "🏆 Sorteo HoF Patrulla Retro";
+            if(titleEl) titleEl.innerText = "🏆 Sorteo HoF Patrulla Retro";
         }
     });
 
@@ -1715,11 +1836,14 @@
             añadidos++;
         });
         alert("¡" + añadidos + " usuario(s) añadido(s) al historial!");
-        document.getElementById('manualUserAdmin').value = '';
         
-        // Limpiar el selector retro después de guardar
-        document.getElementById('manualWinnerMonth').value = '';
-        document.getElementById('retroMonthDisplayValue').textContent = '-- / ----';
+        const manualUser = document.getElementById('manualUserAdmin');
+        const manualMonth = document.getElementById('manualWinnerMonth');
+        const displayValue = document.getElementById('retroMonthDisplayValue');
+        
+        if(manualUser) manualUser.value = '';
+        if(manualMonth) manualMonth.value = '';
+        if(displayValue) displayValue.textContent = '-- / ----';
     }
 
     function borrarGanadorEspecifico(key, usuario, fecha) {
@@ -1730,22 +1854,30 @@
     }
 
     function verificarRepetidoVisual() {
-        if (!actualGanadorUser) return;
-        db.ref('historial_ganadores').once('value', function(snapshot) {
-            const data = snapshot.val();
-            let totalVictorias = 0;
-            if (data) {
-                Object.values(data).forEach(function(item) {
-                    if (item.user.toLowerCase() === actualGanadorUser.toLowerCase()) totalVictorias++;
-                });
-            }
-            const noticeEl = document.getElementById('repeatNotice');
-            if (totalVictorias > 1) {
-                if (noticeEl.classList.contains('hidden')) noticeEl.classList.remove('hidden');
-            } else {
-                if (!noticeEl.classList.contains('hidden')) noticeEl.classList.add('hidden');
-            }
-        });
+        try {
+            if (!actualGanadorUser) return;
+            db.ref('historial_ganadores').once('value', function(snapshot) {
+                const data = snapshot.val();
+                let totalVictorias = 0;
+                if (data) {
+                    Object.values(data).forEach(function(item) {
+                        if (item && item.user && item.user.toLowerCase() === actualGanadorUser.toLowerCase()) {
+                            totalVictorias++;
+                        }
+                    });
+                }
+                const noticeEl = document.getElementById('repeatNotice');
+                if(!noticeEl) return;
+                
+                if (totalVictorias > 1) {
+                    if (noticeEl.classList.contains('hidden')) noticeEl.classList.remove('hidden');
+                } else {
+                    if (!noticeEl.classList.contains('hidden')) noticeEl.classList.add('hidden');
+                }
+            });
+        } catch(e) {
+            console.error("Error verificando repetido visual:", e);
+        }
     }
 
     // ============================================================
@@ -1753,6 +1885,7 @@
     // ============================================================
     function mostrarRecreativa(activa) {
         const slot = document.getElementById('slotMachineCard');
+        if(!slot) return;
         if (activa) slot.classList.add('active');
         else slot.classList.remove('active');
     }
@@ -1784,6 +1917,7 @@
         const ahora = Date.now();
         const diff = targetTime - ahora;
         const slotStatus = document.getElementById('slotStatus');
+        if(!slotStatus) return;
 
         if (diff > 0) {
             mostrarRecreativa(true);
@@ -1806,8 +1940,7 @@
                 slotStatus.innerText = '🎰 PRÓXIMO SORTEO · ' + texto;
             }
         } else {
-            // El navegador NO hace la tirada. Solo espera que el Worker la haga.
-            iniciarRodillos(); // Que sigan girando
+            iniciarRodillos();
             slotStatus.innerText = '⚡ ¡PROCESANDO SORTEO EN EL SERVIDOR!...';
         }
     }
@@ -1845,10 +1978,10 @@
             if (restante <= 0) {
                 clearInterval(slotRevealInterval);
                 slotRevealInterval = null;
-                slotStatus.innerText = '🎉 ¡RESULTADO LISTO! MOSTRANDO GANADOR...';
+                if(slotStatus) slotStatus.innerText = '🎉 ¡RESULTADO LISTO! MOSTRANDO GANADOR...';
                 return;
             }
-            slotStatus.innerText = '🎰 NÚMERO PREMIADO · MOSTRANDO GANADOR EN ' +
+            if(slotStatus) slotStatus.innerText = '🎰 NÚMERO PREMIADO · MOSTRANDO GANADOR EN ' +
                 String(restante).padStart(2,'0') + ' s';
         };
         actualizar();
@@ -1868,7 +2001,8 @@
     }
 
     function obtenerDigitosPremiados(ganador) {
-        const match = String(ganador.ticket || '').match(/^(\d+)/);
+        if(!ganador || !ganador.ticket) return ['0','0','0'];
+        const match = String(ganador.ticket).match(/^(\d+)/);
         const numero = match ? match[1] : '0';
         const numero3 = numero.slice(-3).padStart(3, '0');
         return [numero3.charAt(0), numero3.charAt(1), numero3.charAt(2)];
@@ -1878,98 +2012,102 @@
     //  OBSERVADOR DE SORTEO ACTUAL
     // ============================================================
     db.ref('sorteo_actual').on('value', function(snapshot) {
-        const data = snapshot.val();
-        
-        // Guardamos el estado actual para que el filtro anti-spoiler lo analice
-        programData = data || { status: 'inactivo' };
-        
-        if (timerInterval) clearInterval(timerInterval);
-        detenerTragaperras();
-
-        const slot = document.getElementById('slotMachineCard');
-        const winnerCard = document.getElementById('winnerCard');
-        const waitingCard = document.getElementById('waitingCard');
-
-        if (data && data.status === 'programado' && data.targetTime) {
-            winnerCard.style.display = 'none';
-            waitingCard.classList.add('hidden');
+        try {
+            const data = snapshot.val();
             
-            iniciarRelojCuentaAtras(data.targetTime);
-            refrescarHistorialAntiSpoiler(); 
+            programData = data || { status: 'inactivo' };
             
-        } else if (data && data.ganador) {
-            waitingCard.classList.add('hidden');
-            const revealAt = Number(data.revealAt) || 0;
-            const restante = revealAt - Date.now();
+            if (timerInterval) clearInterval(timerInterval);
+            detenerTragaperras();
 
-            if (restante > 0) {
-                // ESTAMOS EN PLENO SUSPENSE
-                winnerCard.style.display = 'none';
-                finalizarTragaperras(data.ganador, revealAt);
-                setTimeout(() => {
-                    if (document.getElementById('winnerCard').style.display !== 'block') {
-                        detenerTragaperras();
-                        mostrarGanador(data);
+            const slot = document.getElementById('slotMachineCard');
+            const winnerCard = document.getElementById('winnerCard');
+            const waitingCard = document.getElementById('waitingCard');
+
+            if (data && data.status === 'programado' && data.targetTime) {
+                if(winnerCard) winnerCard.style.display = 'none';
+                if(waitingCard) waitingCard.classList.add('hidden');
+                
+                iniciarRelojCuentaAtras(data.targetTime);
+                refrescarHistorialAntiSpoiler(); 
+                
+            } else if (data && data.ganador) {
+                if(waitingCard) waitingCard.classList.add('hidden');
+                const revealAt = Number(data.revealAt) || 0;
+                const restante = revealAt - Date.now();
+
+                if (restante > 0) {
+                    if(winnerCard) winnerCard.style.display = 'none';
+                    finalizarTragaperras(data.ganador, revealAt);
+                    setTimeout(() => {
+                        const wCard = document.getElementById('winnerCard');
+                        if (wCard && wCard.style.display !== 'block') {
+                            detenerTragaperras();
+                            mostrarGanador(data);
+                        }
+                    }, restante + 100);
+                } else {
+                    detenerTragaperras();
+                    mostrarGanador(data);
+                }
+
+                actualGanadorUser = data.ganador.user;
+                const wName = document.getElementById('winnerName');
+                if(wName) wName.innerText = data.ganador.user;
+                
+                let fraseFinal = data.frase;
+                if (!fraseFinal) {
+                    const seed = data.timestamp ? Math.floor(data.timestamp) : 0;
+                    fraseFinal = FRASES_VIDEOJUEGOS[seed % FRASES_VIDEOJUEGOS.length];
+                }
+                const wQuote = document.getElementById('winnerQuote');
+                if(wQuote) wQuote.innerText = fraseFinal;
+                
+                let numeroBoleto = data.ganador.ticket;
+                const matchNum = String(data.ganador.ticket || '').match(/^(\d+)/);
+                if (matchNum) {
+                    numeroBoleto = "Boleto premiado Nº " + matchNum[1];
+                } else {
+                    numeroBoleto = "Boleto premiado: " + data.ganador.ticket;
+                }
+                const wTicket = document.getElementById('winnerTicket');
+                if(wTicket) wTicket.innerText = numeroBoleto;
+                
+                const arcadeList = document.getElementById('arcadeList');
+                if(arcadeList) {
+                    arcadeList.innerHTML = '';
+                    if (data.arcadeGroup && data.arcadeGroup.length > 0) {
+                        data.arcadeGroup.forEach(function(item) {
+                            const li = document.createElement('li');
+                            li.className = 'custom-item';
+                            const esGanador = item.user.toLowerCase() === data.ganador.user.toLowerCase();
+                            li.innerHTML = '<div class="custom-item-text"><strong>' + item.user + '</strong> <span style="color: var(--muted); font-size:0.8rem;">(' + item.ticket + ')</span></div>' +
+                                (esGanador ? '<span class="item-badge" style="background: var(--gold); color: black;">¡Ganador Principal!</span>' : '<span class="item-badge" style="background: #334155;">Elección Arcade</span>');
+                            arcadeList.appendChild(li);
+                        });
                     }
-                }, restante + 100);
-            } else {
-                // NO HAY SUSPENSE O YA PASÓ
-                detenerTragaperras();
-                mostrarGanador(data);
-            }
+                }
+                
+                refrescarHistorialAntiSpoiler();
 
-            actualGanadorUser = data.ganador.user;
-            document.getElementById('winnerName').innerText = data.ganador.user;
-            
-            // --- FIX: FRASE FIJA Y DETERMINISTA ---
-            let fraseFinal = data.frase;
-            if (!fraseFinal) {
-                const seed = data.timestamp ? Math.floor(data.timestamp) : 0;
-                fraseFinal = FRASES_VIDEOJUEGOS[seed % FRASES_VIDEOJUEGOS.length];
-            }
-            document.getElementById('winnerQuote').innerText = fraseFinal;
-            // --------------------------------------
-            
-            let numeroBoleto = data.ganador.ticket;
-            const matchNum = data.ganador.ticket.match(/^(\d+)/);
-            if (matchNum) {
-                numeroBoleto = "Boleto premiado Nº " + matchNum[1];
             } else {
-                numeroBoleto = "Boleto premiado: " + data.ganador.ticket;
+                if(slot) slot.classList.remove('active');
+                if(winnerCard) winnerCard.style.display = 'none';
+                if(waitingCard) waitingCard.classList.remove('hidden');
+                
+                refrescarHistorialAntiSpoiler();
             }
-            document.getElementById('winnerTicket').innerText = numeroBoleto;
-            
-            const arcadeList = document.getElementById('arcadeList');
-            arcadeList.innerHTML = '';
-            if (data.arcadeGroup && data.arcadeGroup.length > 0) {
-                data.arcadeGroup.forEach(function(item) {
-                    const li = document.createElement('li');
-                    li.className = 'custom-item';
-                    const esGanador = item.user.toLowerCase() === data.ganador.user.toLowerCase();
-                    li.innerHTML = '<div class="custom-item-text"><strong>' + item.user + '</strong> <span style="color: var(--muted); font-size:0.8rem;">(' + item.ticket + ')</span></div>' +
-                        (esGanador ? '<span class="item-badge" style="background: var(--gold); color: black;">¡Ganador Principal!</span>' : '<span class="item-badge" style="background: #334155;">Elección Arcade</span>');
-                    arcadeList.appendChild(li);
-                });
-            }
-            
-            refrescarHistorialAntiSpoiler();
-
-        } else {
-            // NO HAY SORTEO ACTIVO
-            slot.classList.remove('active');
-            winnerCard.style.display = 'none';
-            waitingCard.classList.remove('hidden');
-            
-            refrescarHistorialAntiSpoiler();
+        } catch (e) {
+            console.error("Error al procesar data de sorteo_actual:", e);
         }
     });
 
     function mostrarGanador(data) {
         const winnerCard = document.getElementById('winnerCard');
-        winnerCard.style.display = 'block';
-        document.getElementById('slotMachineCard').classList.remove('active');
+        if(winnerCard) winnerCard.style.display = 'block';
+        const slot = document.getElementById('slotMachineCard');
+        if(slot) slot.classList.remove('active');
         
-        // Ha terminado la espera de la caja de arriba, comprobamos repeticiones para la alerta amarilla
         verificarRepetidoVisual();
     }
 
@@ -1986,7 +2124,7 @@
         rawLines.forEach(function(line) {
             let lineaLimpia = line.trim();
             if (!lineaLimpia) return;
-            const matchUser = lineaLimpia.match(/@[\w_]+/);
+            const matchUser = lineaLimpia.match(/@[\w.-]+/);
             if (matchUser) {
                 let boletoLimpio = lineaLimpia.replace(/PUNTO\s+EXTRA\s*/gi, '').trim();
                 participantesValidos.push({ ticket: boletoLimpio, user: matchUser[0] });
@@ -2050,7 +2188,6 @@
         const ahora = new Date();
         const fechaFormateada = `${nombresMeses[ahora.getMonth()]} ${ahora.getFullYear()}`;
 
-        // Elegir la frase para este sorteo (se guarda en resultadoData)
         const fraseGanador = fraseVideojuegoAleatoria();
 
         db.ref('historial_ganadores').push({
@@ -2076,7 +2213,7 @@
     }
 
     // ============================================================
-    //  HISTORIAL Y LISTAS
+    //  RENDERIZADO DE LISTAS
     // ============================================================
     db.ref('historial_ganadores').on('value', function(snapshot) {
         const data = snapshot.val();
@@ -2090,46 +2227,122 @@
             rawHistoryItems.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
         }
         
-        // Pasa el control al filtro Anti-Spoiler, él decidirá si muestra o no el nuevo registro
         refrescarHistorialAntiSpoiler();
     });
 
     function renderWinnersList(list) {
         const listEl = document.getElementById('winnersCountList');
         const btn = document.getElementById('btnToggleWinners');
+        if(!listEl) return;
+        
         listEl.innerHTML = '';
         if (list.length === 0) {
             listEl.innerHTML = '<li style="text-align: center; color: var(--muted);">Sin historial de ganadores guardado.</li>';
-            btn.classList.add('hidden');
+            if(btn) btn.classList.add('hidden');
             return;
         }
-        const visibleItems = isWinnersExpanded ? list : list.slice(0, 3);
-        visibleItems.forEach(function(item, index) {
+
+        const listWithRank = list.map((item, idx) => ({ ...item, rank: idx + 1 }));
+        let itemsToDisplay = [];
+        const isSearching = winnersSearchQuery.length > 0;
+
+        if (isSearching) {
+            itemsToDisplay = listWithRank.filter(item => item.user.toLowerCase().includes(winnersSearchQuery));
+            if (btn) btn.classList.add('hidden');
+            if (itemsToDisplay.length === 0) {
+                listEl.innerHTML = '<li style="text-align: center; color: var(--muted); padding: 6px;">No se encontró a ningún ganador con ese nombre.</li>';
+                return;
+            }
+        } else {
+            itemsToDisplay = isWinnersExpanded ? listWithRank : listWithRank.slice(0, 3);
+            if (btn) {
+                if (list.length > 3) {
+                    btn.classList.remove('hidden');
+                    btn.innerText = isWinnersExpanded ? '⬆️ Mostrar solo los 3 principales' : '⬇️ Ver todos los usuarios premiados (' + list.length + ')';
+                } else {
+                    btn.classList.add('hidden');
+                }
+            }
+        }
+
+        itemsToDisplay.forEach(function(item) {
             const li = document.createElement('li');
             li.className = 'custom-item';
             const textoVez = item.total === 1 ? 'vez premiado' : 'veces premiado';
+            
             let medallaIcono = '';
-            if (index === 0) medallaIcono = '🥇 ';
-            else if (index === 1) medallaIcono = '🥈 ';
-            else if (index === 2) medallaIcono = '🥉 ';
+            if (item.rank === 1) medallaIcono = '🥇 ';
+            else if (item.rank === 2) medallaIcono = '🥈 ';
+            else if (item.rank === 3) medallaIcono = '🥉 ';
+            else medallaIcono = `<span style="color: var(--muted); font-size: 0.8rem; margin-right: 4px;">#${item.rank}</span>`;
+            
             li.innerHTML = '<div class="custom-item-text"><strong>' + medallaIcono + item.user + '</strong></div><span class="item-badge">' + item.total + ' ' + textoVez + '</span>';
             listEl.appendChild(li);
         });
-        if (list.length > 3) {
-            btn.classList.remove('hidden');
-            btn.innerText = isWinnersExpanded ? '⬆️ Mostrar solo los 3 principales' : '⬇️ Ver todos los usuarios premiados (' + list.length + ')';
-        } else {
-            btn.classList.add('hidden');
+    }
+
+    function renderHoFList(list) {
+        const listEl = document.getElementById('hallOfFameList');
+        const btn = document.getElementById('btnToggleHoF');
+        if(!listEl) return;
+        
+        listEl.innerHTML = '';
+        if (list.length === 0) {
+            listEl.innerHTML = '<li style="text-align: center; color: var(--muted);">Aún no hay datos de juegos pasados.</li>';
+            if(btn) btn.classList.add('hidden');
+            return;
         }
+        
+        const listWithRank = list.map((item, idx) => ({ ...item, rank: idx + 1 }));
+        
+        let itemsToDisplay = [];
+        const isSearching = hofSearchQuery.length > 0;
+
+        if (isSearching) {
+            itemsToDisplay = listWithRank.filter(item => item.user.toLowerCase().includes(hofSearchQuery));
+            if (btn) btn.classList.add('hidden'); 
+            if (itemsToDisplay.length === 0) {
+                listEl.innerHTML = '<li style="text-align: center; color: var(--muted); padding: 6px;">No se encontró a ningún participante con ese nombre.</li>';
+                return;
+            }
+        } else {
+            itemsToDisplay = isHoFExpanded ? listWithRank : listWithRank.slice(0, 3); 
+            if (btn) {
+                if (list.length > 3) {
+                    btn.classList.remove('hidden');
+                    btn.innerText = isHoFExpanded ? '⬆️ Mostrar solo el Top 3' : '⬇️ Ver todo el Hall of Fame (' + list.length + ')';
+                } else {
+                    btn.classList.add('hidden');
+                }
+            }
+        }
+
+        itemsToDisplay.forEach(function(item) {
+            const li = document.createElement('li');
+            li.className = 'custom-item';
+            
+            const textoJuegos = item.total === 1 ? 'juego' : 'juegos';
+            
+            let iconoOId = '';
+            if (item.rank === 1) iconoOId = '🥇 ';
+            else if (item.rank === 2) iconoOId = '🥈 ';
+            else if (item.rank === 3) iconoOId = '🥉 ';
+            else iconoOId = `<span style="color: var(--muted); font-size: 0.8rem; margin-right: 4px;">#${item.rank}</span>`;
+            
+            li.innerHTML = '<div class="custom-item-text"><strong>' + iconoOId + item.user + '</strong></div><span class="item-badge" style="background: var(--success);">' + item.total + ' ' + textoJuegos + '</span>';
+            listEl.appendChild(li);
+        });
     }
 
     function renderHistoryList(list) {
         const listEl = document.getElementById('historyList');
         const btn = document.getElementById('btnToggleHistory');
+        if(!listEl) return;
+        
         listEl.innerHTML = '';
         if (list.length === 0) {
             listEl.innerHTML = '<li style="text-align: center; color: var(--muted);">Sin sorteos registrados.</li>';
-            btn.classList.add('hidden');
+            if(btn) btn.classList.add('hidden');
             return;
         }
         const visibleItems = isHistoryExpanded ? list : list.slice(0, 3);
@@ -2140,20 +2353,24 @@
             if (isAdminLoggedIn) {
                 deleteBtnHtml = `<button class="delete-item-btn" onclick="borrarGanadorEspecifico('${item.key}', '${item.user}', '${item.fecha}')">🗑️ Borrar</button>`;
             }
-            li.innerHTML = '<div class="custom-item-text"><strong>' + item.user + '</strong> <span style="color: var(--muted); font-size:0.8rem;">(' + item.ticket + ')</span></div>' +
+            
+            li.innerHTML = '<div class="custom-item-text"><strong>' + item.user + '</strong></div>' +
                            '<div style="display:flex; align-items:center; gap:6px;"><div style="font-size: 0.75rem; color: var(--muted);">' + item.fecha + '</div>' + deleteBtnHtml + '</div>';
             listEl.appendChild(li);
         });
         if (list.length > 3) {
-            btn.classList.remove('hidden');
-            btn.innerText = isHistoryExpanded ? '⬆️ Mostrar solo los últimos 3 sorteos' : '⬇️ Ver todo el historial (' + list.length + ')';
+            if(btn) {
+                btn.classList.remove('hidden');
+                btn.innerText = isHistoryExpanded ? '⬆️ Mostrar solo los últimos 3 sorteos' : '⬇️ Ver todo el historial (' + list.length + ')';
+            }
         } else {
-            btn.classList.add('hidden');
+            if(btn) btn.classList.add('hidden');
         }
     }
 
     function toggleWinnersView() { isWinnersExpanded = !isWinnersExpanded; refrescarHistorialAntiSpoiler(); }
     function toggleHistoryView() { isHistoryExpanded = !isHistoryExpanded; refrescarHistorialAntiSpoiler(); }
+    function toggleHoFView() { isHoFExpanded = !isHoFExpanded; refrescarHistorialAntiSpoiler(); }
 
     // ============================================================
     //  ADMIN
@@ -2162,7 +2379,8 @@
         const pass = prompt("Introduce la clave de administrador:");
         if (pass && btoa(pass) === "cGF0cnVsbGExMjM=") {
             isAdminLoggedIn = true;
-            document.getElementById('adminPanel').classList.remove('hidden');
+            const panel = document.getElementById('adminPanel');
+            if(panel) panel.classList.remove('hidden');
             importarDesdeTelegram(false);
             refrescarHistorialAntiSpoiler();
             cargarListaBackups();
@@ -2188,15 +2406,19 @@
     }
 
     function borrarTodo() {
-        if (confirm("⚠️ ¿BORRAR TODO el historial de la web?")) {
-            document.getElementById('listInput').value = '';
-            document.getElementById('blacklistInput').value = '';
-            document.getElementById('drawDateInput').value = '';
-            document.getElementById('drawTimeInput').value = '';
+        if (confirm("⚠️ ¿Deseas BORRAR TODO el historial de ganadores y el sorteo actual?\n\n(No te preocupes, la lista de participantes se recargará automáticamente para no romper el Hall of Fame).")) {
+            const el2 = document.getElementById('blacklistInput');
+            const el3 = document.getElementById('drawDateInput');
+            const el4 = document.getElementById('drawTimeInput');
+            if(el2) el2.value = '';
+            if(el3) el3.value = '';
+            if(el4) el4.value = '';
+            
             db.ref('sorteo_actual').remove();
             db.ref('historial_ganadores').remove();
-            db.ref('sorteo_participantes_raw').remove();
-            alert("Todo borrado correctamente.");
+            
+            alert("Historial limpiado. Refrescando la lista de participantes...");
+            importarDesdeTelegram(false);
         }
     }
 
@@ -2204,13 +2426,17 @@
     //  FUNCIÓN PRINCIPAL DE PROGRAMACIÓN
     // ============================================================
     function programarOEjecutarSorteo() {
-        const dateVal = document.getElementById('drawDateInput').value;
-        const timeVal = document.getElementById('drawTimeInput').value;
-        const rawLines = document.getElementById('listInput').value.trim();
-        const rawBlacklist = document.getElementById('blacklistInput').value.trim();
+        const dateInput = document.getElementById('drawDateInput');
+        const timeInput = document.getElementById('drawTimeInput');
+        const listInput = document.getElementById('listInput');
+        const blInput = document.getElementById('blacklistInput');
+        
+        if(!dateInput || !timeInput || !listInput || !blInput) return;
 
-        console.log("Fecha seleccionada:", dateVal);
-        console.log("Hora seleccionada:", timeVal);
+        const dateVal = dateInput.value;
+        const timeVal = timeInput.value;
+        const rawLines = listInput.value.trim();
+        const rawBlacklist = blInput.value.trim();
 
         if (!rawLines) return alert("Pega o importa la lista de participantes.");
 
@@ -2219,7 +2445,8 @@
             if (confirm("El sorteo se realizará de inmediato. ¿Continuar?")) {
                 detenerTragaperras();
                 mostrarRecreativa(true);
-                document.getElementById('slotStatus').innerText = '🎰 SORTEO INMEDIATO...';
+                const slotStatus = document.getElementById('slotStatus');
+                if(slotStatus) slotStatus.innerText = '🎰 SORTEO INMEDIATO...';
                 calcularYEjecutarTirada(rawLines, rawBlacklist, false);
             }
             return;
@@ -2255,7 +2482,7 @@
     }
 
     // ============================================================
-    //  INICIALIZADORES DE SELECTORES
+    //  INICIALIZADORES DE SELECTORES RETRO
     // ============================================================
     function initRetroDatePicker() {
         const input = document.getElementById("drawDateInput");
@@ -2297,7 +2524,7 @@
                 if (selected && iso(d) === iso(selected)) b.classList.add("selected");
                 b.textContent = d.getDate();
                 b.onclick = (e) => {
-                    e.stopPropagation(); // Evita que se cierre al hacer click
+                    e.stopPropagation(); 
                     selected = new Date(d.getFullYear(), d.getMonth(), d.getDate());
                     render();
                 };
@@ -2375,7 +2602,7 @@
                 item.dataset.value = String(n);
                 item.textContent = pad(n);
                 item.addEventListener("click", (e) => {
-                    e.stopPropagation(); // Evita que se cierre al hacer click
+                    e.stopPropagation();
                     onSelect(n);
                     render();
                 });
@@ -2466,7 +2693,6 @@
 
         document.addEventListener("click", e => {
             if (!picker.contains(e.target) && !panel.classList.contains("hidden")) {
-                // Al hacer click fuera: revertimos variables usando el último valor guardado
                 const match = /^(\d{2}):(\d{2})$/.exec(valueInput.value || "");
                 if (match) {
                     hour = Number(match[1]);
@@ -2484,9 +2710,6 @@
         valueInput.value = "";
     }
 
-    // ============================================================
-    //  NUEVO SELECTOR RETRO DE MES Y AÑO
-    // ============================================================
     function initRetroMonthPicker() {
         const valueInput = document.getElementById("manualWinnerMonth");
         const display = document.getElementById("retroMonthDisplay");
@@ -2503,7 +2726,6 @@
         let hasSelected = false;
         const pad = n => String(n).padStart(2, "0");
 
-        const currentYear = new Date().getFullYear();
         const minYear = 2020;
         const maxYear = 2040;
         
@@ -2517,7 +2739,7 @@
                 item.dataset.value = String(n);
                 item.textContent = isMonth ? mesesAbbr[n - 1] : n;
                 item.addEventListener("click", (e) => {
-                    e.stopPropagation(); // Evita que se cierre al hacer click
+                    e.stopPropagation();
                     onSelect(n);
                     render();
                 });
@@ -2538,7 +2760,7 @@
 
         function setFromCurrentDate() {
             const now = new Date();
-            month = now.getMonth() + 1; // 1-12
+            month = now.getMonth() + 1; 
             year = now.getFullYear();
             hasSelected = true;
         }
@@ -2611,7 +2833,6 @@
 
         document.addEventListener("click", e => {
             if (!picker.contains(e.target) && !panel.classList.contains("hidden")) {
-                // Al hacer click fuera: revertimos variables usando el último valor guardado
                 const match = /^(\d{4})-(\d{2})$/.exec(valueInput.value || "");
                 if (match) {
                     year = Number(match[1]);
