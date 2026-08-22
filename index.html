@@ -776,7 +776,7 @@
         </div>
     </div>
 
-    <!-- LISTA DE PREMIADOS (CON BUSCADOR) -->
+    <!-- LISTA DE PREMIADOS -->
     <div id="winnersCountCard" class="card hidden">
         <h3>🏆 Ganadores 🏆</h3>
         
@@ -788,7 +788,7 @@
         <button id="btnToggleWinners" class="btn-toggle-view hidden" onclick="toggleWinnersView()">⬇️ Ver todos los usuarios premiados</button>
     </div>
 
-    <!-- HALL OF FAME: JUEGOS COMPLETADOS (CON BUSCADOR) -->
+    <!-- HALL OF FAME: JUEGOS COMPLETADOS -->
     <div id="hallOfFameCard" class="card hidden">
         <h3>👾 Hall of Fame 👾</h3>
         
@@ -802,7 +802,7 @@
 
     <!-- HISTORIAL DE SORTEOS -->
     <div id="historyCard" class="card hidden">
-        <h3>📜 Historial de Ganadores</h3>
+        <h3>📜 Historial de Ganadores Anteriores</h3>
         <ul id="historyList" class="custom-list"></ul>
         <button id="btnToggleHistory" class="btn-toggle-view hidden" onclick="toggleHistoryView()">⬇️ Ver todo el historial</button>
     </div>
@@ -1718,9 +1718,13 @@
             btn.innerText = "⏳ Cargando lista en vivo desde Telegram...";
             btn.disabled = true;
         }
-        const timestamp = Date.now();
-        const targetUrl = `https://t.me/s/retrojuegodelmes?before=${timestamp}`;
+        
+        // CORRECCIÓN: Usamos un timestamp de parámetro 'v' para engañar a la caché,
+        // sin romper el parámetro 'before' que usa Telegram para su paginación interna.
+        const bustCache = Date.now();
+        const targetUrl = `https://t.me/s/retrojuegodelmes?v=${bustCache}`;
         const workerUrl = `${MI_CLOUDFLARE_WORKER}?url=${encodeURIComponent(targetUrl)}`;
+        
         try {
             const response = await fetch(workerUrl, { cache: "no-store" });
             if (!response.ok) throw new Error(`Error Cloudflare: ${response.status}`);
@@ -2292,7 +2296,7 @@
                 return;
             }
         } else {
-            itemsToDisplay = isHoFExpanded ? listWithRank : listWithRank.slice(0, 3);
+            itemsToDisplay = isHoFExpanded ? listWithRank : listWithRank.slice(0, 3); 
             if (btn) {
                 if (list.length > 3) {
                     btn.classList.remove('hidden');
@@ -2340,7 +2344,6 @@
                 deleteBtnHtml = `<button class="delete-item-btn" onclick="borrarGanadorEspecifico('${item.key}', '${item.user}', '${item.fecha}')">🗑️ Borrar</button>`;
             }
             
-            // Historial limpio, sin rastro del boleto
             li.innerHTML = '<div class="custom-item-text"><strong>' + item.user + '</strong></div>' +
                            '<div style="display:flex; align-items:center; gap:6px;"><div style="font-size: 0.75rem; color: var(--muted);">' + item.fecha + '</div>' + deleteBtnHtml + '</div>';
             listEl.appendChild(li);
@@ -2393,20 +2396,19 @@
     }
 
     function borrarTodo() {
-        if (confirm("⚠️ ¿BORRAR TODO el historial de la web?")) {
-            const el1 = document.getElementById('listInput');
+        if (confirm("⚠️ ¿Deseas BORRAR TODO el historial de ganadores y el sorteo actual? (Los participantes se mantendrán para no joder el Hall of Fame)")) {
             const el2 = document.getElementById('blacklistInput');
             const el3 = document.getElementById('drawDateInput');
             const el4 = document.getElementById('drawTimeInput');
-            if(el1) el1.value = '';
             if(el2) el2.value = '';
             if(el3) el3.value = '';
             if(el4) el4.value = '';
             
             db.ref('sorteo_actual').remove();
             db.ref('historial_ganadores').remove();
-            db.ref('sorteo_participantes_raw').remove();
-            alert("Todo borrado correctamente.");
+            
+            alert("Historial de sorteos borrado correctamente. Intentando refrescar Telegram...");
+            importarDesdeTelegram(false);
         }
     }
 
@@ -2555,7 +2557,6 @@
 
         document.addEventListener("click", e => {
             if (!picker.contains(e.target) && !panel.classList.contains("hidden")) {
-                // Al hacer click fuera: revertimos el estado al último valor guardado (o nulo)
                 selected = parse(input.value); 
                 panel.classList.add("hidden");
             }
