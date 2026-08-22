@@ -1068,20 +1068,20 @@
         let enCongelacion = false;
         let freezeUntil = 0;
 
-        // Comprobamos si el sorteo acaba de ocurrir o va a ocurrir (Ventana de 2 minutos)
         if (programData) {
-            if (programData.targetTime) {
-                freezeUntil = programData.targetTime + 120000; // 2 mins después de la hora programada
-                // Activamos congelación desde poco antes de la hora hasta 2 minutos después
+            // ¿Es un sorteo con suspense/programado?
+            // (Si animarResultado era true, tenemos revealAt. Si fue inmediato desde panel, no hay revealAt).
+            const tieneSuspense = programData.revealAt !== undefined;
+            const esProgramado = programData.status === 'programado' || programData.status === 'procesando';
+
+            if (esProgramado && programData.targetTime) {
+                freezeUntil = programData.targetTime + 120000; // 2 minutos de congelación
                 if (ahora > (programData.targetTime - 60000) && ahora < freezeUntil) enCongelacion = true;
-            } else if (programData.timestamp) {
-                freezeUntil = programData.timestamp + 120000; // 2 mins después de un sorteo manual
+            } else if (tieneSuspense && programData.timestamp) {
+                freezeUntil = programData.timestamp + 120000;
                 if (ahora < freezeUntil) enCongelacion = true;
-            } else if (programData.status === "procesando" || programData.status === "programado") {
-                if (programData.targetTime && ahora > programData.targetTime && ahora < programData.targetTime + 120000) {
-                    enCongelacion = true;
-                }
             }
+            // Si es un sorteo en directo manual, no cumple ninguna de las dos, así que no se congela.
         }
 
         if (enCongelacion) {
@@ -1102,7 +1102,7 @@
         
         let winnersCountToRender = Object.keys(mapaConteo).map(usr => ({ user: usr, total: mapaConteo[usr] })).sort((a, b) => b.total - a.total);
 
-        // Renderizamos las tarjetas congeladas
+        // Renderizamos las tarjetas congeladas o en directo (según corresponda)
         renderWinnersList(winnersCountToRender);
         renderHistoryList(historyToRender);
 
