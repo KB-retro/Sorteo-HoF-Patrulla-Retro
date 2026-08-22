@@ -317,7 +317,7 @@
         .winner-title { color: var(--gold); font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px; }
         .winner-name { font-size: 2rem; font-weight: bold; margin: 10px 0 5px; color: #fff; word-break: break-word; }
         
-        /* Modificado: Color verde radiactivo y sombra de neón */
+        /* Color verde radiactivo y sombra de neón */
         .winner-ticket { 
             font-size: 1.15rem; 
             font-weight: bold; 
@@ -1229,12 +1229,10 @@
                 let lineaLimpia = line.trim();
                 if (!lineaLimpia) return;
                 
-                // Expresión regular más tolerante para usuarios con guiones y puntos en Telegram
                 const matchUser = lineaLimpia.match(/@[\w_.-]+/);
                 if (matchUser) {
                     let user = matchUser[0];
                     let numBoletoMatch = lineaLimpia.match(/^(\d+)/);
-                    // Uso seguro de variable, pasamos a String por si acaso
                     let numeroBoleto = numBoletoMatch ? numBoletoMatch[1] : (boletosPorUsuario[user] ? (boletosPorUsuario[user].length + 1).toString() : "1");
                     
                     if (!boletosPorUsuario[user]) boletosPorUsuario[user] = [];
@@ -2194,7 +2192,9 @@
             if (isAdminLoggedIn) {
                 deleteBtnHtml = `<button class="delete-item-btn" onclick="borrarGanadorEspecifico('${item.key}', '${item.user}', '${item.fecha}')">🗑️ Borrar</button>`;
             }
-            li.innerHTML = '<div class="custom-item-text"><strong>' + item.user + '</strong> <span style="color: var(--muted); font-size:0.8rem;">(' + item.ticket + ')</span></div>' +
+            
+            // ELIMINADO TODO RASTRO DEL BOLETO
+            li.innerHTML = '<div class="custom-item-text"><strong>' + item.user + '</strong></div>' +
                            '<div style="display:flex; align-items:center; gap:6px;"><div style="font-size: 0.75rem; color: var(--muted);">' + item.fecha + '</div>' + deleteBtnHtml + '</div>';
             listEl.appendChild(li);
         });
