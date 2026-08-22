@@ -675,7 +675,7 @@
         .retro-date-weekdays,.retro-date-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
         .retro-date-weekdays{margin-bottom:5px}
         .retro-date-weekdays span{text-align:center;font-size:.72rem;opacity:.6}
-        .retro-date-cell{min-height:36px;border:0;border-radius:9px;background:transparent;color:#e2e8f0;cursor:pointer;font-weight:700}
+        .retro-date-cell{min-height:36px;border:0;border-radius:9px;background:transparent;color:#e2e8f0;cursor:pointer;font-inherit;font-weight:700}
         .retro-date-cell:hover{background:rgba(139,92,246,.22)}
         .retro-date-cell.other-month{opacity:.25}
         .retro-date-cell.today{outline:1px solid rgba(167,139,250,.7)}
@@ -991,16 +991,14 @@
     let isWinnersExpanded = false;
     let isHistoryExpanded = false;
     let rawHistoryItems = [];
-    let rawWinnersCount = [];
     let isAdminLoggedIn = false;
     let isUserEditingList = false;
-    let suspenderRenderHistorial = false; // Bandera para pausar el historial durante el suspense
     
     let cacheJuegosSheets = null;
     let ultimaCargaSheets = 0;
 
     let timerInterval = null;
-    let programData = null;
+    let programData = null; // Guarda el estado actual del sorteo para comprobar bloqueos
     let slotAnimationInterval = null;
     let slotAnimationActive = false;
     let slotFinalizing = false;
@@ -1061,6 +1059,63 @@
     const nombresMeses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
     // ============================================================
+    //  FUNCIONES DE CONGELACIÓN (ANTI-SPOILER 2 MINUTOS)
+    // ============================================================
+    function refrescarHistorialAntiSpoiler() {
+        let historyToRender = rawHistoryItems;
+
+        const ahora = Date.now();
+        let enCongelacion = false;
+        let freezeUntil = 0;
+
+        // Comprobamos si el sorteo acaba de ocurrir o va a ocurrir (Ventana de 2 minutos)
+        if (programData) {
+            if (programData.targetTime) {
+                freezeUntil = programData.targetTime + 120000; // 2 mins después de la hora programada
+                // Activamos congelación desde poco antes de la hora hasta 2 minutos después
+                if (ahora > (programData.targetTime - 60000) && ahora < freezeUntil) enCongelacion = true;
+            } else if (programData.timestamp) {
+                freezeUntil = programData.timestamp + 120000; // 2 mins después de un sorteo manual
+                if (ahora < freezeUntil) enCongelacion = true;
+            } else if (programData.status === "procesando" || programData.status === "programado") {
+                if (programData.targetTime && ahora > programData.targetTime && ahora < programData.targetTime + 120000) {
+                    enCongelacion = true;
+                }
+            }
+        }
+
+        if (enCongelacion) {
+            // Filtramos cualquier registro nuevo que Firebase nos haya "chivado" antes de tiempo.
+            // Ocultamos todos los historiales creados en los últimos 2 minutos.
+            historyToRender = rawHistoryItems.filter(item => {
+                const itemTime = item.timestamp || 0;
+                return itemTime < (ahora - 120000); 
+            });
+        }
+
+        // Recalculamos el Hall of Fame basado SOLO en el historial filtrado
+        let mapaConteo = {};
+        historyToRender.forEach(function(item) {
+            const userKey = item.user;
+            mapaConteo[userKey] = (mapaConteo[userKey] || 0) + 1;
+        });
+        
+        let winnersCountToRender = Object.keys(mapaConteo).map(usr => ({ user: usr, total: mapaConteo[usr] })).sort((a, b) => b.total - a.total);
+
+        // Renderizamos las tarjetas congeladas
+        renderWinnersList(winnersCountToRender);
+        renderHistoryList(historyToRender);
+
+        if (historyToRender.length > 0) {
+            document.getElementById('winnersCountCard').classList.remove('hidden');
+            document.getElementById('historyCard').classList.remove('hidden');
+        } else {
+            document.getElementById('winnersCountCard').classList.add('hidden');
+            document.getElementById('historyCard').classList.add('hidden');
+        }
+    }
+
+    // ============================================================
     //  FUNCIONES DE FIREBASE Y PARTICIPANTES
     // ============================================================
     db.ref('sorteo_participantes_raw').on('value', function(snapshot) {
@@ -1091,6 +1146,9 @@
         initRetroDatePicker();
         initRetroTimePicker();
         initRetroMonthPicker();
+        
+        // Iniciamos el Guardia de Seguridad que vigila el historial cada segundo
+        setInterval(refrescarHistorialAntiSpoiler, 1000);
     });
 
     // ============================================================
@@ -1790,7 +1848,10 @@
     // ============================================================
     db.ref('sorteo_actual').on('value', function(snapshot) {
         const data = snapshot.val();
-        programData = data;
+        
+        // Guardamos el estado actual para que el filtro anti-spoiler lo analice
+        programData = data || { status: 'inactivo' };
+        
         if (timerInterval) clearInterval(timerInterval);
         detenerTragaperras();
 
@@ -1802,19 +1863,16 @@
             winnerCard.style.display = 'none';
             waitingCard.classList.add('hidden');
             
-            // Aseguramos que el historial se actualice normalmente si hay algo programado a futuro
-            suspenderRenderHistorial = false;
-            
             iniciarRelojCuentaAtras(data.targetTime);
+            refrescarHistorialAntiSpoiler(); 
+            
         } else if (data && data.ganador) {
             waitingCard.classList.add('hidden');
             const revealAt = Number(data.revealAt) || 0;
             const restante = revealAt - Date.now();
 
             if (restante > 0) {
-                // MODO SUSPENSE ACTIVO: Congelamos el renderizado del historial
-                suspenderRenderHistorial = true;
-                
+                // ESTAMOS EN PLENO SUSPENSE
                 winnerCard.style.display = 'none';
                 finalizarTragaperras(data.ganador, revealAt);
                 setTimeout(() => {
@@ -1825,7 +1883,6 @@
                 }, restante + 100);
             } else {
                 // NO HAY SUSPENSE O YA PASÓ
-                suspenderRenderHistorial = false;
                 detenerTragaperras();
                 mostrarGanador(data);
             }
@@ -1850,7 +1907,6 @@
                 numeroBoleto = "Boleto premiado: " + data.ganador.ticket;
             }
             document.getElementById('winnerTicket').innerText = numeroBoleto;
-            verificarRepetidoVisual();
             
             const arcadeList = document.getElementById('arcadeList');
             arcadeList.innerHTML = '';
@@ -1864,39 +1920,26 @@
                     arcadeList.appendChild(li);
                 });
             }
+            
+            refrescarHistorialAntiSpoiler();
+
         } else {
-            // NO HAY SORTEO
+            // NO HAY SORTEO ACTIVO
             slot.classList.remove('active');
             winnerCard.style.display = 'none';
             waitingCard.classList.remove('hidden');
             
-            // Nos aseguramos de volver a mostrar el historial si alguien borra el sorteo en curso
-            suspenderRenderHistorial = false;
-            if (rawHistoryItems.length > 0) {
-                renderWinnersList();
-                renderHistoryList();
-                document.getElementById('winnersCountCard').classList.remove('hidden');
-                document.getElementById('historyCard').classList.remove('hidden');
-            }
+            refrescarHistorialAntiSpoiler();
         }
     });
 
     function mostrarGanador(data) {
-        // Al terminar el suspense, mostramos las cartas ganadoras y actualizamos el historial
-        suspenderRenderHistorial = false;
-        
         const winnerCard = document.getElementById('winnerCard');
         winnerCard.style.display = 'block';
         document.getElementById('slotMachineCard').classList.remove('active');
         
-        // Renderizamos y mostramos el historial con el nuevo ganador
-        if (rawHistoryItems.length > 0) {
-            renderWinnersList();
-            renderHistoryList();
-            verificarRepetidoVisual();
-            document.getElementById('winnersCountCard').classList.remove('hidden');
-            document.getElementById('historyCard').classList.remove('hidden');
-        }
+        // Ha terminado la espera de la caja de arriba, comprobamos repeticiones para la alerta amarilla
+        verificarRepetidoVisual();
     }
 
     function ejecutarTiradaProgramada() {
@@ -2006,43 +2049,30 @@
     // ============================================================
     db.ref('historial_ganadores').on('value', function(snapshot) {
         const data = snapshot.val();
-        let mapaConteo = {};
         rawHistoryItems = [];
         if (data) {
             Object.keys(data).forEach(function(key) {
                 const item = data[key];
                 item.key = key;
                 rawHistoryItems.push(item);
-                const userKey = item.user;
-                mapaConteo[userKey] = (mapaConteo[userKey] || 0) + 1;
             });
             rawHistoryItems.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
         }
-        rawWinnersCount = Object.keys(mapaConteo).map(usr => ({ user: usr, total: mapaConteo[usr] }))
-            .sort((a, b) => b.total - a.total);
-            
-        // Si NO estamos en modo suspense, lo renderizamos y actualizamos la vista
-        if (!suspenderRenderHistorial) {
-            renderWinnersList();
-            renderHistoryList();
-            verificarRepetidoVisual();
-            if (rawHistoryItems.length > 0) {
-                document.getElementById('winnersCountCard').classList.remove('hidden');
-                document.getElementById('historyCard').classList.remove('hidden');
-            }
-        }
+        
+        // Pasa el control al filtro Anti-Spoiler, él decidirá si muestra o no el nuevo registro
+        refrescarHistorialAntiSpoiler();
     });
 
-    function renderWinnersList() {
+    function renderWinnersList(list) {
         const listEl = document.getElementById('winnersCountList');
         const btn = document.getElementById('btnToggleWinners');
         listEl.innerHTML = '';
-        if (rawWinnersCount.length === 0) {
+        if (list.length === 0) {
             listEl.innerHTML = '<li style="text-align: center; color: var(--muted);">Sin historial de ganadores guardado.</li>';
             btn.classList.add('hidden');
             return;
         }
-        const visibleItems = isWinnersExpanded ? rawWinnersCount : rawWinnersCount.slice(0, 3);
+        const visibleItems = isWinnersExpanded ? list : list.slice(0, 3);
         visibleItems.forEach(function(item, index) {
             const li = document.createElement('li');
             li.className = 'custom-item';
@@ -2054,24 +2084,24 @@
             li.innerHTML = '<div class="custom-item-text"><strong>' + medallaIcono + item.user + '</strong></div><span class="item-badge">' + item.total + ' ' + textoVez + '</span>';
             listEl.appendChild(li);
         });
-        if (rawWinnersCount.length > 3) {
+        if (list.length > 3) {
             btn.classList.remove('hidden');
-            btn.innerText = isWinnersExpanded ? '⬆️ Mostrar solo los 3 principales' : '⬇️ Ver todos los usuarios premiados (' + rawWinnersCount.length + ')';
+            btn.innerText = isWinnersExpanded ? '⬆️ Mostrar solo los 3 principales' : '⬇️ Ver todos los usuarios premiados (' + list.length + ')';
         } else {
             btn.classList.add('hidden');
         }
     }
 
-    function renderHistoryList() {
+    function renderHistoryList(list) {
         const listEl = document.getElementById('historyList');
         const btn = document.getElementById('btnToggleHistory');
         listEl.innerHTML = '';
-        if (rawHistoryItems.length === 0) {
+        if (list.length === 0) {
             listEl.innerHTML = '<li style="text-align: center; color: var(--muted);">Sin sorteos registrados.</li>';
             btn.classList.add('hidden');
             return;
         }
-        const visibleItems = isHistoryExpanded ? rawHistoryItems : rawHistoryItems.slice(0, 3);
+        const visibleItems = isHistoryExpanded ? list : list.slice(0, 3);
         visibleItems.forEach(function(item) {
             const li = document.createElement('li');
             li.className = 'custom-item';
@@ -2083,16 +2113,16 @@
                            '<div style="display:flex; align-items:center; gap:6px;"><div style="font-size: 0.75rem; color: var(--muted);">' + item.fecha + '</div>' + deleteBtnHtml + '</div>';
             listEl.appendChild(li);
         });
-        if (rawHistoryItems.length > 3) {
+        if (list.length > 3) {
             btn.classList.remove('hidden');
-            btn.innerText = isHistoryExpanded ? '⬆️ Mostrar solo los últimos 3 sorteos' : '⬇️ Ver todo el historial (' + rawHistoryItems.length + ')';
+            btn.innerText = isHistoryExpanded ? '⬆️ Mostrar solo los últimos 3 sorteos' : '⬇️ Ver todo el historial (' + list.length + ')';
         } else {
             btn.classList.add('hidden');
         }
     }
 
-    function toggleWinnersView() { isWinnersExpanded = !isWinnersExpanded; renderWinnersList(); }
-    function toggleHistoryView() { isHistoryExpanded = !isHistoryExpanded; renderHistoryList(); }
+    function toggleWinnersView() { isWinnersExpanded = !isWinnersExpanded; refrescarHistorialAntiSpoiler(); }
+    function toggleHistoryView() { isHistoryExpanded = !isHistoryExpanded; refrescarHistorialAntiSpoiler(); }
 
     // ============================================================
     //  ADMIN
@@ -2103,7 +2133,7 @@
             isAdminLoggedIn = true;
             document.getElementById('adminPanel').classList.remove('hidden');
             importarDesdeTelegram(false);
-            renderHistoryList();
+            refrescarHistorialAntiSpoiler();
             cargarListaBackups();
         } else if (pass !== null) {
             alert("Contraseña incorrecta.");
