@@ -317,7 +317,7 @@
         .winner-title { color: var(--gold); font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px; }
         .winner-name { font-size: 2rem; font-weight: bold; margin: 10px 0 5px; color: #fff; word-break: break-word; }
         
-        /* Modificado: Color verde radiactivo y sombra de neón */
+        /* Color verde radiactivo y sombra de neón */
         .winner-ticket { 
             font-size: 1.15rem; 
             font-weight: bold; 
@@ -974,7 +974,9 @@
 <!-- VENTANA MODAL PARTICIPANTES -->
 <div id="probabilitiesModal" class="modal-overlay hidden">
     <div class="modal-card">
-        <h2 style="color: var(--gold); margin-top: 0; margin-bottom: 10px;">📊 Lista de Participantes</h2>
+        <h2 style="color: var(--gold); margin-top: 0; margin-bottom: 5px;">📊 Lista de Participantes</h2>
+        <!-- Nuevo contador de usuarios únicos -->
+        <div id="uniqueUsersCount" style="color: var(--success); font-size: 0.9rem; font-weight: bold; margin-bottom: 10px;">Calculando...</div>
         <ul id="participantsListModal" class="credits-list" style="margin: 5px 0 15px 0; max-height: 50vh;">
             <li class="custom-item" style="justify-content: center; color: var(--muted);">Cargando participantes...</li>
         </ul>
@@ -1206,15 +1208,21 @@
     function calcularYMostrarProbabilidades() {
         const rawLinesStr = document.getElementById('listInput').value.trim();
         const modalListEl = document.getElementById('participantsListModal');
+        const uniqueCountEl = document.getElementById('uniqueUsersCount'); // Referencia al nuevo contador
+        
         if (!modalListEl) return;
         modalListEl.innerHTML = '';
+        
         if (!rawLinesStr) {
             modalListEl.innerHTML = '<li class="custom-item" style="justify-content: center; color: var(--muted);">No hay participantes cargados actualmente.</li>';
+            if(uniqueCountEl) uniqueCountEl.innerText = "Total usuarios únicos: 0";
             return;
         }
+        
         const rawLines = rawLinesStr.split('\n');
         let boletosPorUsuario = {};
         let totalBoletosValidos = 0;
+        
         rawLines.forEach(function(line) {
             let lineaLimpia = line.trim();
             if (!lineaLimpia) return;
@@ -1228,15 +1236,24 @@
                 totalBoletosValidos++;
             }
         });
+        
+        const numUsuariosUnicos = Object.keys(boletosPorUsuario).length;
+        
         if (totalBoletosValidos === 0) {
             modalListEl.innerHTML = '<li class="custom-item" style="justify-content: center; color: var(--muted);">No se encontraron participantes válidos.</li>';
+            if(uniqueCountEl) uniqueCountEl.innerText = "Total usuarios únicos: 0";
             return;
         }
+        
+        // Actualizar el texto del contador
+        if(uniqueCountEl) uniqueCountEl.innerText = `Total usuarios únicos: ${numUsuariosUnicos}`;
+        
         let listaParticipantes = Object.keys(boletosPorUsuario).map(user => {
             let listaB = boletosPorUsuario[user];
             let probabilidad = (listaB.length / totalBoletosValidos) * 100;
             return { user: user, boletos: listaB, count: listaB.length, prob: probabilidad };
         });
+        
         listaParticipantes.sort((a, b) => b.count - a.count);
         listaParticipantes.forEach(p => {
             const li = document.createElement('li');
