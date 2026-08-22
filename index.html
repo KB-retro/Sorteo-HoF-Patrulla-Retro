@@ -994,6 +994,10 @@
     let isAdminLoggedIn = false;
     let isUserEditingList = false;
     
+    // Variables para el sistema anti-parpadeo
+    let lastRenderedWinnersState = "";
+    let lastRenderedHistoryState = "";
+    
     let cacheJuegosSheets = null;
     let ultimaCargaSheets = 0;
 
@@ -1059,7 +1063,7 @@
     const nombresMeses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
     // ============================================================
-    //  FUNCIONES DE CONGELACIÓN (ANTI-SPOILER 2 MINUTOS)
+    //  FUNCIONES DE CONGELACIÓN (ANTI-SPOILER 2 MINUTOS + ANTI PARPADEO)
     // ============================================================
     function refrescarHistorialAntiSpoiler() {
         let historyToRender = rawHistoryItems;
@@ -1070,7 +1074,6 @@
 
         if (programData) {
             // ¿Es un sorteo con suspense/programado?
-            // (Si animarResultado era true, tenemos revealAt. Si fue inmediato desde panel, no hay revealAt).
             const tieneSuspense = programData.revealAt !== undefined;
             const esProgramado = programData.status === 'programado' || programData.status === 'procesando';
 
@@ -1081,11 +1084,9 @@
                 freezeUntil = programData.timestamp + 120000;
                 if (ahora < freezeUntil) enCongelacion = true;
             }
-            // Si es un sorteo en directo manual, no cumple ninguna de las dos, así que no se congela.
         }
 
         if (enCongelacion) {
-            // Filtramos cualquier registro nuevo que Firebase nos haya "chivado" antes de tiempo.
             // Ocultamos todos los historiales creados en los últimos 2 minutos.
             historyToRender = rawHistoryItems.filter(item => {
                 const itemTime = item.timestamp || 0;
@@ -1102,16 +1103,32 @@
         
         let winnersCountToRender = Object.keys(mapaConteo).map(usr => ({ user: usr, total: mapaConteo[usr] })).sort((a, b) => b.total - a.total);
 
-        // Renderizamos las tarjetas congeladas o en directo (según corresponda)
-        renderWinnersList(winnersCountToRender);
-        renderHistoryList(historyToRender);
+        // --- SISTEMA ANTI-PARPADEO ---
+        // Generamos una "huella" de los datos y el estado del botón "Ver más"
+        const newStateWinners = JSON.stringify({ exp: isWinnersExpanded, list: winnersCountToRender });
+        const newStateHistory = JSON.stringify({ exp: isHistoryExpanded, list: historyToRender });
+
+        // Solo borramos y dibujamos si la huella ha cambiado respecto a lo que ya hay en pantalla
+        if (lastRenderedWinnersState !== newStateWinners) {
+            renderWinnersList(winnersCountToRender);
+            lastRenderedWinnersState = newStateWinners;
+        }
+
+        if (lastRenderedHistoryState !== newStateHistory) {
+            renderHistoryList(historyToRender);
+            lastRenderedHistoryState = newStateHistory;
+        }
+        // ------------------------------
+
+        const cardWinners = document.getElementById('winnersCountCard');
+        const cardHistory = document.getElementById('historyCard');
 
         if (historyToRender.length > 0) {
-            document.getElementById('winnersCountCard').classList.remove('hidden');
-            document.getElementById('historyCard').classList.remove('hidden');
+            if (cardWinners.classList.contains('hidden')) cardWinners.classList.remove('hidden');
+            if (cardHistory.classList.contains('hidden')) cardHistory.classList.remove('hidden');
         } else {
-            document.getElementById('winnersCountCard').classList.add('hidden');
-            document.getElementById('historyCard').classList.add('hidden');
+            if (!cardWinners.classList.contains('hidden')) cardWinners.classList.add('hidden');
+            if (!cardHistory.classList.contains('hidden')) cardHistory.classList.add('hidden');
         }
     }
 
@@ -1147,7 +1164,7 @@
         initRetroTimePicker();
         initRetroMonthPicker();
         
-        // Iniciamos el Guardia de Seguridad que vigila el historial cada segundo
+        // Iniciamos el Guardia de Seguridad que vigila el historial cada segundo (ahora con anti-parpadeo)
         setInterval(refrescarHistorialAntiSpoiler, 1000);
     });
 
@@ -1712,8 +1729,11 @@
                 });
             }
             const noticeEl = document.getElementById('repeatNotice');
-            if (totalVictorias > 1) noticeEl.classList.remove('hidden');
-            else noticeEl.classList.add('hidden');
+            if (totalVictorias > 1) {
+                if (noticeEl.classList.contains('hidden')) noticeEl.classList.remove('hidden');
+            } else {
+                if (!noticeEl.classList.contains('hidden')) noticeEl.classList.add('hidden');
+            }
         });
     }
 
