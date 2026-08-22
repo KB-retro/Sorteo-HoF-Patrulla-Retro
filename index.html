@@ -1317,11 +1317,23 @@
             let boletosPorUsuario = {};
             let totalBoletosValidos = 0;
             
+            let sumandoParaHoF = true; 
+            
             rawLines.forEach(function(line) {
                 let lineaLimpia = line.trim();
                 if (!lineaLimpia) return;
                 
+                // EXPRESIÓN REGULAR CORREGIDA: [\w_.-]
                 const matchUser = lineaLimpia.match(/@[\w_.-]+/i);
+                
+                let textoSinUsuario = lineaLimpia.toUpperCase();
+                if (matchUser) {
+                    textoSinUsuario = textoSinUsuario.replace(matchUser[0].toUpperCase(), '');
+                }
+                
+                if (textoSinUsuario.includes('EXTRA')) {
+                    sumandoParaHoF = false; 
+                }
                 
                 if (matchUser) {
                     let user = matchUser[0];
@@ -1734,7 +1746,7 @@
     }
 
     // ============================================================
-    //  IMPORTAR DESDE TELEGRAM (SOLUCIÓN DEFINITIVA CACHÉ)
+    //  IMPORTAR DESDE TELEGRAM (SOLUCIÓN DEFINITIVA CACHÉ Y CORS)
     // ============================================================
     async function importarDesdeTelegram(esManual = true) {
         const btn = document.querySelector('.telegram-btn');
@@ -1745,21 +1757,15 @@
             btn.disabled = true;
         }
         
-        // CÓDIGO CORREGIDO: Usamos el parámetro "?v=" para evadir caché. 
-        // ¡NUNCA USAR "?before=" CON FECHAS PORQUE TELEGRAM FALLA AL BUSCAR ESE ID DE MENSAJE!
+        // CÓDIGO CORREGIDO: Usamos el parámetro "?v=" para evadir caché
+        // y HEMOS ELIMINADO LAS CABECERAS PERSONALIZADAS que causaban el error de CORS.
         const timestamp = Date.now();
         const targetUrl = `https://t.me/s/retrojuegodelmes?v=${timestamp}`;
         const workerUrl = `${MI_CLOUDFLARE_WORKER}?url=${encodeURIComponent(targetUrl)}&nocache=${timestamp}`;
         
         try {
-            const response = await fetch(workerUrl, { 
-                cache: "no-store",
-                headers: {
-                    'Cache-Control': 'no-cache, no-store, must-revalidate',
-                    'Pragma': 'no-cache',
-                    'Expires': '0'
-                }
-            });
+            // Petición de fetch simple para no provocar bloqueos de seguridad del navegador
+            const response = await fetch(workerUrl, { cache: "no-store" });
             
             if (!response.ok) throw new Error(`Error Cloudflare: ${response.status}`);
             const htmlContent = await response.text();
