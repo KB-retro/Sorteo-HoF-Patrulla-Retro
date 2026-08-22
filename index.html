@@ -1734,7 +1734,7 @@
     }
 
     // ============================================================
-    //  IMPORTAR DESDE TELEGRAM (CON PARÁMETROS ANTI-CACHÉ)
+    //  IMPORTAR DESDE TELEGRAM (SOLUCIÓN DEFINITIVA CACHÉ)
     // ============================================================
     async function importarDesdeTelegram(esManual = true) {
         const btn = document.querySelector('.telegram-btn');
@@ -1745,8 +1745,10 @@
             btn.disabled = true;
         }
         
+        // CÓDIGO CORREGIDO: Usamos el parámetro "?v=" para evadir caché. 
+        // ¡NUNCA USAR "?before=" CON FECHAS PORQUE TELEGRAM FALLA AL BUSCAR ESE ID DE MENSAJE!
         const timestamp = Date.now();
-        const targetUrl = `https://t.me/s/retrojuegodelmes?before=${timestamp}`;
+        const targetUrl = `https://t.me/s/retrojuegodelmes?v=${timestamp}`;
         const workerUrl = `${MI_CLOUDFLARE_WORKER}?url=${encodeURIComponent(targetUrl)}&nocache=${timestamp}`;
         
         try {
@@ -2563,7 +2565,7 @@
                 const slotStatus = document.getElementById('slotStatus');
                 if(slotStatus) slotStatus.innerText = '🎰 SORTEO INMEDIATO...';
                 calcularYEjecutarTirada(rawLines, rawBlacklist, false);
-                sumarJuegosAlHoF(true); // <--- Actualiza HoF automático
+                sumarJuegosAlHoF(true); 
                 alert("¡Sorteo finalizado y Hall of Fame actualizado!");
             }
             return;
@@ -2591,7 +2593,7 @@
             rawLines: rawLines,
             rawBlacklist: rawBlacklist
         }).then(() => {
-            sumarJuegosAlHoF(true); // <--- Actualiza HoF automático
+            sumarJuegosAlHoF(true); 
             alert("¡Sorteo programado con éxito y Hall of Fame histórico actualizado!");
         }).catch(error => {
             console.error('Error guardando el sorteo:', error);
