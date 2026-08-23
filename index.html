@@ -441,6 +441,24 @@
             z-index: 99;
             box-shadow: 0 8px 16px rgba(0,0,0,0.5);
             display: none;
+            /* Scroll elegante para Firefox */
+            scrollbar-width: thin;
+            scrollbar-color: #475569 transparent;
+        }
+
+        /* Scroll elegante para Chrome/Edge/Safari */
+        .custom-suggestions-dropdown::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-suggestions-dropdown::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-suggestions-dropdown::-webkit-scrollbar-thumb {
+            background-color: #475569;
+            border-radius: 10px;
+        }
+        .custom-suggestions-dropdown::-webkit-scrollbar-thumb:hover {
+            background-color: var(--accent);
         }
 
         .suggestion-item {
@@ -746,7 +764,7 @@
     </div>
 
     <!-- BUSCADOR DE JUEGOS SIEMPRE VISIBLE -->
-    <div class="card">
+    <div class="card" style="z-index: 10;">
         
         <!-- INSTRUCCIONES ESTILO RETRO -->
         <div class="retro-info-box">
