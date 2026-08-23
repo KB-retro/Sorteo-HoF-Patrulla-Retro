@@ -776,8 +776,9 @@
         </div>
     </div>
 
-    <!-- LISTAS (Empiezan ocultas, se muestran automáticamente al cargar los datos) -->
-    
+    <!-- LAS CAJAS EMPIEZAN OCULTAS PARA EVITAR EL PARPADEO. SE MOSTRARÁN AL RECIBIR DATOS -->
+
+    <!-- LISTA DE PREMIADOS -->
     <div id="winnersCountCard" class="card hidden">
         <h3>🏆 Ganadores 🏆</h3>
         
@@ -789,6 +790,7 @@
         <button id="btnToggleWinners" class="btn-toggle-view hidden" onclick="toggleWinnersView()">⬇️ Ver todos los usuarios premiados</button>
     </div>
 
+    <!-- HALL OF FAME: JUEGOS COMPLETADOS HISTÓRICO -->
     <div id="hallOfFameCard" class="card hidden">
         <h3>👾 Hall of Fame 👾</h3>
         
@@ -800,6 +802,7 @@
         <button id="btnToggleHoF" class="btn-toggle-view hidden" onclick="toggleHoFView()">⬇️ Ver todo el Hall of Fame</button>
     </div>
 
+    <!-- HISTORIAL DE SORTEOS -->
     <div id="historyCard" class="card hidden">
         <h3>📜 Historial de Ganadores Anteriores</h3>
         <ul id="historyList" class="custom-list"></ul>
@@ -1041,8 +1044,9 @@
     let isUserEditingList = false;
     let isHoFEditing = false;
     
-    let mesSorteoActivo = ""; 
+    let mesSorteoActivo = ""; // Variable para sincronizar el mes con la fecha final del ganador
 
+    // BANDERAS DE CARGA PARA EVITAR PARPADEOS (Solución final Layout Thrashing)
     let isDataLoaded = {
         history: false,
         hof: false
@@ -1084,7 +1088,7 @@
     ];
 
     function fraseVideojuegoAleatoria() {
-        return FRASES_VIDEOJUEGOS[obtenerIndiceCriptografico(FRASES_VIDEOJUEGOS.length)];
+        return FRASES_VIDEOJUEGOS[Math.floor(Math.random() * FRASES_VIDEOJUEGOS.length)];
     }
 
     let adminClicks = 0;
@@ -1123,6 +1127,7 @@
                 });
             }
 
+            // Calculo de Ganadores de sorteos
             let mapaConteo = {};
             historyToRender.forEach(function(item) {
                 if(item && item.user) {
@@ -1132,6 +1137,7 @@
             });
             let winnersCountToRender = Object.keys(mapaConteo).map(usr => ({ user: usr, total: mapaConteo[usr] })).sort((a, b) => b.total - a.total);
 
+            // Generamos las huellas de estado
             const newStateWinners = JSON.stringify({ exp: isWinnersExpanded, list: winnersCountToRender, query: winnersSearchQuery, loaded: isDataLoaded.history });
             const newStateHistory = JSON.stringify({ exp: isHistoryExpanded, list: historyToRender, loaded: isDataLoaded.history });
             const newStateHoF = JSON.stringify({ exp: isHoFExpanded, list: hofToRender, query: hofSearchQuery, loaded: isDataLoaded.hof });
@@ -1151,6 +1157,7 @@
                 lastRenderedHoFState = newStateHoF;
             }
 
+            // MUESTRA LAS CAJAS SOLO CUANDO LOS DATOS YA ESTÁN RENDERIZADOS DENTRO
             if (isDataLoaded.history) {
                 const cardWinners = document.getElementById('winnersCountCard');
                 const cardHistory = document.getElementById('historyCard');
@@ -1167,6 +1174,9 @@
         }
     }
 
+    // ============================================================
+    //  FUNCIONES DE BÚSQUEDA EN LISTAS
+    // ============================================================
     function buscarEnWinners() {
         const input = document.getElementById('winnersSearchInput');
         winnersSearchQuery = input ? input.value.trim().toLowerCase() : "";
@@ -1179,6 +1189,9 @@
         refrescarHistorialAntiSpoiler();
     }
 
+    // ============================================================
+    //  FUNCIONES DE FIREBASE (Participantes y HoF)
+    // ============================================================
     db.ref('sorteo_participantes_raw').on('value', function(snapshot) {
         if (isUserEditingList) return;
         const val = snapshot.val();
@@ -1190,7 +1203,7 @@
     });
 
     db.ref('hall_of_fame_juegos').on('value', function(snapshot) {
-        isDataLoaded.hof = true; 
+        isDataLoaded.hof = true; // El chivato avisa de que ya podemos enseñar la tarjeta
         const data = snapshot.val();
         rawHoFItems = [];
         let manualText = "";
@@ -1236,10 +1249,22 @@
         setInterval(refrescarHistorialAntiSpoiler, 1000);
     });
 
-    function abrirCreditos() { document.getElementById('creditsModal').classList.remove('hidden'); }
-    function cerrarCreditos() { document.getElementById('creditsModal').classList.add('hidden'); }
-    function abrirProbabilidadesModal() { calcularYMostrarProbabilidades(); document.getElementById('probabilitiesModal').classList.remove('hidden'); }
-    function cerrarProbabilidadesModal() { document.getElementById('probabilitiesModal').classList.add('hidden'); }
+    // ============================================================
+    //  FUNCIONES DE MODALES
+    // ============================================================
+    function abrirCreditos() {
+        document.getElementById('creditsModal').classList.remove('hidden');
+    }
+    function cerrarCreditos() {
+        document.getElementById('creditsModal').classList.add('hidden');
+    }
+    function abrirProbabilidadesModal() {
+        calcularYMostrarProbabilidades();
+        document.getElementById('probabilitiesModal').classList.remove('hidden');
+    }
+    function cerrarProbabilidadesModal() {
+        document.getElementById('probabilitiesModal').classList.add('hidden');
+    }
 
     window.addEventListener('click', function(event) {
         const credModal = document.getElementById('creditsModal');
@@ -1269,12 +1294,23 @@
             const rawLines = rawLinesStr.split('\n');
             let boletosPorUsuario = {};
             let totalBoletosValidos = 0;
+            let sumandoParaHoF = true; 
             
             rawLines.forEach(function(line) {
                 let lineaLimpia = line.trim();
                 if (!lineaLimpia) return;
                 
                 const matchUser = lineaLimpia.match(/@[\w_.-]+/i);
+                
+                let textoSinUsuario = lineaLimpia.toUpperCase();
+                if (matchUser) {
+                    textoSinUsuario = textoSinUsuario.replace(matchUser[0].toUpperCase(), '');
+                }
+                
+                if (textoSinUsuario.includes('EXTRA')) {
+                    sumandoParaHoF = false; 
+                }
+                
                 if (matchUser) {
                     let user = matchUser[0];
                     let numBoletoMatch = lineaLimpia.match(/^(\d+)/);
@@ -1344,6 +1380,9 @@
         return valorRandom % max;
     }
 
+    // ============================================================
+    //  FUNCIONES DE GOOGLE SHEETS Y BÚSQUEDA
+    // ============================================================
     function parseCSVLine(linea) {
         let resultado = [];
         let celda = '';
@@ -1462,7 +1501,7 @@
         recognition.onresult = function(event) {
             const speechResult = event.results[0][0].transcript;
             if(inputEl) inputEl.value = speechResult;
-            comprobarJuegoEnSheets();
+            comprobarJuegoInmediato(speechResult);
         };
         recognition.onerror = function(event) {
             console.error("Error en reconocimiento de voz:", event.error);
@@ -1476,55 +1515,99 @@
         recognition.start();
     }
 
-    async function obtenerDatosParaBackup() {
-        const results = await Promise.all([
-            db.ref('historial_ganadores').once('value'),
-            db.ref('sorteo_actual').once('value'),
-            db.ref('mes_sorteo').once('value'),
-            db.ref('hall_of_fame_juegos').once('value')
-        ]);
-        return {
-            historial_ganadores: results[0].val() || null,
-            sorteo_actual: results[1].val() || null,
-            mes_sorteo: results[2].val() || null,
-            hall_of_fame_juegos: results[3].val() || null
-        };
+    async function comprobarJuegoInmediato(texto) {
+        const inputEl = document.getElementById('gameSearchInput');
+        if(inputEl) inputEl.value = texto;
+        await comprobarJuegoEnSheets();
     }
 
+    // ============================================================
+    //  FUNCIONES DE BACKUP
+    // ============================================================
     function crearBackupManual() {
-        if (!isAdminLoggedIn) return alert("❌ No tienes permisos de administrador.");
-        if (!confirm("¿Crear una copia de seguridad estándar de los datos actuales en Firebase?")) return;
+        if (!isAdminLoggedIn) {
+            alert("❌ No tienes permisos de administrador.");
+            return;
+        }
+
+        if (!confirm("¿Crear una copia de seguridad estándar de los datos actuales en Firebase?")) {
+            return;
+        }
 
         const ahora = new Date();
         const horaTag = `${String(ahora.getHours()).padStart(2,'0')}${String(ahora.getMinutes()).padStart(2,'0')}`;
         const clave = `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, '0')}-${String(ahora.getDate()).padStart(2, '0')}_${horaTag}`;
-        
-        obtenerDatosParaBackup().then(data => {
-            data.fechaCopia = new Date().toLocaleString('es-ES');
-            data.etiqueta = "Copia Manual";
-            db.ref('backups/' + clave).set(data).then(() => {
-                alert("✅ Copia de seguridad guardada con éxito bajo la clave: " + clave);
-            }).catch(() => alert("❌ No se pudo guardar el backup."));
+        realizarCopiaEnFirebase(clave, "Copia Manual", true);
+    }
+
+    function realizarCopiaEnFirebase(clave, etiqueta, notificar = false) {
+        Promise.all([
+            db.ref('historial_ganadores').once('value'),
+            db.ref('sorteo_actual').once('value'),
+            db.ref('mes_sorteo').once('value'),
+            db.ref('hall_of_fame_juegos').once('value')
+        ]).then(function(results) {
+            const backupPayload = {
+                fechaCopia: new Date().toLocaleString('es-ES'),
+                etiqueta: etiqueta,
+                historial_ganadores: results[0].val() || null,
+                sorteo_actual: results[1].val() || null,
+                mes_sorteo: results[2].val() || null,
+                hall_of_fame_juegos: results[3].val() || null
+            };
+            db.ref('backups/' + clave).set(backupPayload).then(function() {
+                if (notificar) alert("✅ Copia de seguridad guardada con éxito bajo la clave: " + clave);
+            }).catch(function(err) {
+                alert("❌ No se pudo guardar el backup.");
+            });
         });
     }
 
+    // ============================================================
+    //  BACKUP MANUAL EN GITHUB MEDIANTE CLOUDFLARE WORKER
+    // ============================================================
     async function crearBackupGitHubManual() {
-        if (!isAdminLoggedIn) return alert("❌ No tienes permisos de administrador.");
-        if (!confirm("¿Crear una copia de seguridad de los datos actuales en GitHub?")) return;
+        if (!isAdminLoggedIn) {
+            alert("❌ No tienes permisos de administrador.");
+            return;
+        }
+
+        if (!confirm("¿Crear una copia de seguridad de los datos actuales en GitHub?")) {
+            return;
+        }
 
         try {
-            const backupData = await obtenerDatosParaBackup();
-            backupData.tipoBackup = "Backup manual desde la web";
+            const resultados = await Promise.all([
+                db.ref('historial_ganadores').once('value'),
+                db.ref('sorteo_actual').once('value'),
+                db.ref('mes_sorteo').once('value'),
+                db.ref('hall_of_fame_juegos').once('value')
+            ]);
+
+            const backupData = {
+                historial_ganadores: resultados[0].val() || null,
+                sorteo_actual: resultados[1].val() || null,
+                mes_sorteo: resultados[2].val() || null,
+                hall_of_fame_juegos: resultados[3].val() || null,
+                tipoBackup: "Backup manual desde la web"
+            };
 
             const response = await fetch(`${MI_CLOUDFLARE_WORKER}/backup`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json'
+                },
                 body: JSON.stringify(backupData)
             });
 
             const resultado = await response.json();
-            if (!response.ok || !resultado.ok) throw new Error(resultado.error || `Cloudflare respondió ${response.status}`);
+
+            if (!response.ok || !resultado.ok) {
+                throw new Error(resultado.error || `Cloudflare respondió ${response.status}`);
+            }
+
             alert("✅ Copia guardada correctamente en GitHub.\n\nArchivo: " + resultado.archivo);
+
         } catch (error) {
             console.error("Error creando backup manual en GitHub:", error);
             alert("❌ No se pudo crear la copia en GitHub.\n\n" + error.message);
@@ -1550,12 +1633,17 @@
 
     function restaurarBackupSeleccionado() {
         const clave = document.getElementById('backupSelect').value;
-        if (!clave) return alert("Por favor, selecciona una copia de seguridad del desplegable.");
-        
+        if (!clave) {
+            alert("Por favor, selecciona una copia de seguridad del desplegable.");
+            return;
+        }
         if (confirm(`⚠️ ¿Estás seguro de RESTAURAR la copia "${clave}"?\n\nEsto sobrescribirá los datos con los guardados en ese momento.`)) {
             db.ref('backups/' + clave).once('value', function(snapshot) {
                 const data = snapshot.val();
-                if (!data) return alert("Error al leer la copia de seguridad.");
+                if (!data) {
+                    alert("Error al leer la copia de seguridad.");
+                    return;
+                }
                 db.ref('historial_ganadores').set(data.historial_ganadores || null);
                 db.ref('sorteo_actual').set(data.sorteo_actual || null);
                 db.ref('mes_sorteo').set(data.mes_sorteo || null);
@@ -1568,8 +1656,10 @@
 
     function borrarBackupSeleccionado() {
         const clave = document.getElementById('backupSelect').value;
-        if (!clave) return alert("Por favor, selecciona primero una copia del desplegable.");
-        
+        if (!clave) {
+            alert("Por favor, selecciona primero una copia del desplegable.");
+            return;
+        }
         const select = document.getElementById('backupSelect');
         const textoSeleccionado = select.options[select.selectedIndex].text;
         if (confirm(`⚠️ ¿Estás seguro de que deseas ELIMINAR permanentemente la copia de seguridad?\n\n"${textoSeleccionado}"`)) {
@@ -1580,8 +1670,19 @@
     }
 
     function descargarBackupJSON() {
-        obtenerDatosParaBackup().then(backupData => {
-            backupData.exportadoEl = new Date().toLocaleString('es-ES');
+        Promise.all([
+            db.ref('historial_ganadores').once('value'),
+            db.ref('sorteo_actual').once('value'),
+            db.ref('mes_sorteo').once('value'),
+            db.ref('hall_of_fame_juegos').once('value')
+        ]).then(function(results) {
+            const backupData = {
+                historial_ganadores: results[0].val() || null,
+                sorteo_actual: results[1].val() || null,
+                mes_sorteo: results[2].val() || null,
+                hall_of_fame_juegos: results[3].val() || null,
+                exportadoEl: new Date().toLocaleString('es-ES')
+            };
             const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -1620,6 +1721,9 @@
         };
     }
 
+    // ============================================================
+    //  IMPORTAR DESDE TELEGRAM
+    // ============================================================
     async function importarDesdeTelegram(esManual = true) {
         const btn = document.querySelector('.telegram-btn');
         let originalText = "";
@@ -1683,9 +1787,12 @@
         }
     }
 
+    // ============================================================
+    //  MES DEL SORTEO
+    // ============================================================
     db.ref('mes_sorteo').on('value', function(snapshot) {
         const mes = snapshot.val();
-        mesSorteoActivo = mes || "";
+        mesSorteoActivo = mes || ""; // <--- LO GUARDAMOS PARA SINCRONIZAR LA FECHA DEL GANADOR
 
         const titleEl = document.getElementById('mainTitle');
         const monthSelect = document.getElementById('monthSelect');
@@ -1705,7 +1812,10 @@
         }
     }
 
-    function sumarJuegosAlHoF() {
+    // ============================================================
+    //  NUEVO: HALL OF FAME DE JUEGOS COMPLETADOS (SUMAR Y RESTAR)
+    // ============================================================
+    function sumarJuegosAlHoF(isAuto = false) {
         return new Promise((resolve, reject) => {
             const rawLinesStr = document.getElementById('listInput').value.trim();
             if (!rawLinesStr) {
@@ -1780,6 +1890,9 @@
         });
     }
 
+    // ============================================================
+    //  AÑADIR GANADOR MANUAL
+    // ============================================================
     function agregarGanadorManual() {
         const inputVal = document.getElementById('manualUserAdmin').value.trim();
         const customMonthVal = document.getElementById('manualWinnerMonth').value;
@@ -1853,6 +1966,9 @@
         }
     }
 
+    // ============================================================
+    //  LÓGICA DE LA RECREATIVA
+    // ============================================================
     function mostrarRecreativa(activa) {
         const slot = document.getElementById('slotMachineCard');
         if(!slot) return;
@@ -1978,6 +2094,9 @@
         return [numero3.charAt(0), numero3.charAt(1), numero3.charAt(2)];
     }
 
+    // ============================================================
+    //  OBSERVADOR DE SORTEO ACTUAL
+    // ============================================================
     db.ref('sorteo_actual').on('value', function(snapshot) {
         try {
             const data = snapshot.val();
@@ -2154,6 +2273,7 @@
 
             const arcadeGroup = anteriores.concat([ganadorEncontrado], posteriores);
             
+            // LÓGICA DE FECHA AJUSTADA AL MES DEL TÍTULO
             const ahora = new Date();
             let yearGanador = ahora.getFullYear();
             let mesTextoGanador = nombresMeses[ahora.getMonth()];
@@ -2181,6 +2301,7 @@
                 timestamp: Date.now() + Math.random()
             });
 
+            // CORRECCIÓN FIREBASE: revealAt a 0 en vez de undefined para evitar el fallo invisible.
             resolve({
                 ganador: ganadorEncontrado,
                 arcadeGroup: arcadeGroup,
@@ -2191,6 +2312,25 @@
             });
         });
     }
+
+    // ============================================================
+    //  RENDERIZADO DE LISTAS (SIN PARPADEOS)
+    // ============================================================
+    db.ref('historial_ganadores').on('value', function(snapshot) {
+        isDataLoaded.history = true; 
+        const data = snapshot.val();
+        rawHistoryItems = [];
+        if (data) {
+            Object.keys(data).forEach(function(key) {
+                const item = data[key];
+                item.key = key;
+                rawHistoryItems.push(item);
+            });
+            rawHistoryItems.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+        }
+        
+        refrescarHistorialAntiSpoiler();
+    });
 
     function renderWinnersList(list) {
         const listEl = document.getElementById('winnersCountList');
@@ -2342,6 +2482,9 @@
     function toggleHistoryView() { isHistoryExpanded = !isHistoryExpanded; refrescarHistorialAntiSpoiler(); }
     function toggleHoFView() { isHoFExpanded = !isHoFExpanded; refrescarHistorialAntiSpoiler(); }
 
+    // ============================================================
+    //  ADMIN - BORRADOS BLINDADOS
+    // ============================================================
     function toggleAdminPanel() {
         const pass = prompt("Introduce la clave de administrador:");
         if (pass && btoa(pass) === "cGF0cnVsbGExMjM=") {
@@ -2356,6 +2499,7 @@
         }
     }
 
+    // BOTÓN 1: Borrar último sorteo
     function borrarUltimoSorteo() {
         if (confirm("⚠️ ¿Deseas BORRAR el último sorteo (o la programación actual)?\n\nEsto también RESTARÁ los puntos exactos que se sumaron al Hall of Fame en esa tirada.")) {
             
@@ -2401,6 +2545,7 @@
         }
     }
 
+    // BOTÓN 2: Borrar TODO al estilo "Nuclear"
     function borrarTodo() {
         if (confirm("⚠️ ¿Deseas BORRAR TODO? Esto eliminará:\n- El sorteo actual\n- El historial de ganadores\n- El Hall of Fame al completo\n- La lista de participantes\n\nEsta acción es irreversible.")) {
             const el1 = document.getElementById('listInput');
@@ -2421,6 +2566,9 @@
         }
     }
 
+    // ============================================================
+    //  FUNCIÓN PRINCIPAL DE PROGRAMACIÓN Y EJECUCIÓN INSTANTÁNEA
+    // ============================================================
     async function programarOEjecutarSorteo() {
         const dateInput = document.getElementById('drawDateInput');
         const timeInput = document.getElementById('drawTimeInput');
@@ -2436,21 +2584,27 @@
 
         if (!rawLines) return alert("Pega o importa la lista de participantes.");
 
+        // Si NO hay hora seleccionada (cadena vacía o "--:--") → SORTEO INMEDIATO (SIN ESPERAS)
         if (!timeVal || timeVal === "--:--" || timeVal.trim() === "") {
             if (confirm("El sorteo se realizará de inmediato y se consolidará el Hall of Fame Histórico. ¿Continuar?")) {
                 
+                // 1. Sumamos los puntos al HoF
                 const hofAddedPoints = await sumarJuegosAlHoF(true);
                 
+                // 2. Ejecutamos la tirada con la animación DESACTIVADA (false)
                 calcularYEjecutarTirada(rawLines, rawBlacklist, false).then(resultadoData => {
                     if(resultadoData) {
                         resultadoData.hofAdded = hofAddedPoints;
+                        
+                        // 3. Al guardarlo en Firebase sin tiempo de espera, saca el ganador al instante.
                         db.ref('sorteo_actual').set(resultadoData);
                     }
                 });
             }
-            return; 
+            return; // Fin del sorteo inmediato
         }
 
+        // Si hay hora, se programa (Sorteo Automático)
         const timeParts = timeVal.split(':');
         let targetDate = new Date();
 
@@ -2465,6 +2619,7 @@
             targetDate.setDate(targetDate.getDate() + 1);
         }
 
+        // Sumamos los puntos al programar
         const hofAddedPoints = await sumarJuegosAlHoF(true);
 
         db.ref('sorteo_actual').set({
@@ -2481,6 +2636,9 @@
         });
     }
 
+    // ============================================================
+    //  INICIALIZADORES DE SELECTORES RETRO
+    // ============================================================
     function initRetroDatePicker() {
         const input = document.getElementById("drawDateInput");
         const picker = document.getElementById("retroDatePicker");
