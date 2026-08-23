@@ -777,7 +777,7 @@
     </div>
 
     <!-- LAS CAJAS EMPIEZAN OCULTAS PARA EVITAR EL PARPADEO. SE MOSTRARÁN AL RECIBIR DATOS -->
-
+    
     <!-- LISTA DE PREMIADOS -->
     <div id="winnersCountCard" class="card hidden">
         <h3>🏆 Ganadores 🏆</h3>
@@ -804,7 +804,7 @@
 
     <!-- HISTORIAL DE SORTEOS -->
     <div id="historyCard" class="card hidden">
-        <h3>📜 Historial de Premios</h3>
+        <h3>📜 Historial de Ganadores Anteriores</h3>
         <ul id="historyList" class="custom-list"></ul>
         <button id="btnToggleHistory" class="btn-toggle-view hidden" onclick="toggleHistoryView()">⬇️ Ver todo el historial</button>
     </div>
@@ -1816,51 +1816,92 @@
     //  NUEVO: HALL OF FAME DE JUEGOS COMPLETADOS (SUMAR Y RESTAR)
     // ============================================================
     function sumarJuegosAlHoF(isAuto = false) {
-        return new Promise((resolve, reject) => {
-            const rawLinesStr = document.getElementById('listInput').value.trim();
-            if (!rawLinesStr) {
-                resolve({});
-                return;
+        const rawLinesStr = document.getElementById('listInput').value.trim();
+        if (!rawLinesStr) return;
+
+        const rawLines = rawLinesStr.split('\n');
+        let juegosASumar = {};
+        let sumandoParaHoF = true;
+
+        rawLines.forEach(line => {
+            let lineaLimpia = line.trim();
+            if (!lineaLimpia) return;
+            
+            const matchUser = lineaLimpia.match(/@[\w_.-]+/i);
+            let textoSinUsuario = lineaLimpia.toUpperCase();
+            if (matchUser) {
+                textoSinUsuario = textoSinUsuario.replace(matchUser[0].toUpperCase(), '');
+            }
+            if (textoSinUsuario.includes('EXTRA')) {
+                sumandoParaHoF = false; 
             }
 
-            const rawLines = rawLinesStr.split('\n');
-            let juegosASumar = {};
-            let sumandoParaHoF = true;
+            if (matchUser && sumandoParaHoF) {
+                let user = matchUser[0].toLowerCase();
+                let userReal = matchUser[0];
+                if (!juegosASumar[user]) juegosASumar[user] = { realName: userReal, count: 0 };
+                juegosASumar[user].count++; 
+            }
+        });
 
-            rawLines.forEach(line => {
-                let lineaLimpia = line.trim();
-                if (!lineaLimpia) return;
-                
-                const matchUser = lineaLimpia.match(/@[\w_.-]+/i);
-                let textoSinUsuario = lineaLimpia.toUpperCase();
-                if (matchUser) {
-                    textoSinUsuario = textoSinUsuario.replace(matchUser[0].toUpperCase(), '');
-                }
-                if (textoSinUsuario.includes('EXTRA')) {
-                    sumandoParaHoF = false; 
-                }
-
-                if (matchUser && sumandoParaHoF) {
-                    let user = matchUser[0].toLowerCase();
-                    let userReal = matchUser[0];
-                    if (!juegosASumar[user]) juegosASumar[user] = { realName: userReal, count: 0 };
-                    juegosASumar[user].count++; 
+        db.ref('hall_of_fame_juegos').once('value', snapshot => {
+            let currentHoF = snapshot.val() || {};
+            Object.keys(juegosASumar).forEach(userKey => {
+                if (currentHoF[userKey]) {
+                    currentHoF[userKey].total += juegosASumar[userKey].count;
+                } else {
+                    currentHoF[userKey] = { user: juegosASumar[userKey].realName, total: juegosASumar[userKey].count };
                 }
             });
+            db.ref('hall_of_fame_juegos').set(currentHoF);
+        });
+    }
 
-            db.ref('hall_of_fame_juegos').once('value', snapshot => {
-                let currentHoF = snapshot.val() || {};
-                Object.keys(juegosASumar).forEach(userKey => {
-                    if (currentHoF[userKey]) {
-                        currentHoF[userKey].total += juegosASumar[userKey].count;
-                    } else {
-                        currentHoF[userKey] = { user: juegosASumar[userKey].realName, total: juegosASumar[userKey].count };
+    function restarJuegosDelHoF() {
+        const rawLinesStr = document.getElementById('listInput').value.trim();
+        if (!rawLinesStr) return;
+
+        const rawLines = rawLinesStr.split('\n');
+        let juegosARestar = {};
+        let sumandoParaHoF = true;
+
+        rawLines.forEach(line => {
+            let lineaLimpia = line.trim();
+            if (!lineaLimpia) return;
+            
+            const matchUser = lineaLimpia.match(/@[\w_.-]+/i);
+            let textoSinUsuario = lineaLimpia.toUpperCase();
+            if (matchUser) {
+                textoSinUsuario = textoSinUsuario.replace(matchUser[0].toUpperCase(), '');
+            }
+            if (textoSinUsuario.includes('EXTRA')) {
+                sumandoParaHoF = false; 
+            }
+
+            if (matchUser && sumandoParaHoF) {
+                let userKey = matchUser[0].toLowerCase();
+                if (!juegosARestar[userKey]) juegosARestar[userKey] = 0;
+                juegosARestar[userKey]++;
+            }
+        });
+
+        db.ref('hall_of_fame_juegos').once('value', function(hofSnap) {
+            let currentHoF = hofSnap.val() || {};
+            let modificado = false;
+
+            Object.keys(juegosARestar).forEach(userKey => {
+                if (currentHoF[userKey]) {
+                    currentHoF[userKey].total -= juegosARestar[userKey];
+                    modificado = true;
+                    if (currentHoF[userKey].total <= 0) {
+                        delete currentHoF[userKey];
                     }
-                });
-                db.ref('hall_of_fame_juegos').set(currentHoF).then(() => {
-                    resolve(juegosASumar); 
-                });
+                }
             });
+
+            if (modificado) {
+                db.ref('hall_of_fame_juegos').set(currentHoF);
+            }
         });
     }
 
@@ -2203,284 +2244,121 @@
     }
 
     function calcularYEjecutarTirada(rawLinesStr, rawBlacklistStr, animarResultado = true) {
-        return new Promise((resolve, reject) => {
-            const rawLines = rawLinesStr.split('\n');
-            const rawBlacklist = rawBlacklistStr.split('\n');
+        const rawLines = rawLinesStr.split('\n');
+        const rawBlacklist = rawBlacklistStr.split('\n');
 
-            let participantesValidos = [];
-            rawLines.forEach(function(line) {
-                let lineaLimpia = line.trim();
-                if (!lineaLimpia) return;
-                const matchUser = lineaLimpia.match(/@[\w.-]+/);
-                if (matchUser) {
-                    let boletoLimpio = lineaLimpia.replace(/PUNTO\s+EXTRA\s*/gi, '').trim();
-                    participantesValidos.push({ ticket: boletoLimpio, user: matchUser[0] });
-                }
-            });
-
-            const total = participantesValidos.length;
-            if (total === 0) return resolve();
-
-            const blacklist = rawBlacklist.map(u => u.trim().toLowerCase()).filter(u => u.length > 0);
-
-            let log = [];
-            let ganadorEncontrado = null;
-            let indexGanador = -1;
-            let listaCopia = participantesValidos.slice();
-
-            while (listaCopia.length > 0) {
-                const indexAleatorio = obtenerIndiceCriptografico(listaCopia.length);
-                const entrada = listaCopia[indexAleatorio];
-                const usuarioMinusculas = entrada.user.toLowerCase();
-
-                if (blacklist.indexOf(usuarioMinusculas) !== -1) {
-                    log.push("❌ Descartado: " + entrada.ticket + " (" + entrada.user + " está en la Lista Negra)");
-                    listaCopia.splice(indexAleatorio, 1);
-                } else {
-                    ganadorEncontrado = entrada;
-                    indexGanador = participantesValidos.findIndex(p => p.ticket === entrada.ticket);
-                    log.push("✅ ¡TIRADA GANADORA!: " + entrada.ticket);
-                    break;
-                }
+        let participantesValidos = [];
+        rawLines.forEach(function(line) {
+            let lineaLimpia = line.trim();
+            if (!lineaLimpia) return;
+            const matchUser = lineaLimpia.match(/@[\w.-]+/);
+            if (matchUser) {
+                let boletoLimpio = lineaLimpia.replace(/PUNTO\s+EXTRA\s*/gi, '').trim();
+                participantesValidos.push({ ticket: boletoLimpio, user: matchUser[0] });
             }
+        });
 
-            if (!ganadorEncontrado) return resolve();
+        const total = participantesValidos.length;
+        if (total === 0) return;
 
-            let anteriores = [], posteriores = [], usuariosUsados = {};
-            usuariosUsados[ganadorEncontrado.user.toLowerCase()] = true;
+        const blacklist = rawBlacklist.map(u => u.trim().toLowerCase()).filter(u => u.length > 0);
 
-            let curr = indexGanador - 1, cntAnt = 0;
-            while (anteriores.length < 2 && cntAnt < total) {
-                if (curr < 0) curr = total - 1;
-                let cand = participantesValidos[curr];
-                if (!usuariosUsados[cand.user.toLowerCase()]) {
-                    anteriores.unshift(cand);
-                    usuariosUsados[cand.user.toLowerCase()] = true;
-                }
-                curr--; cntAnt++;
+        let log = [];
+        let ganadorEncontrado = null;
+        let indexGanador = -1;
+        let listaCopia = participantesValidos.slice();
+
+        while (listaCopia.length > 0) {
+            const indexAleatorio = obtenerIndiceCriptografico(listaCopia.length);
+            const entrada = listaCopia[indexAleatorio];
+            const usuarioMinusculas = entrada.user.toLowerCase();
+
+            if (blacklist.indexOf(usuarioMinusculas) !== -1) {
+                log.push("❌ Descartado: " + entrada.ticket + " (" + entrada.user + " está en la Lista Negra)");
+                listaCopia.splice(indexAleatorio, 1);
+            } else {
+                ganadorEncontrado = entrada;
+                indexGanador = participantesValidos.findIndex(p => p.ticket === entrada.ticket);
+                log.push("✅ ¡TIRADA GANADORA!: " + entrada.ticket);
+                break;
             }
+        }
 
-            curr = indexGanador + 1; let cntPost = 0;
-            while (posteriores.length < 2 && cntPost < total) {
-                if (curr >= total) curr = 0;
-                let cand = participantesValidos[curr];
-                if (!usuariosUsados[cand.user.toLowerCase()]) {
-                    posteriores.push(cand);
-                    usuariosUsados[cand.user.toLowerCase()] = true;
-                }
-                curr++; cntPost++;
+        if (!ganadorEncontrado) return;
+
+        let anteriores = [], posteriores = [], usuariosUsados = {};
+        usuariosUsados[ganadorEncontrado.user.toLowerCase()] = true;
+
+        let curr = indexGanador - 1, cntAnt = 0;
+        while (anteriores.length < 2 && cntAnt < total) {
+            if (curr < 0) curr = total - 1;
+            let cand = participantesValidos[curr];
+            if (!usuariosUsados[cand.user.toLowerCase()]) {
+                anteriores.unshift(cand);
+                usuariosUsados[cand.user.toLowerCase()] = true;
             }
+            curr--; cntAnt++;
+        }
 
-            const arcadeGroup = anteriores.concat([ganadorEncontrado], posteriores);
+        curr = indexGanador + 1; let cntPost = 0;
+        while (posteriores.length < 2 && cntPost < total) {
+            if (curr >= total) curr = 0;
+            let cand = participantesValidos[curr];
+            if (!usuariosUsados[cand.user.toLowerCase()]) {
+                posteriores.push(cand);
+                usuariosUsados[cand.user.toLowerCase()] = true;
+            }
+            curr++; cntPost++;
+        }
+
+        const arcadeGroup = anteriores.concat([ganadorEncontrado], posteriores);
+        
+        // --- INICIO LÓGICA DE MES DEL GANADOR SOLICITADA ---
+        const ahora = new Date();
+        let yearGanador = ahora.getFullYear();
+        let mesTextoGanador = nombresMeses[ahora.getMonth()];
+
+        if (mesSorteoActivo) {
+            const indexSeleccionado = nombresMeses.indexOf(mesSorteoActivo);
+            const indexActual = ahora.getMonth();
             
-            // LÓGICA DE FECHA AJUSTADA AL MES DEL TÍTULO
-            const ahora = new Date();
-            let yearGanador = ahora.getFullYear();
-            let mesTextoGanador = nombresMeses[ahora.getMonth()];
-
-            if (mesSorteoActivo) {
-                const indexSeleccionado = nombresMeses.indexOf(mesSorteoActivo);
-                const indexActual = ahora.getMonth();
+            if (indexSeleccionado !== -1) {
+                mesTextoGanador = mesSorteoActivo;
+                const diff = indexSeleccionado - indexActual;
                 
-                if (indexSeleccionado !== -1) {
-                    mesTextoGanador = mesSorteoActivo;
-                    const diff = indexSeleccionado - indexActual;
-                    
-                    if (diff < -6) yearGanador++;
-                    else if (diff > 6) yearGanador--;
-                }
+                if (diff < -6) yearGanador++;
+                else if (diff > 6) yearGanador--;
             }
+        }
 
-            const fechaFormateada = `${mesTextoGanador} ${yearGanador}`;
-            const fraseGanador = fraseVideojuegoAleatoria();
+        const fechaFormateada = `${mesTextoGanador} ${yearGanador}`;
+        // --- FIN LÓGICA DE MES ---
 
-            db.ref('historial_ganadores').push({
-                user: ganadorEncontrado.user,
-                ticket: ganadorEncontrado.ticket,
-                fecha: fechaFormateada,
-                timestamp: Date.now() + Math.random()
-            });
+        const fraseGanador = fraseVideojuegoAleatoria();
 
-            // CORRECCIÓN FIREBASE: revealAt a 0 en vez de undefined para evitar el fallo invisible.
-            resolve({
-                ganador: ganadorEncontrado,
-                arcadeGroup: arcadeGroup,
-                log: log,
-                timestamp: Date.now(),
-                frase: fraseGanador,
-                revealAt: animarResultado ? Date.now() + SLOT_REVEAL_MS : 0
-            });
+        db.ref('historial_ganadores').push({
+            user: ganadorEncontrado.user,
+            ticket: ganadorEncontrado.ticket,
+            fecha: fechaFormateada,
+            timestamp: Date.now() + Math.random()
         });
-    }
 
-    // ============================================================
-    //  RENDERIZADO DE LISTAS (SIN PARPADEOS)
-    // ============================================================
-    db.ref('historial_ganadores').on('value', function(snapshot) {
-        isDataLoaded.history = true; 
-        const data = snapshot.val();
-        rawHistoryItems = [];
-        if (data) {
-            Object.keys(data).forEach(function(key) {
-                const item = data[key];
-                item.key = key;
-                rawHistoryItems.push(item);
-            });
-            rawHistoryItems.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-        }
-        
-        refrescarHistorialAntiSpoiler();
-    });
+        const resultadoData = {
+            ganador: ganadorEncontrado,
+            arcadeGroup: arcadeGroup,
+            log: log,
+            timestamp: Date.now(),
+            frase: fraseGanador
+        };
 
-    function renderWinnersList(list) {
-        const listEl = document.getElementById('winnersCountList');
-        const btn = document.getElementById('btnToggleWinners');
-        if(!listEl) return;
-        
-        if (list.length === 0) {
-            listEl.innerHTML = '<li class="custom-item" style="justify-content: center; color: var(--muted);">Sin historial de ganadores guardado.</li>';
-            if(btn) btn.classList.add('hidden');
-            return;
-        }
-
-        const listWithRank = list.map((item, idx) => ({ ...item, rank: idx + 1 }));
-        let itemsToDisplay = [];
-        const isSearching = winnersSearchQuery.length > 0;
-
-        if (isSearching) {
-            itemsToDisplay = listWithRank.filter(item => item.user.toLowerCase().includes(winnersSearchQuery));
-            if (btn) btn.classList.add('hidden');
-            if (itemsToDisplay.length === 0) {
-                listEl.innerHTML = '<li class="custom-item" style="justify-content: center; color: var(--muted); padding: 6px;">No se encontró a ningún ganador con ese nombre.</li>';
-                return;
-            }
+        if (animarResultado) {
+            resultadoData.revealAt = Date.now() + SLOT_REVEAL_MS;
         } else {
-            itemsToDisplay = isWinnersExpanded ? listWithRank : listWithRank.slice(0, 3);
-            if (btn) {
-                if (list.length > 3) {
-                    btn.classList.remove('hidden');
-                    btn.innerText = isWinnersExpanded ? '⬆️ Mostrar solo los 3 principales' : '⬇️ Ver todos los usuarios premiados (' + list.length + ')';
-                } else {
-                    btn.classList.add('hidden');
-                }
-            }
+            resultadoData.revealAt = 0; // FIX FIREBASE UNDEFINED BUG
         }
 
-        const fragment = document.createDocumentFragment();
-        itemsToDisplay.forEach(function(item) {
-            const li = document.createElement('li');
-            li.className = 'custom-item';
-            const textoVez = item.total === 1 ? 'vez premiado' : 'veces premiado';
-            
-            let medallaIcono = '';
-            if (item.rank === 1) medallaIcono = '🥇 ';
-            else if (item.rank === 2) medallaIcono = '🥈 ';
-            else if (item.rank === 3) medallaIcono = '🥉 ';
-            else medallaIcono = `<span style="color: var(--muted); font-size: 0.8rem; margin-right: 4px;">#${item.rank}</span>`;
-            
-            li.innerHTML = '<div class="custom-item-text"><strong>' + medallaIcono + item.user + '</strong></div><span class="item-badge">' + item.total + ' ' + textoVez + '</span>';
-            fragment.appendChild(li);
-        });
-        listEl.innerHTML = '';
-        listEl.appendChild(fragment);
+        db.ref('sorteo_actual').set(resultadoData);
     }
-
-    function renderHoFList(list) {
-        const listEl = document.getElementById('hallOfFameList');
-        const btn = document.getElementById('btnToggleHoF');
-        if(!listEl) return;
-        
-        if (list.length === 0) {
-            listEl.innerHTML = '<li class="custom-item" style="justify-content: center; color: var(--muted);">Aún no hay datos de juegos pasados.</li>';
-            if(btn) btn.classList.add('hidden');
-            return;
-        }
-        
-        const listWithRank = list.map((item, idx) => ({ ...item, rank: idx + 1 }));
-        
-        let itemsToDisplay = [];
-        const isSearching = hofSearchQuery.length > 0;
-
-        if (isSearching) {
-            itemsToDisplay = listWithRank.filter(item => item.user.toLowerCase().includes(hofSearchQuery));
-            if (btn) btn.classList.add('hidden'); 
-            if (itemsToDisplay.length === 0) {
-                listEl.innerHTML = '<li class="custom-item" style="justify-content: center; color: var(--muted); padding: 6px;">No se encontró a ningún participante con ese nombre.</li>';
-                return;
-            }
-        } else {
-            itemsToDisplay = isHoFExpanded ? listWithRank : listWithRank.slice(0, 3); 
-            if (btn) {
-                if (list.length > 3) {
-                    btn.classList.remove('hidden');
-                    btn.innerText = isHoFExpanded ? '⬆️ Mostrar solo el Top 3' : '⬇️ Ver todo el Hall of Fame (' + list.length + ')';
-                } else {
-                    btn.classList.add('hidden');
-                }
-            }
-        }
-
-        const fragment = document.createDocumentFragment();
-        itemsToDisplay.forEach(function(item) {
-            const li = document.createElement('li');
-            li.className = 'custom-item';
-            
-            const textoJuegos = item.total === 1 ? 'juego' : 'juegos';
-            
-            let iconoOId = '';
-            if (item.rank === 1) iconoOId = '🥇 ';
-            else if (item.rank === 2) iconoOId = '🥈 ';
-            else if (item.rank === 3) iconoOId = '🥉 ';
-            else iconoOId = `<span style="color: var(--muted); font-size: 0.8rem; margin-right: 4px;">#${item.rank}</span>`;
-            
-            li.innerHTML = '<div class="custom-item-text"><strong>' + iconoOId + item.user + '</strong></div><span class="item-badge" style="background: var(--success);">' + item.total + ' ' + textoJuegos + '</span>';
-            fragment.appendChild(li);
-        });
-        listEl.innerHTML = '';
-        listEl.appendChild(fragment);
-    }
-
-    function renderHistoryList(list) {
-        const listEl = document.getElementById('historyList');
-        const btn = document.getElementById('btnToggleHistory');
-        if(!listEl) return;
-        
-        if (list.length === 0) {
-            listEl.innerHTML = '<li class="custom-item" style="justify-content: center; color: var(--muted);">Sin sorteos registrados.</li>';
-            if(btn) btn.classList.add('hidden');
-            return;
-        }
-
-        const fragment = document.createDocumentFragment();
-        const visibleItems = isHistoryExpanded ? list : list.slice(0, 3);
-        visibleItems.forEach(function(item) {
-            const li = document.createElement('li');
-            li.className = 'custom-item';
-            let deleteBtnHtml = '';
-            if (isAdminLoggedIn) {
-                deleteBtnHtml = `<button class="delete-item-btn" onclick="borrarGanadorEspecifico('${item.key}', '${item.user}', '${item.fecha}')">🗑️ Borrar</button>`;
-            }
-            
-            li.innerHTML = '<div class="custom-item-text"><strong>' + item.user + '</strong></div>' +
-                           '<div style="display:flex; align-items:center; gap:6px;"><div style="font-size: 0.75rem; color: var(--muted);">' + item.fecha + '</div>' + deleteBtnHtml + '</div>';
-            fragment.appendChild(li);
-        });
-        listEl.innerHTML = '';
-        listEl.appendChild(fragment);
-
-        if (list.length > 3) {
-            if(btn) {
-                btn.classList.remove('hidden');
-                btn.innerText = isHistoryExpanded ? '⬆️ Mostrar solo los últimos 3 sorteos' : '⬇️ Ver todo el historial (' + list.length + ')';
-            }
-        } else {
-            if(btn) btn.classList.add('hidden');
-        }
-    }
-
-    function toggleWinnersView() { isWinnersExpanded = !isWinnersExpanded; refrescarHistorialAntiSpoiler(); }
-    function toggleHistoryView() { isHistoryExpanded = !isHistoryExpanded; refrescarHistorialAntiSpoiler(); }
-    function toggleHoFView() { isHoFExpanded = !isHoFExpanded; refrescarHistorialAntiSpoiler(); }
 
     // ============================================================
     //  ADMIN - BORRADOS BLINDADOS
@@ -2499,53 +2377,26 @@
         }
     }
 
-    // BOTÓN 1: Borrar último sorteo
     function borrarUltimoSorteo() {
-        if (confirm("⚠️ ¿Deseas BORRAR el último sorteo (o la programación actual)?\n\nEsto también RESTARÁ los puntos exactos que se sumaron al Hall of Fame en esa tirada.")) {
+        if (confirm("⚠️ ¿Deseas BORRAR el último sorteo (o la programación actual)?\n\nEsto también RESTARÁ los puntos sumados al Hall of Fame basándose en la lista actual.")) {
             
-            db.ref('sorteo_actual').once('value', function(snapshot) {
-                const data = snapshot.val();
+            restarJuegosDelHoF();
 
-                if (data && data.hofAdded) {
-                    const juegosARestar = data.hofAdded;
-                    
-                    db.ref('hall_of_fame_juegos').once('value', function(hofSnap) {
-                        let currentHoF = hofSnap.val() || {};
-                        let modificado = false;
+            db.ref('sorteo_actual').remove();
 
-                        Object.keys(juegosARestar).forEach(userKey => {
-                            if (currentHoF[userKey]) {
-                                currentHoF[userKey].total -= juegosARestar[userKey].count;
-                                modificado = true;
-                                if (currentHoF[userKey].total <= 0) {
-                                    delete currentHoF[userKey];
-                                }
-                            }
-                        });
-
-                        if (modificado) {
-                            db.ref('hall_of_fame_juegos').set(currentHoF);
-                        }
-                    });
+            db.ref('historial_ganadores').limitToLast(1).once('value', function(snapGan) {
+                const dataGanador = snapGan.val();
+                if (dataGanador) {
+                    const keyBorrar = Object.keys(dataGanador)[0];
+                    db.ref('historial_ganadores/' + keyBorrar).remove();
+                    alert("Último sorteo borrado y Hall of Fame revertido con éxito.");
+                } else {
+                    alert("Programación borrada y Hall of Fame revertido con éxito.");
                 }
-
-                db.ref('sorteo_actual').remove();
-
-                db.ref('historial_ganadores').limitToLast(1).once('value', function(snapGan) {
-                    const dataGanador = snapGan.val();
-                    if (dataGanador) {
-                        const keyBorrar = Object.keys(dataGanador)[0];
-                        db.ref('historial_ganadores/' + keyBorrar).remove();
-                        alert("Último sorteo borrado y Hall of Fame revertido con éxito.");
-                    } else {
-                        alert("Programación borrada y Hall of Fame revertido con éxito.");
-                    }
-                });
             });
         }
     }
 
-    // BOTÓN 2: Borrar TODO al estilo "Nuclear"
     function borrarTodo() {
         if (confirm("⚠️ ¿Deseas BORRAR TODO? Esto eliminará:\n- El sorteo actual\n- El historial de ganadores\n- El Hall of Fame al completo\n- La lista de participantes\n\nEsta acción es irreversible.")) {
             const el1 = document.getElementById('listInput');
@@ -2567,9 +2418,9 @@
     }
 
     // ============================================================
-    //  FUNCIÓN PRINCIPAL DE PROGRAMACIÓN Y EJECUCIÓN INSTANTÁNEA
+    //  FUNCIÓN PRINCIPAL DE PROGRAMACIÓN
     // ============================================================
-    async function programarOEjecutarSorteo() {
+    function programarOEjecutarSorteo() {
         const dateInput = document.getElementById('drawDateInput');
         const timeInput = document.getElementById('drawTimeInput');
         const listInput = document.getElementById('listInput');
@@ -2584,24 +2435,19 @@
 
         if (!rawLines) return alert("Pega o importa la lista de participantes.");
 
-        // Si NO hay hora seleccionada (cadena vacía o "--:--") → SORTEO INMEDIATO (SIN ESPERAS)
+        // Si NO hay hora seleccionada (cadena vacía o "--:--") → SORTEO INMEDIATO
         if (!timeVal || timeVal === "--:--" || timeVal.trim() === "") {
             if (confirm("El sorteo se realizará de inmediato y se consolidará el Hall of Fame Histórico. ¿Continuar?")) {
+                detenerTragaperras();
+                mostrarRecreativa(true);
+                const slotStatus = document.getElementById('slotStatus');
+                if(slotStatus) slotStatus.innerText = '🎰 SORTEO INMEDIATO...';
                 
-                // 1. Sumamos los puntos al HoF
-                const hofAddedPoints = await sumarJuegosAlHoF(true);
-                
-                // 2. Ejecutamos la tirada con la animación DESACTIVADA (false)
-                calcularYEjecutarTirada(rawLines, rawBlacklist, false).then(resultadoData => {
-                    if(resultadoData) {
-                        resultadoData.hofAdded = hofAddedPoints;
-                        
-                        // 3. Al guardarlo en Firebase sin tiempo de espera, saca el ganador al instante.
-                        db.ref('sorteo_actual').set(resultadoData);
-                    }
-                });
+                calcularYEjecutarTirada(rawLines, rawBlacklist, false);
+                sumarJuegosAlHoF(true); 
+                alert("¡Sorteo finalizado y Hall of Fame actualizado!");
             }
-            return; // Fin del sorteo inmediato
+            return;
         }
 
         // Si hay hora, se programa (Sorteo Automático)
@@ -2619,16 +2465,13 @@
             targetDate.setDate(targetDate.getDate() + 1);
         }
 
-        // Sumamos los puntos al programar
-        const hofAddedPoints = await sumarJuegosAlHoF(true);
-
         db.ref('sorteo_actual').set({
             status: 'programado',
             targetTime: targetDate.getTime(),
             rawLines: rawLines,
-            rawBlacklist: rawBlacklist,
-            hofAdded: hofAddedPoints
+            rawBlacklist: rawBlacklist
         }).then(() => {
+            sumarJuegosAlHoF(true); 
             alert("¡Sorteo programado con éxito y Hall of Fame histórico actualizado!");
         }).catch(error => {
             console.error('Error guardando el sorteo:', error);
