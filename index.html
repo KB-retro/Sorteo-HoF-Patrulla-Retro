@@ -289,7 +289,7 @@
             font-weight: bold;
             color: #fff;
             display: flex;
-            justify-content: center;
+            justify-content: space-between;
             align-items: center;
             gap: 10px;
         }
@@ -1041,6 +1041,12 @@
     let isAdminLoggedIn = false;
     let isUserEditingList = false;
     let isHoFEditing = false;
+
+    // BANDERAS DE CARGA PARA EVITAR PARPADEOS
+    let isDataLoaded = {
+        history: false,
+        hof: false
+    };
     
     let lastRenderedWinnersState = "";
     let lastRenderedHistoryState = "";
@@ -1152,10 +1158,10 @@
             });
             let winnersCountToRender = Object.keys(mapaConteo).map(usr => ({ user: usr, total: mapaConteo[usr] })).sort((a, b) => b.total - a.total);
 
-            // Generamos las huellas de estado (incluyendo las queries de búsqueda)
-            const newStateWinners = JSON.stringify({ exp: isWinnersExpanded, list: winnersCountToRender, query: winnersSearchQuery });
-            const newStateHistory = JSON.stringify({ exp: isHistoryExpanded, list: historyToRender });
-            const newStateHoF = JSON.stringify({ exp: isHoFExpanded, list: hofToRender, query: hofSearchQuery });
+            // Generamos las huellas de estado
+            const newStateWinners = JSON.stringify({ exp: isWinnersExpanded, list: winnersCountToRender, query: winnersSearchQuery, loaded: isDataLoaded.history });
+            const newStateHistory = JSON.stringify({ exp: isHistoryExpanded, list: historyToRender, loaded: isDataLoaded.history });
+            const newStateHoF = JSON.stringify({ exp: isHoFExpanded, list: hofToRender, query: hofSearchQuery, loaded: isDataLoaded.hof });
 
             if (lastRenderedWinnersState !== newStateWinners) {
                 renderWinnersList(winnersCountToRender);
@@ -1171,8 +1177,6 @@
                 renderHoFList(hofToRender);
                 lastRenderedHoFState = newStateHoF;
             }
-
-            // YA NO SE OCULTAN LAS CAJAS AUNQUE ESTÉN VACÍAS
             
         } catch (e) {
             console.error("Error silencioso en anti-spoiler:", e);
@@ -1208,6 +1212,7 @@
     });
 
     db.ref('hall_of_fame_juegos').on('value', function(snapshot) {
+        isDataLoaded.hof = true; // Chivato de carga
         const data = snapshot.val();
         rawHoFItems = [];
         let manualText = "";
@@ -1216,7 +1221,6 @@
             Object.keys(data).forEach(function(key) {
                 rawHoFItems.push(data[key]);
             });
-            // Ordenar por total de juegos mayor a menor
             rawHoFItems.sort((a, b) => b.total - a.total);
             
             rawHoFItems.forEach(item => {
@@ -1224,7 +1228,6 @@
             });
         }
         
-        // Rellenar la caja del admin solo si no está escribiendo en ella
         if (!isHoFEditing) {
             const manualInput = document.getElementById('hofManualInput');
             if (manualInput) manualInput.value = manualText.trim();
@@ -1307,7 +1310,6 @@
                 let lineaLimpia = line.trim();
                 if (!lineaLimpia) return;
                 
-                // EXPRESIÓN REGULAR CORREGIDA: [\w_.-]
                 const matchUser = lineaLimpia.match(/@[\w_.-]+/i);
                 
                 let textoSinUsuario = lineaLimpia.toUpperCase();
@@ -2346,9 +2348,10 @@
     }
 
     // ============================================================
-    //  RENDERIZADO DE LISTAS
+    //  RENDERIZADO DE LISTAS (CON CORRECCIÓN DE PARPADEO)
     // ============================================================
     db.ref('historial_ganadores').on('value', function(snapshot) {
+        isDataLoaded.history = true; // Chivato de carga
         const data = snapshot.val();
         rawHistoryItems = [];
         if (data) {
@@ -2368,9 +2371,14 @@
         const btn = document.getElementById('btnToggleWinners');
         if(!listEl) return;
         
-        listEl.innerHTML = '';
+        if (!isDataLoaded.history) {
+            listEl.innerHTML = '<li class="custom-item" style="justify-content: center; color: var(--muted);">⏳ Cargando datos...</li>';
+            if(btn) btn.classList.add('hidden');
+            return;
+        }
+
         if (list.length === 0) {
-            listEl.innerHTML = '<li style="text-align: center; color: var(--muted);">Sin historial de ganadores guardado.</li>';
+            listEl.innerHTML = '<li class="custom-item" style="justify-content: center; color: var(--muted);">Sin historial de ganadores guardado.</li>';
             if(btn) btn.classList.add('hidden');
             return;
         }
@@ -2383,7 +2391,7 @@
             itemsToDisplay = listWithRank.filter(item => item.user.toLowerCase().includes(winnersSearchQuery));
             if (btn) btn.classList.add('hidden');
             if (itemsToDisplay.length === 0) {
-                listEl.innerHTML = '<li style="text-align: center; color: var(--muted); padding: 6px;">No se encontró a ningún ganador con ese nombre.</li>';
+                listEl.innerHTML = '<li class="custom-item" style="justify-content: center; color: var(--muted); padding: 6px;">No se encontró a ningún ganador con ese nombre.</li>';
                 return;
             }
         } else {
@@ -2398,6 +2406,7 @@
             }
         }
 
+        const fragment = document.createDocumentFragment();
         itemsToDisplay.forEach(function(item) {
             const li = document.createElement('li');
             li.className = 'custom-item';
@@ -2410,8 +2419,11 @@
             else medallaIcono = `<span style="color: var(--muted); font-size: 0.8rem; margin-right: 4px;">#${item.rank}</span>`;
             
             li.innerHTML = '<div class="custom-item-text"><strong>' + medallaIcono + item.user + '</strong></div><span class="item-badge">' + item.total + ' ' + textoVez + '</span>';
-            listEl.appendChild(li);
+            fragment.appendChild(li);
         });
+        
+        listEl.innerHTML = '';
+        listEl.appendChild(fragment);
     }
 
     function renderHoFList(list) {
@@ -2419,9 +2431,14 @@
         const btn = document.getElementById('btnToggleHoF');
         if(!listEl) return;
         
-        listEl.innerHTML = '';
+        if (!isDataLoaded.hof) {
+            listEl.innerHTML = '<li class="custom-item" style="justify-content: center; color: var(--muted);">⏳ Cargando datos...</li>';
+            if(btn) btn.classList.add('hidden');
+            return;
+        }
+
         if (list.length === 0) {
-            listEl.innerHTML = '<li style="text-align: center; color: var(--muted);">Aún no hay datos de juegos pasados.</li>';
+            listEl.innerHTML = '<li class="custom-item" style="justify-content: center; color: var(--muted);">Aún no hay datos de juegos pasados.</li>';
             if(btn) btn.classList.add('hidden');
             return;
         }
@@ -2435,7 +2452,7 @@
             itemsToDisplay = listWithRank.filter(item => item.user.toLowerCase().includes(hofSearchQuery));
             if (btn) btn.classList.add('hidden'); 
             if (itemsToDisplay.length === 0) {
-                listEl.innerHTML = '<li style="text-align: center; color: var(--muted); padding: 6px;">No se encontró a ningún participante con ese nombre.</li>';
+                listEl.innerHTML = '<li class="custom-item" style="justify-content: center; color: var(--muted); padding: 6px;">No se encontró a ningún participante con ese nombre.</li>';
                 return;
             }
         } else {
@@ -2450,6 +2467,7 @@
             }
         }
 
+        const fragment = document.createDocumentFragment();
         itemsToDisplay.forEach(function(item) {
             const li = document.createElement('li');
             li.className = 'custom-item';
@@ -2463,8 +2481,11 @@
             else iconoOId = `<span style="color: var(--muted); font-size: 0.8rem; margin-right: 4px;">#${item.rank}</span>`;
             
             li.innerHTML = '<div class="custom-item-text"><strong>' + iconoOId + item.user + '</strong></div><span class="item-badge" style="background: var(--success);">' + item.total + ' ' + textoJuegos + '</span>';
-            listEl.appendChild(li);
+            fragment.appendChild(li);
         });
+        
+        listEl.innerHTML = '';
+        listEl.appendChild(fragment);
     }
 
     function renderHistoryList(list) {
@@ -2472,12 +2493,19 @@
         const btn = document.getElementById('btnToggleHistory');
         if(!listEl) return;
         
-        listEl.innerHTML = '';
-        if (list.length === 0) {
-            listEl.innerHTML = '<li style="text-align: center; color: var(--muted);">Sin sorteos registrados.</li>';
+        if (!isDataLoaded.history) {
+            listEl.innerHTML = '<li class="custom-item" style="justify-content: center; color: var(--muted);">⏳ Cargando datos...</li>';
             if(btn) btn.classList.add('hidden');
             return;
         }
+
+        if (list.length === 0) {
+            listEl.innerHTML = '<li class="custom-item" style="justify-content: center; color: var(--muted);">Sin sorteos registrados.</li>';
+            if(btn) btn.classList.add('hidden');
+            return;
+        }
+        
+        const fragment = document.createDocumentFragment();
         const visibleItems = isHistoryExpanded ? list : list.slice(0, 3);
         visibleItems.forEach(function(item) {
             const li = document.createElement('li');
@@ -2489,8 +2517,12 @@
             
             li.innerHTML = '<div class="custom-item-text"><strong>' + item.user + '</strong></div>' +
                            '<div style="display:flex; align-items:center; gap:6px;"><div style="font-size: 0.75rem; color: var(--muted);">' + item.fecha + '</div>' + deleteBtnHtml + '</div>';
-            listEl.appendChild(li);
+            fragment.appendChild(li);
         });
+        
+        listEl.innerHTML = '';
+        listEl.appendChild(fragment);
+        
         if (list.length > 3) {
             if(btn) {
                 btn.classList.remove('hidden');
