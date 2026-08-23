@@ -1317,11 +1317,22 @@
             let boletosPorUsuario = {};
             let totalBoletosValidos = 0;
             
+            let sumandoParaHoF = true; 
+            
             rawLines.forEach(function(line) {
                 let lineaLimpia = line.trim();
                 if (!lineaLimpia) return;
                 
                 const matchUser = lineaLimpia.match(/@[\w_.-]+/i);
+                
+                let textoSinUsuario = lineaLimpia.toUpperCase();
+                if (matchUser) {
+                    textoSinUsuario = textoSinUsuario.replace(matchUser[0].toUpperCase(), '');
+                }
+                
+                if (textoSinUsuario.includes('EXTRA')) {
+                    sumandoParaHoF = false; 
+                }
                 
                 if (matchUser) {
                     let user = matchUser[0];
@@ -1734,7 +1745,7 @@
     }
 
     // ============================================================
-    //  IMPORTAR DESDE TELEGRAM (CON PARÁMETROS ANTI-CACHÉ)
+    //  IMPORTAR DESDE TELEGRAM
     // ============================================================
     async function importarDesdeTelegram(esManual = true) {
         const btn = document.querySelector('.telegram-btn');
@@ -1823,7 +1834,7 @@
     }
 
     // ============================================================
-    //  NUEVO: HALL OF FAME DE JUEGOS COMPLETADOS AUTOMÁTICO
+    //  NUEVO: HALL OF FAME DE JUEGOS COMPLETADOS (SUMAR Y RESTAR)
     // ============================================================
     function sumarJuegosAlHoF(isAuto = false) {
         const rawLinesStr = document.getElementById('listInput').value.trim();
@@ -1838,12 +1849,10 @@
             if (!lineaLimpia) return;
             
             const matchUser = lineaLimpia.match(/@[\w_.-]+/i);
-            
             let textoSinUsuario = lineaLimpia.toUpperCase();
             if (matchUser) {
                 textoSinUsuario = textoSinUsuario.replace(matchUser[0].toUpperCase(), '');
             }
-            
             if (textoSinUsuario.includes('EXTRA')) {
                 sumandoParaHoF = false; 
             }
@@ -1851,7 +1860,6 @@
             if (matchUser && sumandoParaHoF) {
                 let user = matchUser[0].toLowerCase();
                 let userReal = matchUser[0];
-                
                 if (!juegosASumar[user]) juegosASumar[user] = { realName: userReal, count: 0 };
                 juegosASumar[user].count++; 
             }
@@ -1859,21 +1867,62 @@
 
         db.ref('hall_of_fame_juegos').once('value', snapshot => {
             let currentHoF = snapshot.val() || {};
-            
             Object.keys(juegosASumar).forEach(userKey => {
                 if (currentHoF[userKey]) {
                     currentHoF[userKey].total += juegosASumar[userKey].count;
                 } else {
-                    currentHoF[userKey] = {
-                        user: juegosASumar[userKey].realName,
-                        total: juegosASumar[userKey].count
-                    };
+                    currentHoF[userKey] = { user: juegosASumar[userKey].realName, total: juegosASumar[userKey].count };
+                }
+            });
+            db.ref('hall_of_fame_juegos').set(currentHoF);
+        });
+    }
+
+    function restarJuegosDelHoF() {
+        const rawLinesStr = document.getElementById('listInput').value.trim();
+        if (!rawLinesStr) return;
+
+        const rawLines = rawLinesStr.split('\n');
+        let juegosARestar = {};
+        let sumandoParaHoF = true;
+
+        rawLines.forEach(line => {
+            let lineaLimpia = line.trim();
+            if (!lineaLimpia) return;
+            
+            const matchUser = lineaLimpia.match(/@[\w_.-]+/i);
+            let textoSinUsuario = lineaLimpia.toUpperCase();
+            if (matchUser) {
+                textoSinUsuario = textoSinUsuario.replace(matchUser[0].toUpperCase(), '');
+            }
+            if (textoSinUsuario.includes('EXTRA')) {
+                sumandoParaHoF = false; 
+            }
+
+            if (matchUser && sumandoParaHoF) {
+                let userKey = matchUser[0].toLowerCase();
+                if (!juegosARestar[userKey]) juegosARestar[userKey] = 0;
+                juegosARestar[userKey]++;
+            }
+        });
+
+        db.ref('hall_of_fame_juegos').once('value', function(hofSnap) {
+            let currentHoF = hofSnap.val() || {};
+            let modificado = false;
+
+            Object.keys(juegosARestar).forEach(userKey => {
+                if (currentHoF[userKey]) {
+                    currentHoF[userKey].total -= juegosARestar[userKey];
+                    modificado = true;
+                    if (currentHoF[userKey].total <= 0) {
+                        delete currentHoF[userKey];
+                    }
                 }
             });
 
-            db.ref('hall_of_fame_juegos').set(currentHoF).then(() => {
-                console.log("HoF Histórico actualizado automáticamente.");
-            });
+            if (modificado) {
+                db.ref('hall_of_fame_juegos').set(currentHoF);
+            }
         });
     }
 
@@ -2312,166 +2361,6 @@
     }
 
     // ============================================================
-    //  RENDERIZADO DE LISTAS
-    // ============================================================
-    db.ref('historial_ganadores').on('value', function(snapshot) {
-        const data = snapshot.val();
-        rawHistoryItems = [];
-        if (data) {
-            Object.keys(data).forEach(function(key) {
-                const item = data[key];
-                item.key = key;
-                rawHistoryItems.push(item);
-            });
-            rawHistoryItems.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-        }
-        
-        refrescarHistorialAntiSpoiler();
-    });
-
-    function renderWinnersList(list) {
-        const listEl = document.getElementById('winnersCountList');
-        const btn = document.getElementById('btnToggleWinners');
-        if(!listEl) return;
-        
-        listEl.innerHTML = '';
-        if (list.length === 0) {
-            listEl.innerHTML = '<li style="text-align: center; color: var(--muted);">Sin historial de ganadores guardado.</li>';
-            if(btn) btn.classList.add('hidden');
-            return;
-        }
-
-        const listWithRank = list.map((item, idx) => ({ ...item, rank: idx + 1 }));
-        let itemsToDisplay = [];
-        const isSearching = winnersSearchQuery.length > 0;
-
-        if (isSearching) {
-            itemsToDisplay = listWithRank.filter(item => item.user.toLowerCase().includes(winnersSearchQuery));
-            if (btn) btn.classList.add('hidden');
-            if (itemsToDisplay.length === 0) {
-                listEl.innerHTML = '<li style="text-align: center; color: var(--muted); padding: 6px;">No se encontró a ningún ganador con ese nombre.</li>';
-                return;
-            }
-        } else {
-            itemsToDisplay = isWinnersExpanded ? listWithRank : listWithRank.slice(0, 3);
-            if (btn) {
-                if (list.length > 3) {
-                    btn.classList.remove('hidden');
-                    btn.innerText = isWinnersExpanded ? '⬆️ Mostrar solo los 3 principales' : '⬇️ Ver todos los usuarios premiados (' + list.length + ')';
-                } else {
-                    btn.classList.add('hidden');
-                }
-            }
-        }
-
-        itemsToDisplay.forEach(function(item) {
-            const li = document.createElement('li');
-            li.className = 'custom-item';
-            const textoVez = item.total === 1 ? 'vez premiado' : 'veces premiado';
-            
-            let medallaIcono = '';
-            if (item.rank === 1) medallaIcono = '🥇 ';
-            else if (item.rank === 2) medallaIcono = '🥈 ';
-            else if (item.rank === 3) medallaIcono = '🥉 ';
-            else medallaIcono = `<span style="color: var(--muted); font-size: 0.8rem; margin-right: 4px;">#${item.rank}</span>`;
-            
-            li.innerHTML = '<div class="custom-item-text"><strong>' + medallaIcono + item.user + '</strong></div><span class="item-badge">' + item.total + ' ' + textoVez + '</span>';
-            listEl.appendChild(li);
-        });
-    }
-
-    function renderHoFList(list) {
-        const listEl = document.getElementById('hallOfFameList');
-        const btn = document.getElementById('btnToggleHoF');
-        if(!listEl) return;
-        
-        listEl.innerHTML = '';
-        if (list.length === 0) {
-            listEl.innerHTML = '<li style="text-align: center; color: var(--muted);">Aún no hay datos de juegos pasados.</li>';
-            if(btn) btn.classList.add('hidden');
-            return;
-        }
-        
-        const listWithRank = list.map((item, idx) => ({ ...item, rank: idx + 1 }));
-        
-        let itemsToDisplay = [];
-        const isSearching = hofSearchQuery.length > 0;
-
-        if (isSearching) {
-            itemsToDisplay = listWithRank.filter(item => item.user.toLowerCase().includes(hofSearchQuery));
-            if (btn) btn.classList.add('hidden'); 
-            if (itemsToDisplay.length === 0) {
-                listEl.innerHTML = '<li style="text-align: center; color: var(--muted); padding: 6px;">No se encontró a ningún participante con ese nombre.</li>';
-                return;
-            }
-        } else {
-            itemsToDisplay = isHoFExpanded ? listWithRank : listWithRank.slice(0, 3); 
-            if (btn) {
-                if (list.length > 3) {
-                    btn.classList.remove('hidden');
-                    btn.innerText = isHoFExpanded ? '⬆️ Mostrar solo el Top 3' : '⬇️ Ver todo el Hall of Fame (' + list.length + ')';
-                } else {
-                    btn.classList.add('hidden');
-                }
-            }
-        }
-
-        itemsToDisplay.forEach(function(item) {
-            const li = document.createElement('li');
-            li.className = 'custom-item';
-            
-            const textoJuegos = item.total === 1 ? 'juego' : 'juegos';
-            
-            let iconoOId = '';
-            if (item.rank === 1) iconoOId = '🥇 ';
-            else if (item.rank === 2) iconoOId = '🥈 ';
-            else if (item.rank === 3) iconoOId = '🥉 ';
-            else iconoOId = `<span style="color: var(--muted); font-size: 0.8rem; margin-right: 4px;">#${item.rank}</span>`;
-            
-            li.innerHTML = '<div class="custom-item-text"><strong>' + iconoOId + item.user + '</strong></div><span class="item-badge" style="background: var(--success);">' + item.total + ' ' + textoJuegos + '</span>';
-            listEl.appendChild(li);
-        });
-    }
-
-    function renderHistoryList(list) {
-        const listEl = document.getElementById('historyList');
-        const btn = document.getElementById('btnToggleHistory');
-        if(!listEl) return;
-        
-        listEl.innerHTML = '';
-        if (list.length === 0) {
-            listEl.innerHTML = '<li style="text-align: center; color: var(--muted);">Sin sorteos registrados.</li>';
-            if(btn) btn.classList.add('hidden');
-            return;
-        }
-        const visibleItems = isHistoryExpanded ? list : list.slice(0, 3);
-        visibleItems.forEach(function(item) {
-            const li = document.createElement('li');
-            li.className = 'custom-item';
-            let deleteBtnHtml = '';
-            if (isAdminLoggedIn) {
-                deleteBtnHtml = `<button class="delete-item-btn" onclick="borrarGanadorEspecifico('${item.key}', '${item.user}', '${item.fecha}')">🗑️ Borrar</button>`;
-            }
-            
-            li.innerHTML = '<div class="custom-item-text"><strong>' + item.user + '</strong></div>' +
-                           '<div style="display:flex; align-items:center; gap:6px;"><div style="font-size: 0.75rem; color: var(--muted);">' + item.fecha + '</div>' + deleteBtnHtml + '</div>';
-            listEl.appendChild(li);
-        });
-        if (list.length > 3) {
-            if(btn) {
-                btn.classList.remove('hidden');
-                btn.innerText = isHistoryExpanded ? '⬆️ Mostrar solo los últimos 3 sorteos' : '⬇️ Ver todo el historial (' + list.length + ')';
-            }
-        } else {
-            if(btn) btn.classList.add('hidden');
-        }
-    }
-
-    function toggleWinnersView() { isWinnersExpanded = !isWinnersExpanded; refrescarHistorialAntiSpoiler(); }
-    function toggleHistoryView() { isHistoryExpanded = !isHistoryExpanded; refrescarHistorialAntiSpoiler(); }
-    function toggleHoFView() { isHoFExpanded = !isHoFExpanded; refrescarHistorialAntiSpoiler(); }
-
-    // ============================================================
     //  ADMIN - BORRADOS BLINDADOS
     // ============================================================
     function toggleAdminPanel() {
@@ -2490,71 +2379,24 @@
 
     // BOTÓN 1: Borrar último sorteo (Y deshacer los puntos del Hall of Fame de esa lista)
     function borrarUltimoSorteo() {
-        if (confirm("⚠️ ¿Deseas BORRAR el último sorteo (o la programación actual)?\n\nEsto también RESTARÁ los juegos sumados al Hall of Fame en esa tirada.")) {
-            db.ref('sorteo_actual').once('value', function(snapshot) {
-                const data = snapshot.val();
-                
-                // 1. Restar los puntos del Hall of Fame
-                if (data && data.rawLines) {
-                    const rawLines = data.rawLines.split('\n');
-                    let juegosARestar = {};
-                    let sumandoParaHoF = true;
+        if (confirm("⚠️ ¿Deseas BORRAR el último sorteo (o la programación actual)?\n\nEsto también RESTARÁ los puntos sumados al Hall of Fame basándose en la lista actual.")) {
+            
+            // 1. Des-sumar (restar) los puntos de la lista actual en el Hall of Fame
+            restarJuegosDelHoF();
 
-                    rawLines.forEach(line => {
-                        let lineaLimpia = line.trim();
-                        if (!lineaLimpia) return;
-                        
-                        const matchUser = lineaLimpia.match(/@[\w_.-]+/i);
-                        let textoSinUsuario = lineaLimpia.toUpperCase();
-                        if (matchUser) {
-                            textoSinUsuario = textoSinUsuario.replace(matchUser[0].toUpperCase(), '');
-                        }
-                        
-                        if (textoSinUsuario.includes('EXTRA')) {
-                            sumandoParaHoF = false; 
-                        }
+            // 2. Borrar Sorteo Actual
+            db.ref('sorteo_actual').remove();
 
-                        if (matchUser && sumandoParaHoF) {
-                            let userKey = matchUser[0].toLowerCase();
-                            if (!juegosARestar[userKey]) juegosARestar[userKey] = 0;
-                            juegosARestar[userKey]++;
-                        }
-                    });
-
-                    db.ref('hall_of_fame_juegos').once('value', function(hofSnap) {
-                        let currentHoF = hofSnap.val() || {};
-                        let modificado = false;
-
-                        Object.keys(juegosARestar).forEach(userKey => {
-                            if (currentHoF[userKey]) {
-                                currentHoF[userKey].total -= juegosARestar[userKey];
-                                modificado = true;
-                                if (currentHoF[userKey].total <= 0) {
-                                    delete currentHoF[userKey];
-                                }
-                            }
-                        });
-
-                        if (modificado) {
-                            db.ref('hall_of_fame_juegos').set(currentHoF);
-                        }
-                    });
+            // 3. Borrar del historial
+            db.ref('historial_ganadores').limitToLast(1).once('value', function(snapGan) {
+                const dataGanador = snapGan.val();
+                if (dataGanador) {
+                    const keyBorrar = Object.keys(dataGanador)[0];
+                    db.ref('historial_ganadores/' + keyBorrar).remove();
+                    alert("Último sorteo borrado y Hall of Fame revertido con éxito.");
+                } else {
+                    alert("Programación borrada y Hall of Fame revertido con éxito.");
                 }
-
-                // 2. Borrar Sorteo Actual
-                db.ref('sorteo_actual').remove();
-
-                // 3. Borrar del historial
-                db.ref('historial_ganadores').limitToLast(1).once('value', function(snapGan) {
-                    const dataGanador = snapGan.val();
-                    if (dataGanador) {
-                        const keyBorrar = Object.keys(dataGanador)[0];
-                        db.ref('historial_ganadores/' + keyBorrar).remove();
-                        alert("Último sorteo borrado y Hall of Fame revertido con éxito.");
-                    } else {
-                        alert("Programación borrada y Hall of Fame revertido con éxito.");
-                    }
-                });
             });
         }
     }
@@ -2728,6 +2570,7 @@
 
         document.addEventListener("click", e => {
             if (!picker.contains(e.target) && !panel.classList.contains("hidden")) {
+                // Al hacer click fuera: revertimos el estado al último valor guardado (o nulo)
                 selected = parse(input.value); 
                 panel.classList.add("hidden");
             }
