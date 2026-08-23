@@ -776,9 +776,8 @@
         </div>
     </div>
 
-    <!-- LAS CAJAS EMPIEZAN OCULTAS PARA EVITAR EL PARPADEO. SE MOSTRARÁN AL RECIBIR DATOS -->
-
-    <!-- LISTA DE PREMIADOS -->
+    <!-- LISTAS (Empiezan ocultas, se muestran automáticamente al cargar los datos) -->
+    
     <div id="winnersCountCard" class="card hidden">
         <h3>🏆 Ganadores 🏆</h3>
         
@@ -790,7 +789,6 @@
         <button id="btnToggleWinners" class="btn-toggle-view hidden" onclick="toggleWinnersView()">⬇️ Ver todos los usuarios premiados</button>
     </div>
 
-    <!-- HALL OF FAME: JUEGOS COMPLETADOS HISTÓRICO -->
     <div id="hallOfFameCard" class="card hidden">
         <h3>👾 Hall of Fame 👾</h3>
         
@@ -802,7 +800,6 @@
         <button id="btnToggleHoF" class="btn-toggle-view hidden" onclick="toggleHoFView()">⬇️ Ver todo el Hall of Fame</button>
     </div>
 
-    <!-- HISTORIAL DE SORTEOS -->
     <div id="historyCard" class="card hidden">
         <h3>📜 Historial de Ganadores Anteriores</h3>
         <ul id="historyList" class="custom-list"></ul>
@@ -1367,6 +1364,9 @@
         }
     }
 
+    // ============================================================
+    //  ELECCIÓN ALEATORIA CRIPTOGRÁFICAMENTE SEGURA (Corregida a 32 bits)
+    // ============================================================
     function obtenerIndiceCriptografico(max) {
         if (max <= 0) return 0;
         const arrayBuffer = new Uint32Array(1);
@@ -2566,7 +2566,7 @@
     }
 
     // ============================================================
-    //  FUNCIÓN PRINCIPAL DE PROGRAMACIÓN
+    //  FUNCIÓN PRINCIPAL DE PROGRAMACIÓN Y EJECUCIÓN INSTANTÁNEA
     // ============================================================
     async function programarOEjecutarSorteo() {
         const dateInput = document.getElementById('drawDateInput');
@@ -2583,27 +2583,28 @@
 
         if (!rawLines) return alert("Pega o importa la lista de participantes.");
 
-        const hofAddedPoints = await sumarJuegosAlHoF(true);
-
+        // Si NO hay hora seleccionada (cadena vacía o "--:--") → SORTEO INMEDIATO (SIN ESPERAS)
         if (!timeVal || timeVal === "--:--" || timeVal.trim() === "") {
             if (confirm("El sorteo se realizará de inmediato y se consolidará el Hall of Fame Histórico. ¿Continuar?")) {
-                detenerTragaperras();
-                mostrarRecreativa(true);
-                const slotStatus = document.getElementById('slotStatus');
-                if(slotStatus) slotStatus.innerText = '🎰 SORTEO INMEDIATO...';
                 
+                // 1. Sumamos los puntos al HoF
+                const hofAddedPoints = await sumarJuegosAlHoF(true);
+                
+                // 2. Ejecutamos la tirada con la animación DESACTIVADA (false)
                 calcularYEjecutarTirada(rawLines, rawBlacklist, false).then(resultadoData => {
                     if(resultadoData) {
                         resultadoData.hofAdded = hofAddedPoints;
-                        db.ref('sorteo_actual').set(resultadoData).then(() => {
-                            alert("¡Sorteo finalizado y Hall of Fame actualizado!");
-                        });
+                        
+                        // 3. Al guardarlo en Firebase sin tiempo de espera (sin revealAt), 
+                        // la web aborta la tragaperras y saca el ganador al instante.
+                        db.ref('sorteo_actual').set(resultadoData);
                     }
                 });
             }
-            return;
+            return; // Fin del sorteo inmediato
         }
 
+        // Si hay hora, se programa (Sorteo Automático)
         const timeParts = timeVal.split(':');
         let targetDate = new Date();
 
@@ -2617,6 +2618,9 @@
         if (!dateVal && targetDate.getTime() <= Date.now()) {
             targetDate.setDate(targetDate.getDate() + 1);
         }
+
+        // Sumamos los puntos al programar
+        const hofAddedPoints = await sumarJuegosAlHoF(true);
 
         db.ref('sorteo_actual').set({
             status: 'programado',
