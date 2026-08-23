@@ -2301,13 +2301,14 @@
                 timestamp: Date.now() + Math.random()
             });
 
+            // CORRECCIÓN FIREBASE: revealAt a 0 en vez de undefined para evitar el fallo invisible.
             resolve({
                 ganador: ganadorEncontrado,
                 arcadeGroup: arcadeGroup,
                 log: log,
                 timestamp: Date.now(),
                 frase: fraseGanador,
-                revealAt: animarResultado ? Date.now() + SLOT_REVEAL_MS : undefined
+                revealAt: animarResultado ? Date.now() + SLOT_REVEAL_MS : 0
             });
         });
     }
@@ -2595,8 +2596,7 @@
                     if(resultadoData) {
                         resultadoData.hofAdded = hofAddedPoints;
                         
-                        // 3. Al guardarlo en Firebase sin tiempo de espera (sin revealAt), 
-                        // la web aborta la tragaperras y saca el ganador al instante.
+                        // 3. Al guardarlo en Firebase sin tiempo de espera, saca el ganador al instante.
                         db.ref('sorteo_actual').set(resultadoData);
                     }
                 });
