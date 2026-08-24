@@ -835,7 +835,7 @@
         <button id="btnToggleHistory" class="btn-toggle-view hidden" onclick="toggleHistoryView()">⬇️ Ver todo el historial</button>
     </div>
 
-    <!-- ===== PANEL DE ADMINISTRACIÓN (CON AJUSTES AVANZADOS OCULTOS) ===== -->
+    <!-- ===== PANEL DE ADMINISTRACIÓN ===== -->
     <div id="adminPanel" class="card admin-panel hidden">
         <h2>🛠️ Panel de Control</h2>
 
@@ -920,16 +920,15 @@
             <button class="admin-btn" onclick="programarOEjecutarSorteo()">🎲 GUARDAR Y PROGRAMAR SORTEO</button>
         </div>
 
-        <!-- ===== BOTÓN PARA MOSTRAR/OCULTAR AJUSTES AVANZADOS ===== -->
+        <!-- BOTÓN PARA MOSTRAR/OCULTAR AJUSTES AVANZADOS -->
         <button class="btn-advanced-toggle" id="btnAdvancedToggle" onclick="toggleAdvancedSettings()">
             <span>⚙️ Ajustes Avanzados</span>
             <span class="toggle-icon">▼</span>
         </button>
 
-        <!-- ===== AJUSTES AVANZADOS (ocultos por defecto) ===== -->
+        <!-- AJUSTES AVANZADOS (ocultos por defecto) -->
         <div class="advanced-settings-wrapper" id="advancedSettingsWrapper">
 
-            <!-- Añadir Ganadores Manuales -->
             <div class="admin-section">
                 <label><b>➕ Añadir Ganador(es) Anterior(es) al Historial:</b></label>
                 <p style="font-size: 0.8rem; color: var(--muted); margin: 4px 0 8px 0;">
@@ -966,7 +965,6 @@
                 <button style="background-color: #0284c7;" onclick="agregarGanadorManual()">➕ AÑADIR AL HISTORIAL</button>
             </div>
 
-            <!-- Gestión del Hall of Fame -->
             <div class="admin-section" style="border: 1px solid var(--gold); background: rgba(245, 158, 11, 0.05);">
                 <label style="color: var(--gold);"><b>👾 Gestión del Hall of Fame (Histórico):</b></label>
                 <p style="font-size: 0.8rem; color: var(--muted); margin: 4px 0 8px 0;">
@@ -979,7 +977,6 @@
                 <button style="background-color: var(--accent); margin-top: 5px;" onclick="guardarHoFManual()">💾 SOBRESCRIBIR HALL OF FAME</button>
             </div>
 
-            <!-- Copias de Seguridad -->
             <div class="admin-section" style="border: 1px solid var(--accent); background: rgba(99, 102, 241, 0.08);">
                 <label><b>💾 Copias de Seguridad y Restauración:</b></label>
                 <p style="font-size: 0.8rem; color: var(--muted); margin: 4px 0 10px 0;">
@@ -1006,7 +1003,6 @@
                 </div>
             </div>
 
-            <!-- Botones de Borrado -->
             <button class="warning-btn" onclick="borrarUltimoSorteo()">↩️ BORRAR ÚLTIMO SORTEO</button>
             <button class="clear-btn" onclick="borrarTodo()">🧹 BORRAR TODO</button>
         </div>
@@ -2658,7 +2654,7 @@
     }
 
     // ============================================================
-    //  INICIALIZADORES DE SELECTORES RETRO
+    //  INICIALIZADORES DE SELECTORES RETRO (MEJORADOS)
     // ============================================================
     function initRetroDatePicker() {
         const input = document.getElementById("drawDateInput");
@@ -2679,6 +2675,7 @@
         const now = new Date();
         let selected = null;
         let view = new Date(now.getFullYear(), now.getMonth(), 1);
+        let savedValue = input.value || "";
 
         function parse(s) {
             const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || "");
@@ -2708,14 +2705,27 @@
             }
         }
 
+        function cancelSelection() {
+            // Restaurar el valor guardado
+            const old = parse(savedValue);
+            if (old) {
+                input.value = savedValue;
+                text.textContent = pad(old.getDate()) + "/" + pad(old.getMonth() + 1) + "/" + old.getFullYear();
+                selected = old;
+            } else {
+                input.value = "";
+                text.textContent = "--/--/----";
+                selected = null;
+            }
+            panel.classList.add("hidden");
+        }
+
         display.onclick = e => {
             e.stopPropagation();
-            if (!selected) {
-                selected = parse(input.value) || new Date();
-                view = new Date(selected.getFullYear(), selected.getMonth(), 1);
-            } else {
-                view = new Date(selected.getFullYear(), selected.getMonth(), 1);
-            }
+            // Guardar el valor actual antes de abrir
+            savedValue = input.value || "";
+            selected = parse(savedValue) || new Date();
+            view = new Date(selected.getFullYear(), selected.getMonth(), 1);
             render();
             panel.classList.remove("hidden");
         };
@@ -2728,6 +2738,7 @@
             if (selected) {
                 const val = iso(selected);
                 input.value = val;
+                savedValue = val;
                 text.textContent = pad(selected.getDate()) + "/" + pad(selected.getMonth() + 1) + "/" + selected.getFullYear();
                 panel.classList.add("hidden");
             }
@@ -2735,22 +2746,23 @@
 
         cancelBtn.onclick = (e) => {
             e.stopPropagation();
-            input.value = "";
-            text.textContent = "--/--/----";
-            selected = null;
-            panel.classList.add("hidden");
+            cancelSelection();
         };
 
+        // Click fuera del panel → CANCELAR
         document.addEventListener("click", e => {
             if (!picker.contains(e.target) && !panel.classList.contains("hidden")) {
-                selected = parse(input.value); 
-                panel.classList.add("hidden");
+                cancelSelection();
             }
         });
 
         const old = parse(input.value);
-        if (old) text.textContent = pad(old.getDate()) + "/" + pad(old.getMonth() + 1) + "/" + old.getFullYear();
-        else text.textContent = "--/--/----";
+        if (old) {
+            text.textContent = pad(old.getDate()) + "/" + pad(old.getMonth() + 1) + "/" + old.getFullYear();
+            savedValue = input.value;
+        } else {
+            text.textContent = "--/--/----";
+        }
     }
 
     function initRetroTimePicker() {
@@ -2767,6 +2779,7 @@
 
         let hour = 0, minute = 0;
         let hasSelected = false;
+        let savedValue = valueInput.value || "";
         const pad = n => String(n).padStart(2, "0");
 
         function renderWheel(element, max, selectedVal, onSelect) {
@@ -2796,16 +2809,47 @@
             renderWheel(minuteWheel, 59, minute, n => minute = n);
         }
 
-        function setFromCurrentTime() {
-            const now = new Date();
-            hour = now.getHours();
-            minute = now.getMinutes();
-            hasSelected = true;
+        function setFromValue(val) {
+            const match = /^(\d{2}):(\d{2})$/.exec(val || "");
+            if (match) {
+                hour = Number(match[1]);
+                minute = Number(match[2]);
+                hasSelected = true;
+            } else {
+                const now = new Date();
+                hour = now.getHours();
+                minute = now.getMinutes();
+                hasSelected = true;
+            }
+        }
+
+        function cancelSelection() {
+            if (savedValue && savedValue !== "--:--") {
+                const match = /^(\d{2}):(\d{2})$/.exec(savedValue);
+                if (match) {
+                    hour = Number(match[1]);
+                    minute = Number(match[2]);
+                    displayValue.textContent = savedValue;
+                    valueInput.value = savedValue;
+                    hasSelected = true;
+                } else {
+                    displayValue.textContent = "--:--";
+                    valueInput.value = "";
+                    hasSelected = false;
+                }
+            } else {
+                displayValue.textContent = "--:--";
+                valueInput.value = "";
+                hasSelected = false;
+            }
+            panel.classList.add("hidden");
+            display.setAttribute("aria-expanded", "false");
         }
 
         display.addEventListener("click", event => {
             event.stopPropagation();
-            if (!hasSelected) setFromCurrentTime();
+            savedValue = valueInput.value || "";
+            if (!hasSelected) setFromValue(savedValue);
             else {
                 const match = /^(\d{2}):(\d{2})$/.exec(valueInput.value || "");
                 if (match) {
@@ -2813,7 +2857,7 @@
                     minute = Number(match[2]);
                     hasSelected = true;
                 } else {
-                    setFromCurrentTime();
+                    setFromValue(savedValue);
                 }
             }
             render();
@@ -2823,11 +2867,11 @@
 
         confirmBtn.addEventListener("click", (e) => {
             e.stopPropagation();
-            if (!hasSelected) setFromCurrentTime();
+            if (!hasSelected) setFromValue(savedValue);
             const value = pad(hour) + ":" + pad(minute);
             displayValue.textContent = value;
             valueInput.value = value;
-            valueInput.dataset.userSelected = "true";
+            savedValue = value;
             hasSelected = true;
             panel.classList.add("hidden");
             display.setAttribute("aria-expanded", "false");
@@ -2835,54 +2879,54 @@
 
         cancelBtn.addEventListener("click", (e) => {
             e.stopPropagation();
-            valueInput.value = "";
-            displayValue.textContent = "--:--";
-            hasSelected = false;
-            panel.classList.add("hidden");
-            display.setAttribute("aria-expanded", "false");
+            cancelSelection();
         });
 
         hourWheel.addEventListener("wheel", e => {
             e.preventDefault();
-            if (!hasSelected) setFromCurrentTime();
+            if (!hasSelected) setFromValue(savedValue);
             hour = (hour + (e.deltaY > 0 ? 1 : -1) + 24) % 24;
             render();
         }, { passive: false });
 
         minuteWheel.addEventListener("wheel", e => {
             e.preventDefault();
-            if (!hasSelected) setFromCurrentTime();
+            if (!hasSelected) setFromValue(savedValue);
             minute = (minute + (e.deltaY > 0 ? 1 : -1) + 60) % 60;
             render();
         }, { passive: false });
 
         hourWheel.addEventListener("keydown", e => {
-            if (e.key === "ArrowDown") { e.preventDefault(); if (!hasSelected) setFromCurrentTime(); hour = (hour + 1) % 24; render(); }
-            if (e.key === "ArrowUp") { e.preventDefault(); if (!hasSelected) setFromCurrentTime(); hour = (hour - 1 + 24) % 24; render(); }
+            if (e.key === "ArrowDown") { e.preventDefault(); if (!hasSelected) setFromValue(savedValue); hour = (hour + 1) % 24; render(); }
+            if (e.key === "ArrowUp") { e.preventDefault(); if (!hasSelected) setFromValue(savedValue); hour = (hour - 1 + 24) % 24; render(); }
         });
 
         minuteWheel.addEventListener("keydown", e => {
-            if (e.key === "ArrowDown") { e.preventDefault(); if (!hasSelected) setFromCurrentTime(); minute = (minute + 1) % 60; render(); }
-            if (e.key === "ArrowUp") { e.preventDefault(); if (!hasSelected) setFromCurrentTime(); minute = (minute - 1 + 60) % 60; render(); }
+            if (e.key === "ArrowDown") { e.preventDefault(); if (!hasSelected) setFromValue(savedValue); minute = (minute + 1) % 60; render(); }
+            if (e.key === "ArrowUp") { e.preventDefault(); if (!hasSelected) setFromValue(savedValue); minute = (minute - 1 + 60) % 60; render(); }
         });
 
+        // Click fuera del panel → CANCELAR
         document.addEventListener("click", e => {
             if (!picker.contains(e.target) && !panel.classList.contains("hidden")) {
-                const match = /^(\d{2}):(\d{2})$/.exec(valueInput.value || "");
-                if (match) {
-                    hour = Number(match[1]);
-                    minute = Number(match[2]);
-                    hasSelected = true;
-                } else {
-                    hasSelected = false;
-                }
-                panel.classList.add("hidden");
-                display.setAttribute("aria-expanded", "false");
+                cancelSelection();
             }
         });
 
-        displayValue.textContent = "--:--";
-        valueInput.value = "";
+        // Inicializar
+        const initial = valueInput.value;
+        if (initial && initial !== "--:--") {
+            const match = /^(\d{2}):(\d{2})$/.exec(initial);
+            if (match) {
+                hour = Number(match[1]);
+                minute = Number(match[2]);
+                displayValue.textContent = initial;
+                savedValue = initial;
+                hasSelected = true;
+            }
+        } else {
+            displayValue.textContent = "--:--";
+        }
     }
 
     function initRetroMonthPicker() {
@@ -2899,11 +2943,11 @@
 
         let month = 0, year = 0;
         let hasSelected = false;
+        let savedValue = valueInput.value || "";
         const pad = n => String(n).padStart(2, "0");
 
         const minYear = 2020;
         const maxYear = 2040;
-        
         const mesesAbbr = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
 
         function renderWheel(element, min, max, selectedVal, onSelect, isMonth = false) {
@@ -2933,16 +2977,47 @@
             renderWheel(yearWheel, minYear, maxYear, year, n => year = n, false);
         }
 
-        function setFromCurrentDate() {
-            const now = new Date();
-            month = now.getMonth() + 1; 
-            year = now.getFullYear();
-            hasSelected = true;
+        function setFromValue(val) {
+            const match = /^(\d{4})-(\d{2})$/.exec(val || "");
+            if (match) {
+                year = Number(match[1]);
+                month = Number(match[2]);
+                hasSelected = true;
+            } else {
+                const now = new Date();
+                month = now.getMonth() + 1;
+                year = now.getFullYear();
+                hasSelected = true;
+            }
+        }
+
+        function cancelSelection() {
+            if (savedValue && savedValue !== "-- / ----") {
+                const match = /^(\d{4})-(\d{2})$/.exec(savedValue);
+                if (match) {
+                    year = Number(match[1]);
+                    month = Number(match[2]);
+                    displayValue.textContent = `${mesesAbbr[month - 1]} / ${year}`;
+                    valueInput.value = savedValue;
+                    hasSelected = true;
+                } else {
+                    displayValue.textContent = "-- / ----";
+                    valueInput.value = "";
+                    hasSelected = false;
+                }
+            } else {
+                displayValue.textContent = "-- / ----";
+                valueInput.value = "";
+                hasSelected = false;
+            }
+            panel.classList.add("hidden");
+            display.setAttribute("aria-expanded", "false");
         }
 
         display.addEventListener("click", event => {
             event.stopPropagation();
-            if (!hasSelected) setFromCurrentDate();
+            savedValue = valueInput.value || "";
+            if (!hasSelected) setFromValue(savedValue);
             else {
                 const match = /^(\d{4})-(\d{2})$/.exec(valueInput.value || "");
                 if (match) {
@@ -2950,7 +3025,7 @@
                     month = Number(match[2]);
                     hasSelected = true;
                 } else {
-                    setFromCurrentDate();
+                    setFromValue(savedValue);
                 }
             }
             render();
@@ -2960,10 +3035,11 @@
 
         confirmBtn.addEventListener("click", (e) => {
             e.stopPropagation();
-            if (!hasSelected) setFromCurrentDate();
+            if (!hasSelected) setFromValue(savedValue);
             const valueStr = `${year}-${pad(month)}`;
             displayValue.textContent = `${mesesAbbr[month - 1]} / ${year}`;
             valueInput.value = valueStr;
+            savedValue = valueStr;
             hasSelected = true;
             panel.classList.add("hidden");
             display.setAttribute("aria-expanded", "false");
@@ -2971,16 +3047,12 @@
 
         cancelBtn.addEventListener("click", (e) => {
             e.stopPropagation();
-            valueInput.value = "";
-            displayValue.textContent = "-- / ----";
-            hasSelected = false;
-            panel.classList.add("hidden");
-            display.setAttribute("aria-expanded", "false");
+            cancelSelection();
         });
 
         monthWheel.addEventListener("wheel", e => {
             e.preventDefault();
-            if (!hasSelected) setFromCurrentDate();
+            if (!hasSelected) setFromValue(savedValue);
             month = month + (e.deltaY > 0 ? 1 : -1);
             if (month > 12) month = 1;
             if (month < 1) month = 12;
@@ -2989,7 +3061,7 @@
 
         yearWheel.addEventListener("wheel", e => {
             e.preventDefault();
-            if (!hasSelected) setFromCurrentDate();
+            if (!hasSelected) setFromValue(savedValue);
             year = year + (e.deltaY > 0 ? 1 : -1);
             if (year > maxYear) year = minYear;
             if (year < minYear) year = maxYear;
@@ -2997,32 +3069,36 @@
         }, { passive: false });
 
         monthWheel.addEventListener("keydown", e => {
-            if (e.key === "ArrowDown") { e.preventDefault(); if (!hasSelected) setFromCurrentDate(); month = month + 1 > 12 ? 1 : month + 1; render(); }
-            if (e.key === "ArrowUp") { e.preventDefault(); if (!hasSelected) setFromCurrentDate(); month = month - 1 < 1 ? 12 : month - 1; render(); }
+            if (e.key === "ArrowDown") { e.preventDefault(); if (!hasSelected) setFromValue(savedValue); month = month + 1 > 12 ? 1 : month + 1; render(); }
+            if (e.key === "ArrowUp") { e.preventDefault(); if (!hasSelected) setFromValue(savedValue); month = month - 1 < 1 ? 12 : month - 1; render(); }
         });
 
         yearWheel.addEventListener("keydown", e => {
-            if (e.key === "ArrowDown") { e.preventDefault(); if (!hasSelected) setFromCurrentDate(); year = year + 1 > maxYear ? minYear : year + 1; render(); }
-            if (e.key === "ArrowUp") { e.preventDefault(); if (!hasSelected) setFromCurrentDate(); year = year - 1 < minYear ? maxYear : year - 1; render(); }
+            if (e.key === "ArrowDown") { e.preventDefault(); if (!hasSelected) setFromValue(savedValue); year = year + 1 > maxYear ? minYear : year + 1; render(); }
+            if (e.key === "ArrowUp") { e.preventDefault(); if (!hasSelected) setFromValue(savedValue); year = year - 1 < minYear ? maxYear : year - 1; render(); }
         });
 
+        // Click fuera del panel → CANCELAR
         document.addEventListener("click", e => {
             if (!picker.contains(e.target) && !panel.classList.contains("hidden")) {
-                const match = /^(\d{4})-(\d{2})$/.exec(valueInput.value || "");
-                if (match) {
-                    year = Number(match[1]);
-                    month = Number(match[2]);
-                    hasSelected = true;
-                } else {
-                    hasSelected = false;
-                }
-                panel.classList.add("hidden");
-                display.setAttribute("aria-expanded", "false");
+                cancelSelection();
             }
         });
 
-        displayValue.textContent = "-- / ----";
-        valueInput.value = "";
+        // Inicializar
+        const initial = valueInput.value;
+        if (initial) {
+            const match = /^(\d{4})-(\d{2})$/.exec(initial);
+            if (match) {
+                year = Number(match[1]);
+                month = Number(match[2]);
+                displayValue.textContent = `${mesesAbbr[month - 1]} / ${year}`;
+                savedValue = initial;
+                hasSelected = true;
+            }
+        } else {
+            displayValue.textContent = "-- / ----";
+        }
     }
 </script>
 </body>
