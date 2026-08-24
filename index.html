@@ -1911,7 +1911,12 @@
             });
 
             if (modificado) {
-                db.ref('hall_of_fame_juegos').set(currentHoF);
+                // CORRECCIÓN: Si el nodo se queda vacío tras borrar, lo eliminamos de Firebase
+                if (Object.keys(currentHoF).length === 0) {
+                    db.ref('hall_of_fame_juegos').remove();
+                } else {
+                    db.ref('hall_of_fame_juegos').set(currentHoF);
+                }
             }
         });
     }
@@ -2335,12 +2340,15 @@
             timestamp: Date.now() + Math.random()
         });
 
+        // CORRECCIÓN: Guardamos también rawLines y rawBlacklist para el historial
         const resultadoData = {
             ganador: ganadorEncontrado,
             arcadeGroup: arcadeGroup,
             log: log,
             timestamp: Date.now(),
-            frase: fraseGanador
+            frase: fraseGanador,
+            rawLines: rawLinesStr,        
+            rawBlacklist: rawBlacklistStr 
         };
 
         if (animarResultado) {
@@ -2534,9 +2542,14 @@
             db.ref('sorteo_actual').once('value', function(snapActual) {
                 const dataSorteo = snapActual.val();
                 
-                if (dataSorteo && dataSorteo.rawLines) {
-                    // 1. Des-sumar (restar) los puntos usando la lista que se guardó en el sorteo
-                    restarJuegosDelHoF(dataSorteo.rawLines);
+                // Buscamos la lista guardada o usamos la caja de texto como rescate
+                let lineasUsadas = (dataSorteo && dataSorteo.rawLines) 
+                    ? dataSorteo.rawLines 
+                    : document.getElementById('listInput').value.trim();
+                
+                if (lineasUsadas) {
+                    // 1. Des-sumar (restar) los puntos
+                    restarJuegosDelHoF(lineasUsadas);
                 }
 
                 // 2. Borrar Sorteo Actual
