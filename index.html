@@ -657,6 +657,7 @@
             .slot-reel { height: 68px; font-size: 2rem; }
         }
 
+        /* ===== SELECTOR DE HORA MEJORADO ===== */
         .retro-time-picker { position:relative; width:100%; }
         .retro-time-display {
             width:100%; min-height:44px; padding:10px 14px;
@@ -674,23 +675,59 @@
         }
         .retro-time-panel.hidden { display:none; }
         .retro-time-title { text-align:center; font-weight:800; color:#c4b5fd; margin-bottom:10px; }
-        .retro-time-wheels { display:flex; align-items:center; justify-content:center; gap:8px; }
-        .retro-time-wheel-wrap { width:110px; }
-        .retro-time-wheel-label { text-align:center; font-size:.72rem; opacity:.7; margin-bottom:5px; }
-        .retro-time-wheel {
-            height:174px; overflow-y:auto; scroll-snap-type:y mandatory;
-            border:1px solid rgba(139,92,246,.45); border-radius:12px;
-            background:#020617; scrollbar-width:none;
+
+        .retro-time-selector {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin: 8px 0;
         }
-        .retro-time-wheel::-webkit-scrollbar { display:none; }
-        .retro-time-option {
-            height:58px; display:flex; align-items:center; justify-content:center;
-            scroll-snap-align:center; font-size:1.35rem; font-weight:800;
-            color:#64748b; cursor:pointer; user-select:none;
+        .retro-time-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
         }
-        .retro-time-option.selected { color:#f8fafc; background:rgba(139,92,246,.18); }
-        .retro-time-colon { font-size:1.6rem; font-weight:900; padding-top:20px; }
-        .retro-time-help { text-align:center; font-size:.72rem; opacity:.6; margin:9px 0; }
+        .retro-time-group label {
+            font-size: 0.7rem;
+            opacity: 0.6;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .retro-time-group .time-value {
+            font-size: 2.2rem;
+            font-weight: 900;
+            color: #f8fafc;
+            min-width: 60px;
+            text-align: center;
+            font-variant-numeric: tabular-nums;
+            padding: 0 8px;
+        }
+        .retro-time-btn {
+            background: rgba(139, 92, 246, 0.2);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 8px;
+            color: #c4b5fd;
+            font-size: 1.2rem;
+            padding: 4px 16px;
+            cursor: pointer;
+            width: auto;
+            min-width: 44px;
+            transition: background 0.2s;
+            font-weight: 700;
+        }
+        .retro-time-btn:hover { background: rgba(139, 92, 246, 0.4); }
+        .retro-time-btn:active { transform: scale(0.95); }
+        .retro-time-colon {
+            font-size: 2.5rem;
+            font-weight: 300;
+            opacity: 0.5;
+            padding-top: 14px;
+        }
+        .retro-time-help {
+            text-align:center; font-size:.72rem; opacity:.6; margin:9px 0;
+        }
         .retro-time-confirm {
             width:100%; border:0; border-radius:10px; padding:9px 12px;
             background:#7c3aed; color:#fff; font-weight:800; cursor:pointer;
@@ -702,8 +739,8 @@
             margin-top: 8px;
         }
         .retro-time-cancel:hover { background:#334155; }
-        @media (max-width:480px) { .retro-time-wheel-wrap { width:90px; } }
 
+        /* ===== SELECTOR DE FECHA RETRO ===== */
         .retro-date-picker{position:relative;width:100%}
         .retro-date-display{width:100%;min-height:44px;padding:10px 14px;box-sizing:border-box;display:flex;align-items:center;gap:10px;border:1px solid rgba(139,92,246,.55);border-radius:12px;background:rgba(15,23,42,.85);color:#f8fafc;font:inherit;cursor:pointer;text-align:left}
         .retro-date-display span:last-child{margin-left:auto;opacity:.7}
@@ -720,6 +757,7 @@
         .retro-date-cell.other-month{opacity:.25}
         .retro-date-cell.today{outline:1px solid rgba(167,139,250,.7)}
         .retro-date-cell.selected{background:#7c3aed;color:#fff}
+        .retro-date-cell:active { transform: scale(0.95); }
         .retro-date-confirm{width:100%;margin-top:7px;padding:9px 12px;border:0;border-radius:10px;background:#7c3aed;color:#fff;font-weight:800;cursor:pointer}
         .retro-date-confirm:hover{background:#8b5cf6}
         .retro-date-cancel{width:100%;margin-top:7px;padding:9px 12px;border:0;border-radius:10px;background:#475569;color:#fff;font-weight:800;cursor:pointer}
@@ -886,8 +924,6 @@
                             <span>L</span><span>M</span><span>X</span><span>J</span><span>V</span><span>S</span><span>D</span>
                         </div>
                         <div class="retro-date-grid" id="retroDateGrid"></div>
-                        <button type="button" class="retro-date-confirm" id="retroDateConfirm">CONFIRMAR FECHA</button>
-                        <button type="button" class="retro-date-cancel" id="retroDateCancel">CANCELAR</button>
                     </div>
                 </div>
 
@@ -899,18 +935,22 @@
                     </button>
                     <div class="retro-time-panel hidden" id="retroTimePanel">
                         <div class="retro-time-title">SELECCIONA LA HORA</div>
-                        <div class="retro-time-wheels">
-                            <div class="retro-time-wheel-wrap">
-                                <div class="retro-time-wheel-label">HORA</div>
-                                <div class="retro-time-wheel" id="retroHourWheel" tabindex="0" aria-label="Hora"></div>
+                        <div class="retro-time-selector">
+                            <div class="retro-time-group">
+                                <label>Hora</label>
+                                <button type="button" class="retro-time-btn" id="hourUp">▲</button>
+                                <span class="time-value" id="hourDisplay">00</span>
+                                <button type="button" class="retro-time-btn" id="hourDown">▼</button>
                             </div>
-                            <div class="retro-time-colon">:</div>
-                            <div class="retro-time-wheel-wrap">
-                                <div class="retro-time-wheel-label">MIN</div>
-                                <div class="retro-time-wheel" id="retroMinuteWheel" tabindex="0" aria-label="Minutos"></div>
+                            <span class="retro-time-colon">:</span>
+                            <div class="retro-time-group">
+                                <label>Min</label>
+                                <button type="button" class="retro-time-btn" id="minUp">▲</button>
+                                <span class="time-value" id="minDisplay">00</span>
+                                <button type="button" class="retro-time-btn" id="minDown">▼</button>
                             </div>
                         </div>
-                        <div class="retro-time-help">Rueda del ratón o ▲ ▼ · 00–23 / 00–59</div>
+                        <div class="retro-time-help">▲ ▼ o rueda del ratón para cambiar</div>
                         <button type="button" class="retro-time-confirm" id="retroTimeConfirm">CONFIRMAR HORA</button>
                         <button type="button" class="retro-time-cancel" id="retroTimeCancel">CANCELAR</button>
                     </div>
@@ -2654,7 +2694,7 @@
     }
 
     // ============================================================
-    //  INICIALIZADORES DE SELECTORES RETRO (MEJORADOS)
+    //  INICIALIZADORES DE SELECTORES (MEJORADOS)
     // ============================================================
     function initRetroDatePicker() {
         const input = document.getElementById("drawDateInput");
@@ -2666,8 +2706,6 @@
         const label = document.getElementById("retroDateMonthLabel");
         const prev = document.getElementById("retroDatePrev");
         const next = document.getElementById("retroDateNext");
-        const confirmBtn = document.getElementById("retroDateConfirm");
-        const cancelBtn = document.getElementById("retroDateCancel");
         if (!input || !picker) return;
 
         const pad = n => String(n).padStart(2, "0");
@@ -2697,16 +2735,20 @@
                 if (selected && iso(d) === iso(selected)) b.classList.add("selected");
                 b.textContent = d.getDate();
                 b.onclick = (e) => {
-                    e.stopPropagation(); 
+                    e.stopPropagation();
                     selected = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-                    render();
+                    // Al hacer clic en un día, seleccionar y cerrar automáticamente
+                    const val = iso(selected);
+                    input.value = val;
+                    savedValue = val;
+                    text.textContent = pad(selected.getDate()) + "/" + pad(selected.getMonth() + 1) + "/" + selected.getFullYear();
+                    panel.classList.add("hidden");
                 };
                 grid.appendChild(b);
             }
         }
 
         function cancelSelection() {
-            // Restaurar el valor guardado
             const old = parse(savedValue);
             if (old) {
                 input.value = savedValue;
@@ -2722,7 +2764,6 @@
 
         display.onclick = e => {
             e.stopPropagation();
-            // Guardar el valor actual antes de abrir
             savedValue = input.value || "";
             selected = parse(savedValue) || new Date();
             view = new Date(selected.getFullYear(), selected.getMonth(), 1);
@@ -2733,23 +2774,6 @@
         prev.onclick = (e) => { e.stopPropagation(); view.setMonth(view.getMonth() - 1); render(); };
         next.onclick = (e) => { e.stopPropagation(); view.setMonth(view.getMonth() + 1); render(); };
 
-        confirmBtn.onclick = (e) => {
-            e.stopPropagation();
-            if (selected) {
-                const val = iso(selected);
-                input.value = val;
-                savedValue = val;
-                text.textContent = pad(selected.getDate()) + "/" + pad(selected.getMonth() + 1) + "/" + selected.getFullYear();
-                panel.classList.add("hidden");
-            }
-        };
-
-        cancelBtn.onclick = (e) => {
-            e.stopPropagation();
-            cancelSelection();
-        };
-
-        // Click fuera del panel → CANCELAR
         document.addEventListener("click", e => {
             if (!picker.contains(e.target) && !panel.classList.contains("hidden")) {
                 cancelSelection();
@@ -2770,57 +2794,37 @@
         const display = document.getElementById("retroTimeDisplay");
         const displayValue = document.getElementById("retroTimeDisplayValue");
         const panel = document.getElementById("retroTimePanel");
-        const hourWheel = document.getElementById("retroHourWheel");
-        const minuteWheel = document.getElementById("retroMinuteWheel");
+        const hourDisplay = document.getElementById("hourDisplay");
+        const minDisplay = document.getElementById("minDisplay");
+        const hourUp = document.getElementById("hourUp");
+        const hourDown = document.getElementById("hourDown");
+        const minUp = document.getElementById("minUp");
+        const minDown = document.getElementById("minDown");
         const confirmBtn = document.getElementById("retroTimeConfirm");
         const cancelBtn = document.getElementById("retroTimeCancel");
         const picker = document.getElementById("retroTimePicker");
-        if (!valueInput || !display || !displayValue || !panel || !hourWheel || !minuteWheel || !confirmBtn || !picker) return;
+        if (!valueInput || !display || !displayValue || !panel || !hourDisplay || !minDisplay || !confirmBtn || !picker) return;
 
         let hour = 0, minute = 0;
-        let hasSelected = false;
         let savedValue = valueInput.value || "";
         const pad = n => String(n).padStart(2, "0");
-
-        function renderWheel(element, max, selectedVal, onSelect) {
-            element.innerHTML = "";
-            for (let n = 0; n <= max; n++) {
-                const item = document.createElement("div");
-                item.className = "retro-time-option" + (n === selectedVal ? " selected" : "");
-                item.dataset.value = String(n);
-                item.textContent = pad(n);
-                item.addEventListener("click", (e) => {
-                    e.stopPropagation();
-                    onSelect(n);
-                    render();
-                });
-                element.appendChild(item);
-            }
-            requestAnimationFrame(() => {
-                const selectedItem = element.querySelector(".selected");
-                if (selectedItem) {
-                    element.scrollTop = selectedItem.offsetTop - (element.clientHeight - selectedItem.offsetHeight) / 2;
-                }
-            });
-        }
-
-        function render() {
-            renderWheel(hourWheel, 23, hour, n => hour = n);
-            renderWheel(minuteWheel, 59, minute, n => minute = n);
-        }
 
         function setFromValue(val) {
             const match = /^(\d{2}):(\d{2})$/.exec(val || "");
             if (match) {
                 hour = Number(match[1]);
                 minute = Number(match[2]);
-                hasSelected = true;
             } else {
                 const now = new Date();
                 hour = now.getHours();
                 minute = now.getMinutes();
-                hasSelected = true;
             }
+            updateDisplay();
+        }
+
+        function updateDisplay() {
+            hourDisplay.textContent = pad(hour);
+            minDisplay.textContent = pad(minute);
         }
 
         function cancelSelection() {
@@ -2831,17 +2835,15 @@
                     minute = Number(match[2]);
                     displayValue.textContent = savedValue;
                     valueInput.value = savedValue;
-                    hasSelected = true;
                 } else {
                     displayValue.textContent = "--:--";
                     valueInput.value = "";
-                    hasSelected = false;
                 }
             } else {
                 displayValue.textContent = "--:--";
                 valueInput.value = "";
-                hasSelected = false;
             }
+            updateDisplay();
             panel.classList.add("hidden");
             display.setAttribute("aria-expanded", "false");
         }
@@ -2849,30 +2851,35 @@
         display.addEventListener("click", event => {
             event.stopPropagation();
             savedValue = valueInput.value || "";
-            if (!hasSelected) setFromValue(savedValue);
-            else {
-                const match = /^(\d{2}):(\d{2})$/.exec(valueInput.value || "");
-                if (match) {
-                    hour = Number(match[1]);
-                    minute = Number(match[2]);
-                    hasSelected = true;
-                } else {
-                    setFromValue(savedValue);
-                }
-            }
-            render();
+            setFromValue(savedValue);
             panel.classList.remove("hidden");
             display.setAttribute("aria-expanded", "true");
         });
 
+        hourUp.onclick = (e) => { e.stopPropagation(); hour = (hour + 1) % 24; updateDisplay(); };
+        hourDown.onclick = (e) => { e.stopPropagation(); hour = (hour - 1 + 24) % 24; updateDisplay(); };
+        minUp.onclick = (e) => { e.stopPropagation(); minute = (minute + 1) % 60; updateDisplay(); };
+        minDown.onclick = (e) => { e.stopPropagation(); minute = (minute - 1 + 60) % 60; updateDisplay(); };
+
+        // Soporte para rueda del ratón
+        hourDisplay.addEventListener("wheel", e => {
+            e.preventDefault();
+            hour = (hour + (e.deltaY > 0 ? 1 : -1) + 24) % 24;
+            updateDisplay();
+        }, { passive: false });
+
+        minDisplay.addEventListener("wheel", e => {
+            e.preventDefault();
+            minute = (minute + (e.deltaY > 0 ? 1 : -1) + 60) % 60;
+            updateDisplay();
+        }, { passive: false });
+
         confirmBtn.addEventListener("click", (e) => {
             e.stopPropagation();
-            if (!hasSelected) setFromValue(savedValue);
             const value = pad(hour) + ":" + pad(minute);
             displayValue.textContent = value;
             valueInput.value = value;
             savedValue = value;
-            hasSelected = true;
             panel.classList.add("hidden");
             display.setAttribute("aria-expanded", "false");
         });
@@ -2882,31 +2889,6 @@
             cancelSelection();
         });
 
-        hourWheel.addEventListener("wheel", e => {
-            e.preventDefault();
-            if (!hasSelected) setFromValue(savedValue);
-            hour = (hour + (e.deltaY > 0 ? 1 : -1) + 24) % 24;
-            render();
-        }, { passive: false });
-
-        minuteWheel.addEventListener("wheel", e => {
-            e.preventDefault();
-            if (!hasSelected) setFromValue(savedValue);
-            minute = (minute + (e.deltaY > 0 ? 1 : -1) + 60) % 60;
-            render();
-        }, { passive: false });
-
-        hourWheel.addEventListener("keydown", e => {
-            if (e.key === "ArrowDown") { e.preventDefault(); if (!hasSelected) setFromValue(savedValue); hour = (hour + 1) % 24; render(); }
-            if (e.key === "ArrowUp") { e.preventDefault(); if (!hasSelected) setFromValue(savedValue); hour = (hour - 1 + 24) % 24; render(); }
-        });
-
-        minuteWheel.addEventListener("keydown", e => {
-            if (e.key === "ArrowDown") { e.preventDefault(); if (!hasSelected) setFromValue(savedValue); minute = (minute + 1) % 60; render(); }
-            if (e.key === "ArrowUp") { e.preventDefault(); if (!hasSelected) setFromValue(savedValue); minute = (minute - 1 + 60) % 60; render(); }
-        });
-
-        // Click fuera del panel → CANCELAR
         document.addEventListener("click", e => {
             if (!picker.contains(e.target) && !panel.classList.contains("hidden")) {
                 cancelSelection();
@@ -2922,11 +2904,13 @@
                 minute = Number(match[2]);
                 displayValue.textContent = initial;
                 savedValue = initial;
-                hasSelected = true;
             }
         } else {
-            displayValue.textContent = "--:--";
+            const now = new Date();
+            hour = now.getHours();
+            minute = now.getMinutes();
         }
+        updateDisplay();
     }
 
     function initRetroMonthPicker() {
@@ -3017,17 +3001,7 @@
         display.addEventListener("click", event => {
             event.stopPropagation();
             savedValue = valueInput.value || "";
-            if (!hasSelected) setFromValue(savedValue);
-            else {
-                const match = /^(\d{4})-(\d{2})$/.exec(valueInput.value || "");
-                if (match) {
-                    year = Number(match[1]);
-                    month = Number(match[2]);
-                    hasSelected = true;
-                } else {
-                    setFromValue(savedValue);
-                }
-            }
+            setFromValue(savedValue);
             render();
             panel.classList.remove("hidden");
             display.setAttribute("aria-expanded", "true");
@@ -3035,7 +3009,6 @@
 
         confirmBtn.addEventListener("click", (e) => {
             e.stopPropagation();
-            if (!hasSelected) setFromValue(savedValue);
             const valueStr = `${year}-${pad(month)}`;
             displayValue.textContent = `${mesesAbbr[month - 1]} / ${year}`;
             valueInput.value = valueStr;
@@ -3052,7 +3025,6 @@
 
         monthWheel.addEventListener("wheel", e => {
             e.preventDefault();
-            if (!hasSelected) setFromValue(savedValue);
             month = month + (e.deltaY > 0 ? 1 : -1);
             if (month > 12) month = 1;
             if (month < 1) month = 12;
@@ -3061,31 +3033,18 @@
 
         yearWheel.addEventListener("wheel", e => {
             e.preventDefault();
-            if (!hasSelected) setFromValue(savedValue);
             year = year + (e.deltaY > 0 ? 1 : -1);
             if (year > maxYear) year = minYear;
             if (year < minYear) year = maxYear;
             render();
         }, { passive: false });
 
-        monthWheel.addEventListener("keydown", e => {
-            if (e.key === "ArrowDown") { e.preventDefault(); if (!hasSelected) setFromValue(savedValue); month = month + 1 > 12 ? 1 : month + 1; render(); }
-            if (e.key === "ArrowUp") { e.preventDefault(); if (!hasSelected) setFromValue(savedValue); month = month - 1 < 1 ? 12 : month - 1; render(); }
-        });
-
-        yearWheel.addEventListener("keydown", e => {
-            if (e.key === "ArrowDown") { e.preventDefault(); if (!hasSelected) setFromValue(savedValue); year = year + 1 > maxYear ? minYear : year + 1; render(); }
-            if (e.key === "ArrowUp") { e.preventDefault(); if (!hasSelected) setFromValue(savedValue); year = year - 1 < minYear ? maxYear : year - 1; render(); }
-        });
-
-        // Click fuera del panel → CANCELAR
         document.addEventListener("click", e => {
             if (!picker.contains(e.target) && !panel.classList.contains("hidden")) {
                 cancelSelection();
             }
         });
 
-        // Inicializar
         const initial = valueInput.value;
         if (initial) {
             const match = /^(\d{4})-(\d{2})$/.exec(initial);
