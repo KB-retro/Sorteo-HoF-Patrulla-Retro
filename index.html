@@ -2753,6 +2753,9 @@
         else text.textContent = "--/--/----";
     }
 
+    // ============================================================
+    //  initRetroTimePicker MODIFICADO: siempre empieza a las 21:00
+    // ============================================================
     function initRetroTimePicker() {
         const valueInput = document.getElementById("drawTimeInput");
         const display = document.getElementById("retroTimeDisplay");
@@ -2765,7 +2768,8 @@
         const picker = document.getElementById("retroTimePicker");
         if (!valueInput || !display || !displayValue || !panel || !hourWheel || !minuteWheel || !confirmBtn || !picker) return;
 
-        let hour = 0, minute = 0;
+        let hour = 21;  // <--- SIEMPRE EMPIEZA A LAS 21
+        let minute = 0;
         let hasSelected = false;
         const pad = n => String(n).padStart(2, "0");
 
@@ -2796,26 +2800,23 @@
             renderWheel(minuteWheel, 59, minute, n => minute = n);
         }
 
+        // Al abrir, siempre usa 21:00 si no hay valor guardado
         function setFromCurrentTime() {
-            const now = new Date();
-            hour = now.getHours();
-            minute = now.getMinutes();
+            const currentVal = valueInput.value;
+            const match = /^(\d{2}):(\d{2})$/.exec(currentVal);
+            if (match && currentVal !== "--:--") {
+                hour = Number(match[1]);
+                minute = Number(match[2]);
+            } else {
+                hour = 21;
+                minute = 0;
+            }
             hasSelected = true;
         }
 
         display.addEventListener("click", event => {
             event.stopPropagation();
-            if (!hasSelected) setFromCurrentTime();
-            else {
-                const match = /^(\d{2}):(\d{2})$/.exec(valueInput.value || "");
-                if (match) {
-                    hour = Number(match[1]);
-                    minute = Number(match[2]);
-                    hasSelected = true;
-                } else {
-                    setFromCurrentTime();
-                }
-            }
+            setFromCurrentTime();
             render();
             panel.classList.remove("hidden");
             display.setAttribute("aria-expanded", "true");
@@ -2881,7 +2882,8 @@
             }
         });
 
-        displayValue.textContent = "--:--";
+        // Mostrar 21:00 por defecto
+        displayValue.textContent = "21:00";
         valueInput.value = "";
     }
 
