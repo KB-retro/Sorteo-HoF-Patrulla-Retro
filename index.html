@@ -440,26 +440,9 @@
             z-index: 99;
             box-shadow: 0 8px 16px rgba(0,0,0,0.5);
             display: none;
-            /* Soporte para Firefox */
-            scrollbar-width: thin;
-            scrollbar-color: var(--accent) #1e293b;
+            scrollbar-width: none;
         }
-        
-        /* Soporte para Chrome, Safari y Edge */
-        .custom-suggestions-dropdown::-webkit-scrollbar { 
-            width: 8px; 
-        }
-        .custom-suggestions-dropdown::-webkit-scrollbar-track { 
-            background: #1e293b; 
-            border-radius: 0 0 8px 0;
-        }
-        .custom-suggestions-dropdown::-webkit-scrollbar-thumb { 
-            background: var(--accent); 
-            border-radius: 4px; 
-        }
-        .custom-suggestions-dropdown::-webkit-scrollbar-thumb:hover { 
-            background: var(--accent-hover); 
-        }
+        .custom-suggestions-dropdown::-webkit-scrollbar { width: 0px; background: transparent; }
 
         .suggestion-item {
             padding: 10px 12px;
@@ -718,12 +701,10 @@
     <img src="logo.png?v=2" alt="Logo Patrulla Retro" class="header-logo" onclick="contarClicksAdmin()">
     <h1 id="mainTitle">🏆 Sorteo HoF Patrulla Retro</h1>
 
-    <!-- BOTÓN SUPERIOR -->
     <div class="top-prob-btn-container">
         <button class="top-prob-btn" onclick="abrirProbabilidadesModal()">📊 Lista de Participantes</button>
     </div>
 
-    <!-- TRAGAPERRAS DEL SORTEO -->
     <div id="slotMachineCard" aria-live="polite">
         <div class="slot-marquee">★ 🕹️ SORTEO EN DIRECTO 🕹️ ★</div>
         <div class="slot-cabinet">
@@ -740,7 +721,6 @@
         </div>
     </div>
 
-    <!-- PANTALLA GANADOR -->
     <div id="winnerCard" class="winner-box">
         <div class="winner-title">🎉 ¡Tenemos Ganador Oficial! 🎉</div>
         <div id="winnerName" class="winner-name">Cargando...</div>
@@ -757,16 +737,13 @@
         </div>
     </div>
 
-    <!-- MENSAJE ESPERA -->
     <div id="waitingCard" class="card hidden" style="text-align: center;">
         <h2>⏳ El sorteo aún no se ha realizado</h2>
         <p style="color: var(--muted); font-size: 0.85rem;">El administrador realizará o programará la tirada en breve. Esta página se actualizará automáticamente.</p>
     </div>
 
-    <!-- BUSCADOR DE JUEGOS SIEMPRE VISIBLE -->
     <div class="card" style="position: relative; z-index: 50;">
         
-        <!-- INSTRUCCIONES ESTILO RETRO -->
         <div class="retro-info-box">
             <strong>👾 Instrucciones para los elegidos:</strong>
             <p style="margin: 6px 0;">🎮 <b>Elección de Arcade:</b> Usa este buscador para verificar tu propuesta. Si el resultado se ilumina en <span class="highlight-green">verde</span>, comunícaselo a <a href="https://t.me/M_1_c_h_3_l" target="_blank" style="color: #60a5fa; text-decoration: none; font-weight: bold;">@M_1_c_h_3_l</a> por Telegram.</p>
@@ -792,7 +769,6 @@
         </div>
     </div>
 
-    <!-- LISTA DE PREMIADOS -->
     <div id="winnersCountCard" class="card">
         <h3>🏆 Ganadores 🏆</h3>
         
@@ -800,15 +776,10 @@
             <input type="text" id="winnersSearchInput" placeholder="🔍 Buscar usuario (@usuario)..." oninput="buscarEnWinners()" autocomplete="off" style="font-size: 0.85rem; padding: 8px 12px;">
         </div>
 
-        <ul id="winnersCountList" class="custom-list">
-            <li class="custom-item" style="justify-content: center; color: var(--muted); background: transparent; border: 1px dashed #334155;">
-                ⏳ Cargando datos del servidor...
-            </li>
-        </ul>
+        <ul id="winnersCountList" class="custom-list"></ul>
         <button id="btnToggleWinners" class="btn-toggle-view hidden" onclick="toggleWinnersView()">⬇️ Ver todos los usuarios premiados</button>
     </div>
 
-    <!-- HALL OF FAME: JUEGOS COMPLETADOS HISTÓRICO -->
     <div id="hallOfFameCard" class="card">
         <h3>👾 Hall of Fame 👾</h3>
         
@@ -816,26 +787,16 @@
             <input type="text" id="hofSearchInput" placeholder="🔍 Buscar usuario (@usuario)..." oninput="buscarEnHoF()" autocomplete="off" style="font-size: 0.85rem; padding: 8px 12px;">
         </div>
 
-        <ul id="hallOfFameList" class="custom-list">
-            <li class="custom-item" style="justify-content: center; color: var(--muted); background: transparent; border: 1px dashed #334155;">
-                ⏳ Cargando ranking histórico...
-            </li>
-        </ul>
+        <ul id="hallOfFameList" class="custom-list"></ul>
         <button id="btnToggleHoF" class="btn-toggle-view hidden" onclick="toggleHoFView()">⬇️ Ver todo el Hall of Fame</button>
     </div>
 
-    <!-- HISTORIAL DE SORTEOS -->
     <div id="historyCard" class="card">
         <h3>📜 Historial de Ganadores 📜</h3>
-        <ul id="historyList" class="custom-list">
-            <li class="custom-item" style="justify-content: center; color: var(--muted); background: transparent; border: 1px dashed #334155;">
-                ⏳ Cargando sorteos anteriores...
-            </li>
-        </ul>
+        <ul id="historyList" class="custom-list"></ul>
         <button id="btnToggleHistory" class="btn-toggle-view hidden" onclick="toggleHistoryView()">⬇️ Ver todo el historial</button>
     </div>
 
-    <!-- PANEL ADMIN -->
     <div id="adminPanel" class="card admin-panel hidden">
         <h2>🛠️ Panel de Control (Administrador)</h2>
 
@@ -927,9 +888,8 @@
         <button id="btnToggleAdvancedAdmin" class="btn-toggle-view" onclick="toggleAdvancedAdmin()" style="width: 100%; margin-top: 10px; font-weight: bold;">⚙️ Mostrar Opciones Avanzadas</button>
 
         <!-- CONTENEDOR DE OPCIONES AVANZADAS OCULTO POR DEFECTO -->
-        <div id="advancedAdminConfig" class="hidden" style="margin-top: 15px; display: flex; flex-direction: column; gap: 12px;">
-            
-            <div class="admin-section" style="margin-bottom: 0;">
+        <div id="advancedAdminConfig" class="hidden" style="margin-top: 15px; display: flex; flex-direction: column;">
+            <div class="admin-section">
                 <label><b>➕ Añadir Ganador(es) Anterior(es) al Historial:</b></label>
                 <p style="font-size: 0.8rem; color: var(--muted); margin: 4px 0 8px 0;">
                     Introduce los usuarios y selecciona el mes y año en el que obtuvieron el premio.
@@ -967,7 +927,7 @@
             </div>
 
             <!-- SECCIÓN DE GESTIÓN DEL HALL OF FAME (HISTÓRICO) -->
-            <div class="admin-section" style="border: 1px solid var(--gold); background: rgba(245, 158, 11, 0.05); margin-bottom: 0;">
+            <div class="admin-section" style="border: 1px solid var(--gold); background: rgba(245, 158, 11, 0.05);">
                 <label style="color: var(--gold);"><b>👾 Gestión del Hall of Fame (Histórico):</b></label>
                 <p style="font-size: 0.8rem; color: var(--muted); margin: 4px 0 8px 0;">
                     Los juegos de la lista se sumarán automáticamente al ranking histórico al momento de programar o ejecutar el sorteo.
@@ -979,7 +939,7 @@
                 <button style="background-color: var(--accent); margin-top: 5px;" onclick="guardarHoFManual()">💾 SOBRESCRIBIR HALL OF FAME</button>
             </div>
 
-            <div class="admin-section" style="border: 1px solid var(--accent); background: rgba(99, 102, 241, 0.08); margin-bottom: 0;">
+            <div class="admin-section" style="border: 1px solid var(--accent); background: rgba(99, 102, 241, 0.08);">
                 <label><b>💾 Copias de Seguridad y Restauración:</b></label>
                 <p style="font-size: 0.8rem; color: var(--muted); margin: 4px 0 10px 0;">
                     Puedes guardar un punto de restauración en Firebase antes de hacer sorteos, o descargarte una copia física a tu PC.
@@ -1008,9 +968,7 @@
 
             <button class="warning-btn" onclick="borrarUltimoSorteo()">↩️ BORRAR ÚLTIMO SORTEO</button>
             <button class="clear-btn" onclick="borrarTodo()">🧹 BORRAR TODO</button>
-
-        </div> <!-- CIERRE DEL CONTENEDOR AVANZADO -->
-
+        </div>
     </div>
 
     <div class="footer-buttons-group">
@@ -1018,7 +976,6 @@
     </div>
 </div>
 
-<!-- VENTANA MODAL CRÉDITOS -->
 <div id="creditsModal" class="modal-overlay hidden">
     <div class="modal-card">
         <h2 style="color: var(--gold); margin-top: 0; margin-bottom: 15px;">Créditos</h2>
@@ -1036,7 +993,6 @@
     </div>
 </div>
 
-<!-- VENTANA MODAL PARTICIPANTES -->
 <div id="probabilitiesModal" class="modal-overlay hidden">
     <div class="modal-card">
         <h2 style="color: var(--gold); margin-top: 0; margin-bottom: 5px;">📊 Lista de Participantes</h2>
@@ -1078,7 +1034,7 @@
     let isAdminLoggedIn = false;
     let isUserEditingList = false;
     let isHoFEditing = false;
-    let isAdvancedAdminVisible = false; // Variable para controlar el panel avanzado
+    let isAdvancedAdminVisible = false;
     
     let lastRenderedWinnersState = "";
     let lastRenderedHistoryState = "";
@@ -1210,6 +1166,8 @@
                 lastRenderedHoFState = newStateHoF;
             }
 
+            // YA NO SE OCULTAN LAS CAJAS AUNQUE ESTÉN VACÍAS
+            
         } catch (e) {
             console.error("Error silencioso en anti-spoiler:", e);
         }
@@ -1288,12 +1246,6 @@
         initRetroTimePicker();
         initRetroMonthPicker();
         
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) {
-            const micBtn = document.getElementById('micBtn');
-            if (micBtn) micBtn.style.display = 'none';
-        }
-        
         setInterval(refrescarHistorialAntiSpoiler, 1000);
     });
 
@@ -1349,6 +1301,7 @@
                 let lineaLimpia = line.trim();
                 if (!lineaLimpia) return;
                 
+                // EXPRESIÓN REGULAR CORREGIDA: [\w_.-]
                 const matchUser = lineaLimpia.match(/@[\w_.-]+/i);
                 
                 let textoSinUsuario = lineaLimpia.toUpperCase();
@@ -1808,7 +1761,7 @@
                 let plainText = tempDiv.textContent || tempDiv.innerText || "";
                 if (regexPatronLista.test(plainText)) {
                     const lineas = plainText.split('\n');
-                    const lineasFiltradas = lineas.map(l => l.trim()).filter(l => regexPatronLista.test(l) || /EXTRA/i.test(l));
+                    const lineasFiltradas = lineas.map(l => l.trim()).filter(l => regexPatronLista.test(l) || /PUNTO\s+EXTRA/i.test(l));
                     if (lineasFiltradas.length > 0) {
                         ultimaListaEncontrada = lineasFiltradas.join('\n');
                         break;
@@ -1860,23 +1813,7 @@
     }
 
     // ============================================================
-    //  TOGGLE PANEL AVANZADO (NUEVO)
-    // ============================================================
-    function toggleAdvancedAdmin() {
-        isAdvancedAdminVisible = !isAdvancedAdminVisible;
-        const panel = document.getElementById('advancedAdminConfig');
-        const btn = document.getElementById('btnToggleAdvancedAdmin');
-        if (isAdvancedAdminVisible) {
-            panel.classList.remove('hidden');
-            btn.innerText = '⚙️ Ocultar Opciones Avanzadas';
-        } else {
-            panel.classList.add('hidden');
-            btn.innerText = '⚙️ Mostrar Opciones Avanzadas';
-        }
-    }
-
-    // ============================================================
-    //  HALL OF FAME DE JUEGOS COMPLETADOS (SUMAR Y RESTAR)
+    //  NUEVO: HALL OF FAME DE JUEGOS COMPLETADOS (SUMAR Y RESTAR)
     // ============================================================
     function sumarJuegosAlHoF(isAuto = false) {
         const rawLinesStr = document.getElementById('listInput').value.trim();
@@ -1884,28 +1821,26 @@
 
         const rawLines = rawLinesStr.split('\n');
         let juegosASumar = {};
-        let bloqueExtraActivado = false;
+        let sumandoParaHoF = true;
 
         rawLines.forEach(line => {
             let lineaLimpia = line.trim();
             if (!lineaLimpia) return;
             
-            let textoMayusculas = lineaLimpia.toUpperCase();
             const matchUser = lineaLimpia.match(/@[\w_.-]+/i);
-
-            if (!matchUser && textoMayusculas.includes('EXTRA')) {
-                bloqueExtraActivado = true;
+            let textoSinUsuario = lineaLimpia.toUpperCase();
+            if (matchUser) {
+                textoSinUsuario = textoSinUsuario.replace(matchUser[0].toUpperCase(), '');
+            }
+            if (textoSinUsuario.includes('EXTRA')) {
+                sumandoParaHoF = false; 
             }
 
-            if (matchUser) {
-                let esLineaExtra = textoMayusculas.includes('EXTRA');
-
-                if (!esLineaExtra && !bloqueExtraActivado) {
-                    let user = matchUser[0].toLowerCase();
-                    let userReal = matchUser[0];
-                    if (!juegosASumar[user]) juegosASumar[user] = { realName: userReal, count: 0 };
-                    juegosASumar[user].count++; 
-                }
+            if (matchUser && sumandoParaHoF) {
+                let user = matchUser[0].toLowerCase();
+                let userReal = matchUser[0];
+                if (!juegosASumar[user]) juegosASumar[user] = { realName: userReal, count: 0 };
+                juegosASumar[user].count++; 
             }
         });
 
@@ -1922,32 +1857,31 @@
         });
     }
 
-    function restarJuegosDelHoF(rawLinesStr) {
+    function restarJuegosDelHoF() {
+        const rawLinesStr = document.getElementById('listInput').value.trim();
         if (!rawLinesStr) return;
 
         const rawLines = rawLinesStr.split('\n');
         let juegosARestar = {};
-        let bloqueExtraActivado = false;
+        let sumandoParaHoF = true;
 
         rawLines.forEach(line => {
             let lineaLimpia = line.trim();
             if (!lineaLimpia) return;
             
-            let textoMayusculas = lineaLimpia.toUpperCase();
             const matchUser = lineaLimpia.match(/@[\w_.-]+/i);
-
-            if (!matchUser && textoMayusculas.includes('EXTRA')) {
-                bloqueExtraActivado = true;
+            let textoSinUsuario = lineaLimpia.toUpperCase();
+            if (matchUser) {
+                textoSinUsuario = textoSinUsuario.replace(matchUser[0].toUpperCase(), '');
+            }
+            if (textoSinUsuario.includes('EXTRA')) {
+                sumandoParaHoF = false; 
             }
 
-            if (matchUser) {
-                let esLineaExtra = textoMayusculas.includes('EXTRA');
-
-                if (!esLineaExtra && !bloqueExtraActivado) {
-                    let userKey = matchUser[0].toLowerCase();
-                    if (!juegosARestar[userKey]) juegosARestar[userKey] = 0;
-                    juegosARestar[userKey]++;
-                }
+            if (matchUser && sumandoParaHoF) {
+                let userKey = matchUser[0].toLowerCase();
+                if (!juegosARestar[userKey]) juegosARestar[userKey] = 0;
+                juegosARestar[userKey]++;
             }
         });
 
@@ -1966,11 +1900,7 @@
             });
 
             if (modificado) {
-                if (Object.keys(currentHoF).length === 0) {
-                    db.ref('hall_of_fame_juegos').remove();
-                } else {
-                    db.ref('hall_of_fame_juegos').set(currentHoF);
-                }
+                db.ref('hall_of_fame_juegos').set(currentHoF);
             }
         });
     }
@@ -2383,14 +2313,6 @@
                 const slotStatus = document.getElementById('slotStatus');
                 if(slotStatus) slotStatus.innerText = '🎰 SORTEO INMEDIATO...';
                 
-                // NOTA: Como la función de ejecutar en local ya no existe, 
-                // delegamos la ejecución al sistema guardándolo como 'inmediato' 
-                // o lo procesamos aquí si lo prefieres para la animación en vivo.
-                // Lo más limpio es mandar a Firebase con un targetTime del pasado (-1 ms) 
-                // para que el Cron lo coja al instante, o bien re-crear la tirada localmente.
-                
-                // Para mantener la fluidez visual original sin depender de la recarga del Cron:
-                // Programamos a 1 segundo para forzar la animación
                 let targetInmediato = Date.now() + 1000;
                 
                 db.ref('sorteo_actual').set({
