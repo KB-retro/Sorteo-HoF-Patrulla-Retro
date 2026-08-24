@@ -2617,7 +2617,7 @@
         if (!rawLines) return alert("Pega o importa la lista de participantes.");
 
         if (!timeVal || timeVal === "--:--" || timeVal.trim() === "") {
-            if (confirm("El sorteo se realizará de inmediato y se consolidará el Hall of Fame Histórico. ¿Continuar?")) {
+            if (confirm("El sorteo se realizará de inmediato, ¿Continuar?")) {
                 detenerTragaperras();
                 mostrarRecreativa(true);
                 const slotStatus = document.getElementById('slotStatus');
