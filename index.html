@@ -27,6 +27,7 @@
 
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
 
     <style>
         :root {
@@ -1241,7 +1242,8 @@
             rawHoFItems.sort((a, b) => b.total - a.total);
             
             rawHoFItems.forEach(item => {
-                manualText += `${item.user} = ${item.total}\n`;
+                manualText += `${item.user} = ${item.total}
+`;
             });
         }
         
@@ -1323,7 +1325,8 @@
                 return;
             }
             
-            const rawLines = rawLinesStr.split('\n');
+            const rawLines = rawLinesStr.split('
+');
             let boletosPorUsuario = {};
             let totalBoletosValidos = 0;
             
@@ -1434,7 +1437,7 @@
 
     function normalizarTexto(txt) {
         if (!txt) return "";
-        return txt.toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+        return txt.toString().normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
     }
 
     async function obtenerJuegosDesdeSheets() {
@@ -1443,7 +1446,8 @@
             const res = await fetch(GOOGLE_SHEETS_CSV_URL + "&t=" + Date.now());
             if (!res.ok) throw new Error("Error al leer Sheets");
             const text = await res.text();
-            const lineas = text.split('\n').filter(l => l.trim().length > 0);
+            const lineas = text.split('
+').filter(l => l.trim().length > 0);
             let juegos = [];
             lineas.forEach(lineaRaw => {
                 const columnas = parseCSVLine(lineaRaw);
@@ -2264,6 +2268,37 @@
         }
     });
 
+    function lanzarFuegosArtificiales() {
+        var duration = 4000;
+        var animationEnd = Date.now() + duration;
+        var defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 9999 };
+
+        function randomInRange(min, max) {
+            return Math.random() * (max - min) + min;
+        }
+
+        var interval = setInterval(function() {
+            var timeLeft = animationEnd - Date.now();
+
+            if (timeLeft <= 0) {
+                return clearInterval(interval);
+            }
+
+            var particleCount = 50 * (timeLeft / duration);
+            
+            confetti(Object.assign({}, defaults, { 
+                particleCount, 
+                origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 },
+                colors: ['#f59e0b', '#6366f1', '#22c55e', '#ef4444', '#ffffff']
+            }));
+            confetti(Object.assign({}, defaults, { 
+                particleCount, 
+                origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 },
+                colors: ['#f59e0b', '#6366f1', '#22c55e', '#ef4444', '#ffffff']
+            }));
+        }, 250);
+    }
+
     function mostrarGanador(data) {
         const winnerCard = document.getElementById('winnerCard');
         if(winnerCard) winnerCard.style.display = 'block';
@@ -2271,6 +2306,7 @@
         if(slot) slot.classList.remove('active');
         
         verificarRepetidoVisual();
+        lanzarFuegosArtificiales();
     }
 
     function calcularYEjecutarTirada(rawLinesStr, rawBlacklistStr, animarResultado = true) {
