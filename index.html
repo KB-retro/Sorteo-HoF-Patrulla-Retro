@@ -835,7 +835,7 @@
         <button id="btnToggleHistory" class="btn-toggle-view hidden" onclick="toggleHistoryView()">⬇️ Ver todo el historial</button>
     </div>
 
-    <!-- ===== PANEL DE ADMINISTRACIÓN (CON AJUSTES AVANZADOS OCULTOS) ===== -->
+    <!-- ===== PANEL DE ADMINISTRACIÓN ===== -->
     <div id="adminPanel" class="card admin-panel hidden">
         <h2>🛠️ Panel de Control</h2>
 
@@ -867,7 +867,7 @@
             <label style="margin-top: 10px; display: block;"><b>2. Excluidos / Lista Negra (1 por línea):</b></label>
             <textarea id="blacklistInput" placeholder="@usuario_excluido1&#10;@usuario_excluido2"></textarea>
 
-            <label style="margin-top: 10px; display: block;"><b>3. Fecha y Hora (Cancelar para sorteo inmediato):</b></label>
+            <label style="margin-top: 10px; display: block;"><b>3. Fecha y Hora Exacta del Sorteo (Opcional):</b></label>
             <div class="datetime-group" style="margin-top: 6px;">
                 <input type="hidden" id="drawDateInput" value="">
                 <div class="retro-date-picker" id="retroDatePicker">
@@ -920,16 +920,15 @@
             <button class="admin-btn" onclick="programarOEjecutarSorteo()">🎲 GUARDAR Y PROGRAMAR SORTEO</button>
         </div>
 
-        <!-- ===== BOTÓN PARA MOSTRAR/OCULTAR AJUSTES AVANZADOS ===== -->
+        <!-- BOTÓN PARA MOSTRAR/OCULTAR AJUSTES AVANZADOS -->
         <button class="btn-advanced-toggle" id="btnAdvancedToggle" onclick="toggleAdvancedSettings()">
             <span>⚙️ Ajustes Avanzados</span>
             <span class="toggle-icon">▼</span>
         </button>
 
-        <!-- ===== AJUSTES AVANZADOS (ocultos por defecto) ===== -->
+        <!-- AJUSTES AVANZADOS (ocultos por defecto) -->
         <div class="advanced-settings-wrapper" id="advancedSettingsWrapper">
 
-            <!-- Añadir Ganadores Manuales -->
             <div class="admin-section">
                 <label><b>➕ Añadir Ganador(es) Anterior(es) al Historial:</b></label>
                 <p style="font-size: 0.8rem; color: var(--muted); margin: 4px 0 8px 0;">
@@ -966,7 +965,6 @@
                 <button style="background-color: #0284c7;" onclick="agregarGanadorManual()">➕ AÑADIR AL HISTORIAL</button>
             </div>
 
-            <!-- Gestión del Hall of Fame -->
             <div class="admin-section" style="border: 1px solid var(--gold); background: rgba(245, 158, 11, 0.05);">
                 <label style="color: var(--gold);"><b>👾 Gestión del Hall of Fame (Histórico):</b></label>
                 <p style="font-size: 0.8rem; color: var(--muted); margin: 4px 0 8px 0;">
@@ -979,7 +977,6 @@
                 <button style="background-color: var(--accent); margin-top: 5px;" onclick="guardarHoFManual()">💾 SOBRESCRIBIR HALL OF FAME</button>
             </div>
 
-            <!-- Copias de Seguridad -->
             <div class="admin-section" style="border: 1px solid var(--accent); background: rgba(99, 102, 241, 0.08);">
                 <label><b>💾 Copias de Seguridad y Restauración:</b></label>
                 <p style="font-size: 0.8rem; color: var(--muted); margin: 4px 0 10px 0;">
@@ -1006,7 +1003,6 @@
                 </div>
             </div>
 
-            <!-- Botones de Borrado -->
             <button class="warning-btn" onclick="borrarUltimoSorteo()">↩️ BORRAR ÚLTIMO SORTEO</button>
             <button class="clear-btn" onclick="borrarTodo()">🧹 BORRAR TODO</button>
         </div>
@@ -2171,7 +2167,7 @@
     }
 
     // ============================================================
-    //  OBSERVADOR DE SORTEO ACTUAL
+    //  OBSERVADOR DE SORTEO ACTUAL - MODIFICADO
     // ============================================================
     db.ref('sorteo_actual').on('value', function(snapshot) {
         try {
@@ -2198,7 +2194,8 @@
                 const revealAt = Number(data.revealAt) || 0;
                 const restante = revealAt - Date.now();
 
-                if (restante > 0) {
+                // Si hay revealAt y queda tiempo, mostrar cuenta atrás de 30s
+                if (revealAt > 0 && restante > 0) {
                     if(winnerCard) winnerCard.style.display = 'none';
                     finalizarTragaperras(data.ganador, revealAt);
                     setTimeout(() => {
@@ -2209,6 +2206,7 @@
                         }
                     }, restante + 100);
                 } else {
+                    // Si no hay revealAt o ya pasó el tiempo, mostrar resultado inmediato
                     detenerTragaperras();
                     mostrarGanador(data);
                 }
@@ -2364,6 +2362,7 @@
             rawBlacklist: rawBlacklistStr 
         };
 
+        // Solo añadir revealAt si es un sorteo programado (con animación)
         if (animarResultado) {
             resultadoData.revealAt = Date.now() + SLOT_REVEAL_MS;
         }
@@ -2616,19 +2615,21 @@
 
         if (!rawLines) return alert("Pega o importa la lista de participantes.");
 
+        // SORTEO INMEDIATO (sin hora) → animarResultado = false
         if (!timeVal || timeVal === "--:--" || timeVal.trim() === "") {
-            if (confirm("El sorteo se realizará de inmediato, ¿Continuar?")) {
+            if (confirm("El sorteo se realizará de inmediato y se consolidará el Hall of Fame Histórico. ¿Continuar?")) {
                 detenerTragaperras();
                 mostrarRecreativa(true);
                 const slotStatus = document.getElementById('slotStatus');
                 if(slotStatus) slotStatus.innerText = '🎰 SORTEO INMEDIATO...';
-                calcularYEjecutarTirada(rawLines, rawBlacklist, false);
+                calcularYEjecutarTirada(rawLines, rawBlacklist, false); // <-- SIN animación
                 sumarJuegosAlHoF(true); 
                 alert("¡Sorteo finalizado y Hall of Fame actualizado!");
             }
             return;
         }
 
+        // SORTEO PROGRAMADO (con hora) → animarResultado = true (30 segundos)
         const timeParts = timeVal.split(':');
         let targetDate = new Date();
 
@@ -2643,6 +2644,7 @@
             targetDate.setDate(targetDate.getDate() + 1);
         }
 
+        // Guardar como programado
         db.ref('sorteo_actual').set({
             status: 'programado',
             targetTime: targetDate.getTime(),
@@ -2650,7 +2652,7 @@
             rawBlacklist: rawBlacklist
         }).then(() => {
             sumarJuegosAlHoF(true); 
-            alert("¡Sorteo programado con éxito!");
+            alert("¡Sorteo programado con éxito! Se mostrará con cuenta atrás de 30 segundos.");
         }).catch(error => {
             console.error('Error guardando el sorteo:', error);
             alert('❌ No se pudo programar el sorteo.');
@@ -2754,7 +2756,7 @@
     }
 
     // ============================================================
-    //  initRetroTimePicker MODIFICADO: siempre empieza a las 21:00
+    //  initRetroTimePicker - empieza a las 21:00
     // ============================================================
     function initRetroTimePicker() {
         const valueInput = document.getElementById("drawTimeInput");
@@ -2768,7 +2770,7 @@
         const picker = document.getElementById("retroTimePicker");
         if (!valueInput || !display || !displayValue || !panel || !hourWheel || !minuteWheel || !confirmBtn || !picker) return;
 
-        let hour = 21;  // <--- SIEMPRE EMPIEZA A LAS 21
+        let hour = 21;
         let minute = 0;
         let hasSelected = false;
         const pad = n => String(n).padStart(2, "0");
@@ -2800,7 +2802,6 @@
             renderWheel(minuteWheel, 59, minute, n => minute = n);
         }
 
-        // Al abrir, siempre usa 21:00 si no hay valor guardado
         function setFromCurrentTime() {
             const currentVal = valueInput.value;
             const match = /^(\d{2}):(\d{2})$/.exec(currentVal);
@@ -2882,7 +2883,6 @@
             }
         });
 
-        // Mostrar 21:00 por defecto
         displayValue.textContent = "21:00";
         valueInput.value = "";
     }
