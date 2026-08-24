@@ -802,58 +802,43 @@
         </div>
     </div>
 
-    <!-- TARJETA DE GANADORES -->
-    <div id="winnersCountCard" class="card card-placeholder">
+    <!-- TARJETA DE GANADORES - VERSIÓN SIMPLIFICADA -->
+    <div id="winnersCountCard" class="card">
         <h3>🏆 Ganadores 🏆</h3>
         <div style="margin-top: 10px; margin-bottom: 10px;">
             <input type="text" id="winnersSearchInput" placeholder="🔍 Buscar usuario (@usuario)..." oninput="buscarEnWinners()" autocomplete="off" style="font-size: 0.85rem; padding: 8px 12px;">
         </div>
-        <div class="placeholder-content" style="text-align: center; color: var(--muted); padding: 20px 0;">
-            <span>⏳ Cargando datos...</span>
-        </div>
-        <div class="loaded-content">
-            <ul id="winnersCountList" class="custom-list">
-                <li class="custom-item" style="justify-content: center; color: var(--muted); background: transparent; border: 1px dashed #334155;">
-                    ⏳ Cargando datos del servidor...
-                </li>
-            </ul>
-            <button id="btnToggleWinners" class="btn-toggle-view hidden" onclick="toggleWinnersView()">⬇️ Ver todos los usuarios premiados</button>
-        </div>
+        <ul id="winnersCountList" class="custom-list">
+            <li class="custom-item" style="justify-content: center; color: var(--muted); background: transparent; border: 1px dashed #334155;">
+                ⏳ Cargando datos del servidor...
+            </li>
+        </ul>
+        <button id="btnToggleWinners" class="btn-toggle-view hidden" onclick="toggleWinnersView()">⬇️ Ver todos los usuarios premiados</button>
     </div>
 
-    <!-- TARJETA DE HALL OF FAME -->
-    <div id="hallOfFameCard" class="card card-placeholder">
+    <!-- TARJETA DE HALL OF FAME - VERSIÓN SIMPLIFICADA -->
+    <div id="hallOfFameCard" class="card">
         <h3>👾 Hall of Fame 👾</h3>
         <div style="margin-top: 10px; margin-bottom: 10px;">
             <input type="text" id="hofSearchInput" placeholder="🔍 Buscar usuario (@usuario)..." oninput="buscarEnHoF()" autocomplete="off" style="font-size: 0.85rem; padding: 8px 12px;">
         </div>
-        <div class="placeholder-content" style="text-align: center; color: var(--muted); padding: 20px 0;">
-            <span>⏳ Cargando ranking histórico...</span>
-        </div>
-        <div class="loaded-content">
-            <ul id="hallOfFameList" class="custom-list">
-                <li class="custom-item" style="justify-content: center; color: var(--muted); background: transparent; border: 1px dashed #334155;">
-                    ⏳ Cargando ranking histórico...
-                </li>
-            </ul>
-            <button id="btnToggleHoF" class="btn-toggle-view hidden" onclick="toggleHoFView()">⬇️ Ver todo el Hall of Fame</button>
-        </div>
+        <ul id="hallOfFameList" class="custom-list">
+            <li class="custom-item" style="justify-content: center; color: var(--muted); background: transparent; border: 1px dashed #334155;">
+                ⏳ Cargando ranking histórico...
+            </li>
+        </ul>
+        <button id="btnToggleHoF" class="btn-toggle-view hidden" onclick="toggleHoFView()">⬇️ Ver todo el Hall of Fame</button>
     </div>
 
-    <!-- TARJETA DE HISTORIAL -->
-    <div id="historyCard" class="card card-placeholder">
+    <!-- TARJETA DE HISTORIAL - VERSIÓN SIMPLIFICADA -->
+    <div id="historyCard" class="card">
         <h3>📜 Historial de Ganadores 📜</h3>
-        <div class="placeholder-content" style="text-align: center; color: var(--muted); padding: 20px 0;">
-            <span>⏳ Cargando historial...</span>
-        </div>
-        <div class="loaded-content">
-            <ul id="historyList" class="custom-list">
-                <li class="custom-item" style="justify-content: center; color: var(--muted); background: transparent; border: 1px dashed #334155;">
-                    ⏳ Cargando sorteos anteriores...
-                </li>
-            </ul>
-            <button id="btnToggleHistory" class="btn-toggle-view hidden" onclick="toggleHistoryView()">⬇️ Ver todo el historial</button>
-        </div>
+        <ul id="historyList" class="custom-list">
+            <li class="custom-item" style="justify-content: center; color: var(--muted); background: transparent; border: 1px dashed #334155;">
+                ⏳ Cargando sorteos anteriores...
+            </li>
+        </ul>
+        <button id="btnToggleHistory" class="btn-toggle-view hidden" onclick="toggleHistoryView()">⬇️ Ver todo el historial</button>
     </div>
 
     <!-- PANEL DE ADMINISTRACIÓN -->
@@ -1089,10 +1074,6 @@
     let isUserEditingList = false;
     let isHoFEditing = false;
     
-    let lastRenderedWinnersState = "";
-    let lastRenderedHistoryState = "";
-    let lastRenderedHoFState = "";
-    
     let cacheJuegosSheets = null;
     let ultimaCargaSheets = 0;
 
@@ -1251,24 +1232,9 @@
             });
             let winnersCountToRender = Object.keys(mapaConteo).map(usr => ({ user: usr, total: mapaConteo[usr] })).sort((a, b) => b.total - a.total);
 
-            const newStateWinners = JSON.stringify({ exp: isWinnersExpanded, list: winnersCountToRender, query: winnersSearchQuery });
-            const newStateHistory = JSON.stringify({ exp: isHistoryExpanded, list: historyToRender });
-            const newStateHoF = JSON.stringify({ exp: isHoFExpanded, list: hofToRender, query: hofSearchQuery });
-
-            if (lastRenderedWinnersState !== newStateWinners) {
-                renderWinnersList(winnersCountToRender);
-                lastRenderedWinnersState = newStateWinners;
-            }
-
-            if (lastRenderedHistoryState !== newStateHistory) {
-                renderHistoryList(historyToRender);
-                lastRenderedHistoryState = newStateHistory;
-            }
-            
-            if (lastRenderedHoFState !== newStateHoF) {
-                renderHoFList(hofToRender);
-                lastRenderedHoFState = newStateHoF;
-            }
+            renderWinnersList(winnersCountToRender);
+            renderHistoryList(historyToRender);
+            renderHoFList(hofToRender);
             
         } catch (e) {
             console.error("Error silencioso en anti-spoiler:", e);
@@ -1301,9 +1267,6 @@
             textarea.value = val;
             calcularYMostrarProbabilidades();
         }
-        if (val !== null) {
-            marcarTarjetaCargada('winnersCountCard');
-        }
     });
 
     db.ref('hall_of_fame_juegos').on('value', function(snapshot) {
@@ -1328,7 +1291,6 @@
         }
         
         refrescarHistorialAntiSpoiler();
-        marcarTarjetaCargada('hallOfFameCard');
     });
 
     db.ref('historial_ganadores').on('value', function(snapshot) {
@@ -1344,16 +1306,7 @@
         }
         
         refrescarHistorialAntiSpoiler();
-        marcarTarjetaCargada('historyCard');
     });
-
-    function marcarTarjetaCargada(id) {
-        const card = document.getElementById(id);
-        if (card && card.classList.contains('card-placeholder')) {
-            card.classList.remove('card-placeholder');
-            card.classList.add('card-loaded');
-        }
-    }
 
     function guardarParticipantesFirebase() {
         const val = document.getElementById('listInput').value;
@@ -2488,13 +2441,8 @@
         const btn = document.getElementById('btnToggleWinners');
         if(!listEl) return;
         
-        marcarTarjetaCargada('winnersCountCard');
-        
         if (list.length === 0) {
-            const emptyMsg = 'Sin historial de ganadores guardado.';
-            if (listEl.innerHTML !== emptyMsg) {
-                listEl.innerHTML = `<li style="text-align: center; color: var(--muted);">${emptyMsg}</li>`;
-            }
+            listEl.innerHTML = '<li style="text-align: center; color: var(--muted);">Sin historial de ganadores guardado.</li>';
             if(btn) btn.classList.add('hidden');
             return;
         }
@@ -2542,13 +2490,8 @@
         const btn = document.getElementById('btnToggleHoF');
         if(!listEl) return;
         
-        marcarTarjetaCargada('hallOfFameCard');
-        
         if (list.length === 0) {
-            const emptyMsg = 'Aún no hay datos de juegos pasados.';
-            if (listEl.innerHTML !== emptyMsg) {
-                listEl.innerHTML = `<li style="text-align: center; color: var(--muted);">${emptyMsg}</li>`;
-            }
+            listEl.innerHTML = '<li style="text-align: center; color: var(--muted);">Aún no hay datos de juegos pasados.</li>';
             if(btn) btn.classList.add('hidden');
             return;
         }
@@ -2596,13 +2539,8 @@
         const btn = document.getElementById('btnToggleHistory');
         if(!listEl) return;
         
-        marcarTarjetaCargada('historyCard');
-        
         if (list.length === 0) {
-            const emptyMsg = 'Sin sorteos registrados.';
-            if (listEl.innerHTML !== emptyMsg) {
-                listEl.innerHTML = `<li style="text-align: center; color: var(--muted);">${emptyMsg}</li>`;
-            }
+            listEl.innerHTML = '<li style="text-align: center; color: var(--muted);">Sin sorteos registrados.</li>';
             if(btn) btn.classList.add('hidden');
             return;
         }
