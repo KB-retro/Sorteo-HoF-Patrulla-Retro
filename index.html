@@ -113,7 +113,7 @@
             box-shadow: 0 4px 20px rgba(0,0,0,0.6);
             backdrop-filter: blur(4px);
             word-wrap: break-word;
-            overflow: hidden;
+            /* Se ha eliminado 'overflow: hidden;' para que el buscador no se corte */
         }
 
         h1 { font-size: 1.5rem; margin: 0 0 5px; text-align: center; line-height: 1.2; }
@@ -1250,7 +1250,6 @@
         initRetroTimePicker();
         initRetroMonthPicker();
         
-        // CORRECCIÓN: Ocultar botón del micrófono si el navegador no lo soporta
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) {
             const micBtn = document.getElementById('micBtn');
@@ -1312,7 +1311,6 @@
                 let lineaLimpia = line.trim();
                 if (!lineaLimpia) return;
                 
-                // EXPRESIÓN REGULAR CORREGIDA: [\w_.-]
                 const matchUser = lineaLimpia.match(/@[\w_.-]+/i);
                 
                 let textoSinUsuario = lineaLimpia.toUpperCase();
@@ -1868,7 +1866,6 @@
         });
     }
 
-    // CORRECCIÓN: Ahora recibe el string de la lista para poder usar la original de la DB
     function restarJuegosDelHoF(rawLinesStr) {
         if (!rawLinesStr) return;
 
@@ -1911,7 +1908,6 @@
             });
 
             if (modificado) {
-                // CORRECCIÓN: Si el nodo se queda vacío tras borrar, lo eliminamos de Firebase
                 if (Object.keys(currentHoF).length === 0) {
                     db.ref('hall_of_fame_juegos').remove();
                 } else {
@@ -2340,7 +2336,6 @@
             timestamp: Date.now() + Math.random()
         });
 
-        // CORRECCIÓN: Guardamos también rawLines y rawBlacklist para el historial
         const resultadoData = {
             ganador: ganadorEncontrado,
             arcadeGroup: arcadeGroup,
@@ -2535,27 +2530,22 @@
         }
     }
 
-    // CORRECCIÓN: Borrar último sorteo leyendo de la BD y no del Input actual
     function borrarUltimoSorteo() {
         if (confirm("⚠️ ¿Deseas BORRAR el último sorteo (o la programación actual)?\n\nEsto también RESTARÁ los puntos sumados al Hall of Fame basándose en la lista original del sorteo.")) {
             
             db.ref('sorteo_actual').once('value', function(snapActual) {
                 const dataSorteo = snapActual.val();
                 
-                // Buscamos la lista guardada o usamos la caja de texto como rescate
                 let lineasUsadas = (dataSorteo && dataSorteo.rawLines) 
                     ? dataSorteo.rawLines 
                     : document.getElementById('listInput').value.trim();
                 
                 if (lineasUsadas) {
-                    // 1. Des-sumar (restar) los puntos
                     restarJuegosDelHoF(lineasUsadas);
                 }
 
-                // 2. Borrar Sorteo Actual
                 db.ref('sorteo_actual').remove();
 
-                // 3. Borrar del historial
                 db.ref('historial_ganadores').limitToLast(1).once('value', function(snapGan) {
                     const dataGanador = snapGan.val();
                     if (dataGanador) {
@@ -2739,7 +2729,6 @@
 
         document.addEventListener("click", e => {
             if (!picker.contains(e.target) && !panel.classList.contains("hidden")) {
-                // Al hacer click fuera: revertimos el estado al último valor guardado (o nulo)
                 selected = parse(input.value); 
                 panel.classList.add("hidden");
             }
