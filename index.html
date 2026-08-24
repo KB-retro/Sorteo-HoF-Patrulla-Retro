@@ -113,7 +113,7 @@
             box-shadow: 0 4px 20px rgba(0,0,0,0.6);
             backdrop-filter: blur(4px);
             word-wrap: break-word;
-            overflow: visible;
+            overflow: hidden;
         }
 
         h1 { font-size: 1.5rem; margin: 0 0 5px; text-align: center; line-height: 1.2; }
@@ -441,25 +441,9 @@
             z-index: 99;
             box-shadow: 0 8px 16px rgba(0,0,0,0.5);
             display: none;
-            /* Scroll elegante para Firefox */
-            scrollbar-width: thin;
-            scrollbar-color: #475569 transparent;
+            scrollbar-width: none;
         }
-
-        /* Scroll elegante para Chrome/Edge/Safari */
-        .custom-suggestions-dropdown::-webkit-scrollbar {
-            width: 6px;
-        }
-        .custom-suggestions-dropdown::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        .custom-suggestions-dropdown::-webkit-scrollbar-thumb {
-            background-color: #475569;
-            border-radius: 10px;
-        }
-        .custom-suggestions-dropdown::-webkit-scrollbar-thumb:hover {
-            background-color: var(--accent);
-        }
+        .custom-suggestions-dropdown::-webkit-scrollbar { width: 0px; background: transparent; }
 
         .suggestion-item {
             padding: 10px 12px;
@@ -764,7 +748,7 @@
     </div>
 
     <!-- BUSCADOR DE JUEGOS SIEMPRE VISIBLE -->
-    <div class="card" style="z-index: 10;">
+    <div class="card">
         
         <!-- INSTRUCCIONES ESTILO RETRO -->
         <div class="retro-info-box">
@@ -1188,8 +1172,6 @@
                 lastRenderedHoFState = newStateHoF;
             }
 
-            // YA NO SE OCULTAN LAS CAJAS AUNQUE ESTÉN VACÍAS
-            
         } catch (e) {
             console.error("Error silencioso en anti-spoiler:", e);
         }
@@ -1267,6 +1249,13 @@
         initRetroDatePicker();
         initRetroTimePicker();
         initRetroMonthPicker();
+        
+        // CORRECCIÓN: Ocultar botón del micrófono si el navegador no lo soporta
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            const micBtn = document.getElementById('micBtn');
+            if (micBtn) micBtn.style.display = 'none';
+        }
         
         setInterval(refrescarHistorialAntiSpoiler, 1000);
     });
@@ -1879,8 +1868,8 @@
         });
     }
 
-    function restarJuegosDelHoF() {
-        const rawLinesStr = document.getElementById('listInput').value.trim();
+    // CORRECCIÓN: Ahora recibe el string de la lista para poder usar la original de la DB
+    function restarJuegosDelHoF(rawLinesStr) {
         if (!rawLinesStr) return;
 
         const rawLines = rawLinesStr.split('\n');
@@ -2538,26 +2527,32 @@
         }
     }
 
-    // BOTÓN 1: Borrar último sorteo (Y deshacer los puntos del Hall of Fame de esa lista)
+    // CORRECCIÓN: Borrar último sorteo leyendo de la BD y no del Input actual
     function borrarUltimoSorteo() {
-        if (confirm("⚠️ ¿Deseas BORRAR el último sorteo (o la programación actual)?\n\nEsto también RESTARÁ los puntos sumados al Hall of Fame basándose en la lista actual.")) {
+        if (confirm("⚠️ ¿Deseas BORRAR el último sorteo (o la programación actual)?\n\nEsto también RESTARÁ los puntos sumados al Hall of Fame basándose en la lista original del sorteo.")) {
             
-            // 1. Des-sumar (restar) los puntos de la lista actual en el Hall of Fame
-            restarJuegosDelHoF();
-
-            // 2. Borrar Sorteo Actual
-            db.ref('sorteo_actual').remove();
-
-            // 3. Borrar del historial
-            db.ref('historial_ganadores').limitToLast(1).once('value', function(snapGan) {
-                const dataGanador = snapGan.val();
-                if (dataGanador) {
-                    const keyBorrar = Object.keys(dataGanador)[0];
-                    db.ref('historial_ganadores/' + keyBorrar).remove();
-                    alert("Último sorteo borrado y Hall of Fame revertido con éxito.");
-                } else {
-                    alert("Programación borrada y Hall of Fame revertido con éxito.");
+            db.ref('sorteo_actual').once('value', function(snapActual) {
+                const dataSorteo = snapActual.val();
+                
+                if (dataSorteo && dataSorteo.rawLines) {
+                    // 1. Des-sumar (restar) los puntos usando la lista que se guardó en el sorteo
+                    restarJuegosDelHoF(dataSorteo.rawLines);
                 }
+
+                // 2. Borrar Sorteo Actual
+                db.ref('sorteo_actual').remove();
+
+                // 3. Borrar del historial
+                db.ref('historial_ganadores').limitToLast(1).once('value', function(snapGan) {
+                    const dataGanador = snapGan.val();
+                    if (dataGanador) {
+                        const keyBorrar = Object.keys(dataGanador)[0];
+                        db.ref('historial_ganadores/' + keyBorrar).remove();
+                        alert("Último sorteo borrado y Hall of Fame revertido con éxito.");
+                    } else {
+                        alert("Programación borrada y Hall of Fame revertido con éxito.");
+                    }
+                });
             });
         }
     }
