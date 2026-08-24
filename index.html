@@ -427,7 +427,7 @@
             100% { transform: scale(1); opacity: 1; }
         }
 
-        .custom-suggestions-dropdown {
+       .custom-suggestions-dropdown {
             position: absolute;
             top: 100%;
             left: 0;
@@ -441,10 +441,26 @@
             z-index: 99;
             box-shadow: 0 8px 16px rgba(0,0,0,0.5);
             display: none;
-            scrollbar-width: none;
+            /* Soporte para Firefox */
+            scrollbar-width: thin;
+            scrollbar-color: var(--accent) #1e293b;
         }
-        .custom-suggestions-dropdown::-webkit-scrollbar { width: 0px; background: transparent; }
-
+        
+        /* Soporte para Chrome, Safari y Edge */
+        .custom-suggestions-dropdown::-webkit-scrollbar { 
+            width: 8px; 
+        }
+        .custom-suggestions-dropdown::-webkit-scrollbar-track { 
+            background: #1e293b; 
+            border-radius: 0 0 8px 0;
+        }
+        .custom-suggestions-dropdown::-webkit-scrollbar-thumb { 
+            background: var(--accent); 
+            border-radius: 4px; 
+        }
+        .custom-suggestions-dropdown::-webkit-scrollbar-thumb:hover { 
+            background: var(--accent-hover); 
+        }
         .suggestion-item {
             padding: 10px 12px;
             font-size: 0.9rem;
