@@ -113,7 +113,6 @@
             box-shadow: 0 4px 20px rgba(0,0,0,0.6);
             backdrop-filter: blur(4px);
             word-wrap: break-word;
-            /* Se ha eliminado 'overflow: hidden;' para que el buscador no se corte */
         }
 
         h1 { font-size: 1.5rem; margin: 0 0 5px; text-align: center; line-height: 1.2; }
@@ -427,7 +426,7 @@
             100% { transform: scale(1); opacity: 1; }
         }
 
-       .custom-suggestions-dropdown {
+        .custom-suggestions-dropdown {
             position: absolute;
             top: 100%;
             left: 0;
@@ -461,6 +460,7 @@
         .custom-suggestions-dropdown::-webkit-scrollbar-thumb:hover { 
             background: var(--accent-hover); 
         }
+
         .suggestion-item {
             padding: 10px 12px;
             font-size: 0.9rem;
@@ -1321,22 +1321,11 @@
             let boletosPorUsuario = {};
             let totalBoletosValidos = 0;
             
-            let sumandoParaHoF = true; 
-            
             rawLines.forEach(function(line) {
                 let lineaLimpia = line.trim();
                 if (!lineaLimpia) return;
                 
                 const matchUser = lineaLimpia.match(/@[\w_.-]+/i);
-                
-                let textoSinUsuario = lineaLimpia.toUpperCase();
-                if (matchUser) {
-                    textoSinUsuario = textoSinUsuario.replace(matchUser[0].toUpperCase(), '');
-                }
-                
-                if (textoSinUsuario.includes('EXTRA')) {
-                    sumandoParaHoF = false; 
-                }
                 
                 if (matchUser) {
                     let user = matchUser[0];
@@ -1786,7 +1775,7 @@
                 let plainText = tempDiv.textContent || tempDiv.innerText || "";
                 if (regexPatronLista.test(plainText)) {
                     const lineas = plainText.split('\n');
-                    const lineasFiltradas = lineas.map(l => l.trim()).filter(l => regexPatronLista.test(l) || /PUNTO\s+EXTRA/i.test(l));
+                    const lineasFiltradas = lineas.map(l => l.trim()).filter(l => regexPatronLista.test(l) || /EXTRA/i.test(l));
                     if (lineasFiltradas.length > 0) {
                         ultimaListaEncontrada = lineasFiltradas.join('\n');
                         break;
@@ -1838,7 +1827,7 @@
     }
 
     // ============================================================
-    //  NUEVO: HALL OF FAME DE JUEGOS COMPLETADOS (SUMAR Y RESTAR)
+    //  HALL OF FAME DE JUEGOS COMPLETADOS (SUMAR Y RESTAR)
     // ============================================================
     function sumarJuegosAlHoF(isAuto = false) {
         const rawLinesStr = document.getElementById('listInput').value.trim();
@@ -1846,26 +1835,28 @@
 
         const rawLines = rawLinesStr.split('\n');
         let juegosASumar = {};
-        let sumandoParaHoF = true;
+        let bloqueExtraActivado = false;
 
         rawLines.forEach(line => {
             let lineaLimpia = line.trim();
             if (!lineaLimpia) return;
             
+            let textoMayusculas = lineaLimpia.toUpperCase();
             const matchUser = lineaLimpia.match(/@[\w_.-]+/i);
-            let textoSinUsuario = lineaLimpia.toUpperCase();
-            if (matchUser) {
-                textoSinUsuario = textoSinUsuario.replace(matchUser[0].toUpperCase(), '');
-            }
-            if (textoSinUsuario.includes('EXTRA')) {
-                sumandoParaHoF = false; 
+
+            if (!matchUser && textoMayusculas.includes('EXTRA')) {
+                bloqueExtraActivado = true;
             }
 
-            if (matchUser && sumandoParaHoF) {
-                let user = matchUser[0].toLowerCase();
-                let userReal = matchUser[0];
-                if (!juegosASumar[user]) juegosASumar[user] = { realName: userReal, count: 0 };
-                juegosASumar[user].count++; 
+            if (matchUser) {
+                let esLineaExtra = textoMayusculas.includes('EXTRA');
+
+                if (!esLineaExtra && !bloqueExtraActivado) {
+                    let user = matchUser[0].toLowerCase();
+                    let userReal = matchUser[0];
+                    if (!juegosASumar[user]) juegosASumar[user] = { realName: userReal, count: 0 };
+                    juegosASumar[user].count++; 
+                }
             }
         });
 
@@ -1887,25 +1878,27 @@
 
         const rawLines = rawLinesStr.split('\n');
         let juegosARestar = {};
-        let sumandoParaHoF = true;
+        let bloqueExtraActivado = false;
 
         rawLines.forEach(line => {
             let lineaLimpia = line.trim();
             if (!lineaLimpia) return;
             
+            let textoMayusculas = lineaLimpia.toUpperCase();
             const matchUser = lineaLimpia.match(/@[\w_.-]+/i);
-            let textoSinUsuario = lineaLimpia.toUpperCase();
-            if (matchUser) {
-                textoSinUsuario = textoSinUsuario.replace(matchUser[0].toUpperCase(), '');
-            }
-            if (textoSinUsuario.includes('EXTRA')) {
-                sumandoParaHoF = false; 
+
+            if (!matchUser && textoMayusculas.includes('EXTRA')) {
+                bloqueExtraActivado = true;
             }
 
-            if (matchUser && sumandoParaHoF) {
-                let userKey = matchUser[0].toLowerCase();
-                if (!juegosARestar[userKey]) juegosARestar[userKey] = 0;
-                juegosARestar[userKey]++;
+            if (matchUser) {
+                let esLineaExtra = textoMayusculas.includes('EXTRA');
+
+                if (!esLineaExtra && !bloqueExtraActivado) {
+                    let userKey = matchUser[0].toLowerCase();
+                    if (!juegosARestar[userKey]) juegosARestar[userKey] = 0;
+                    juegosARestar[userKey]++;
+                }
             }
         });
 
@@ -2279,7 +2272,7 @@
         rawLines.forEach(function(line) {
             let lineaLimpia = line.trim();
             if (!lineaLimpia) return;
-            const matchUser = lineaLimpia.match(/@[\w.-]+/);
+            const matchUser = lineaLimpia.match(/@[\w_.-]+/i);
             if (matchUser) {
                 let boletoLimpio = lineaLimpia.replace(/PUNTO\s+EXTRA\s*/gi, '').trim();
                 participantesValidos.push({ ticket: boletoLimpio, user: matchUser[0] });
@@ -2576,7 +2569,6 @@
         }
     }
 
-    // BOTÓN 2: Borrar TODO al estilo "Nuclear"
     function borrarTodo() {
         if (confirm("⚠️ ¿Deseas BORRAR TODO? Esto eliminará:\n- El sorteo actual\n- El historial de ganadores\n- El Hall of Fame al completo\n- La lista de participantes\n\nEsta acción es irreversible.")) {
             const el1 = document.getElementById('listInput');
@@ -2615,7 +2607,6 @@
 
         if (!rawLines) return alert("Pega o importa la lista de participantes.");
 
-        // Si NO hay hora seleccionada (cadena vacía o "--:--") → SORTEO INMEDIATO
         if (!timeVal || timeVal === "--:--" || timeVal.trim() === "") {
             if (confirm("El sorteo se realizará de inmediato y se consolidará el Hall of Fame Histórico. ¿Continuar?")) {
                 detenerTragaperras();
@@ -2629,7 +2620,6 @@
             return;
         }
 
-        // Si hay hora, se programa (con animación de 30 segundos)
         const timeParts = timeVal.split(':');
         let targetDate = new Date();
 
@@ -2640,7 +2630,6 @@
 
         targetDate.setHours(parseInt(timeParts[0], 10), parseInt(timeParts[1], 10), 0, 0);
 
-        // Si no hay fecha y la hora ya pasó, se programa para mañana
         if (!dateVal && targetDate.getTime() <= Date.now()) {
             targetDate.setDate(targetDate.getDate() + 1);
         }
