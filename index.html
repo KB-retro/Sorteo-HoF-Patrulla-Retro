@@ -29,6 +29,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
     <style>
+        /* ===== CSS COMPLETO ===== */
         :root {
             --card: rgba(30, 41, 59, 0.92);
             --accent: #6366f1;
@@ -310,6 +311,7 @@
 
         .winner-title { color: var(--gold); font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px; }
         .winner-name { font-size: 2rem; font-weight: bold; margin: 10px 0 5px; color: #fff; word-break: break-word; }
+        
         .winner-ticket { 
             font-size: 1.15rem; 
             font-weight: bold; 
@@ -319,6 +321,7 @@
             margin-bottom: 5px; 
             letter-spacing: 0.5px;
         }
+        
         .winner-quote { font-size: 1.2rem; font-style: italic; color: var(--gold); margin-top: 6px; }
 
         .repeat-winner-banner {
@@ -345,6 +348,7 @@
 
         .arcade-title { font-size: 0.95rem; font-weight: bold; color: var(--gold); margin-bottom: 8px; text-align: center; }
 
+        /* ===== INSTRUCCIONES RETRO ===== */
         .retro-info-box {
             background: rgba(15, 23, 42, 0.6);
             border: 1px solid #334155;
@@ -432,13 +436,26 @@
             z-index: 99;
             box-shadow: 0 8px 16px rgba(0,0,0,0.5);
             display: none;
+            /* Soporte para Firefox */
             scrollbar-width: thin;
             scrollbar-color: var(--accent) #1e293b;
         }
-        .custom-suggestions-dropdown::-webkit-scrollbar { width: 8px; }
-        .custom-suggestions-dropdown::-webkit-scrollbar-track { background: #1e293b; border-radius: 0 0 8px 0; }
-        .custom-suggestions-dropdown::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 4px; }
-        .custom-suggestions-dropdown::-webkit-scrollbar-thumb:hover { background: var(--accent-hover); }
+        
+        /* Soporte para Chrome, Safari y Edge */
+        .custom-suggestions-dropdown::-webkit-scrollbar { 
+            width: 8px; 
+        }
+        .custom-suggestions-dropdown::-webkit-scrollbar-track { 
+            background: #1e293b; 
+            border-radius: 0 0 8px 0;
+        }
+        .custom-suggestions-dropdown::-webkit-scrollbar-thumb { 
+            background: var(--accent); 
+            border-radius: 4px; 
+        }
+        .custom-suggestions-dropdown::-webkit-scrollbar-thumb:hover { 
+            background: var(--accent-hover); 
+        }
 
         .suggestion-item {
             padding: 10px 12px;
@@ -504,49 +521,12 @@
 
         .hidden { display: none !important; }
 
-        .advanced-settings-wrapper {
-            overflow: hidden;
-            max-height: 0;
-            opacity: 0;
-            transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1), 
-                        opacity 0.4s ease-out,
-                        margin 0.4s ease-out;
-            margin: 0;
-        }
-        .advanced-settings-wrapper.open {
-            max-height: 4000px;
-            opacity: 1;
-            margin-top: 15px;
-        }
-
-        .btn-advanced-toggle {
-            background-color: #334155 !important;
-            color: var(--text) !important;
-            font-size: 0.85rem !important;
-            padding: 10px 14px !important;
-            border-radius: 8px !important;
-            margin-top: 5px !important;
-            transition: background 0.2s, transform 0.1s !important;
-            display: flex !important;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-        .btn-advanced-toggle:hover { background-color: #475569 !important; }
-        .btn-advanced-toggle:active { transform: scale(0.98); }
-        .btn-advanced-toggle .toggle-icon {
-            display: inline-block;
-            transition: transform 0.3s ease;
-        }
-        .btn-advanced-toggle.open .toggle-icon {
-            transform: rotate(180deg);
-        }
-
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(-10px); }
             to { opacity: 1; transform: translateY(0); }
         }
     
+        /* ===== TRAGAPERRAS RETRO 8-BIT ===== */
         #slotMachineCard {
             display: none;
             text-align: center;
@@ -657,6 +637,7 @@
             .slot-reel { height: 68px; font-size: 2rem; }
         }
 
+        /* ===== SELECTOR DE HORA Y MES RETRO ===== */
         .retro-time-picker { position:relative; width:100%; }
         .retro-time-display {
             width:100%; min-height:44px; padding:10px 14px;
@@ -704,6 +685,7 @@
         .retro-time-cancel:hover { background:#334155; }
         @media (max-width:480px) { .retro-time-wheel-wrap { width:90px; } }
 
+        /* ===== SELECTOR DE FECHA RETRO ===== */
         .retro-date-picker{position:relative;width:100%}
         .retro-date-display{width:100%;min-height:44px;padding:10px 14px;box-sizing:border-box;display:flex;align-items:center;gap:10px;border:1px solid rgba(139,92,246,.55);border-radius:12px;background:rgba(15,23,42,.85);color:#f8fafc;font:inherit;cursor:pointer;text-align:left}
         .retro-date-display span:last-child{margin-left:auto;opacity:.7}
@@ -774,6 +756,7 @@
     </div>
 
     <div class="card" style="position: relative; z-index: 50;">
+        
         <div class="retro-info-box">
             <strong>👾 Instrucciones para los elegidos:</strong>
             <p style="margin: 6px 0;">🎮 <b>Elección de Arcade:</b> Usa este buscador para verificar tu propuesta. Si el resultado se ilumina en <span class="highlight-green">verde</span>, comunícaselo a <a href="https://t.me/M_1_c_h_3_l" target="_blank" style="color: #60a5fa; text-decoration: none; font-weight: bold;">@M_1_c_h_3_l</a> por Telegram.</p>
@@ -801,9 +784,11 @@
 
     <div id="winnersCountCard" class="card">
         <h3>🏆 Ganadores 🏆</h3>
+        
         <div style="margin-top: 10px; margin-bottom: 10px;">
             <input type="text" id="winnersSearchInput" placeholder="🔍 Buscar usuario (@usuario)..." oninput="buscarEnWinners()" autocomplete="off" style="font-size: 0.85rem; padding: 8px 12px;">
         </div>
+
         <ul id="winnersCountList" class="custom-list">
             <li class="custom-item" style="justify-content: center; color: var(--muted); background: transparent; border: 1px dashed #334155;">
                 ⏳ Cargando datos del servidor...
@@ -814,9 +799,11 @@
 
     <div id="hallOfFameCard" class="card">
         <h3>👾 Hall of Fame 👾</h3>
+        
         <div style="margin-top: 10px; margin-bottom: 10px;">
             <input type="text" id="hofSearchInput" placeholder="🔍 Buscar usuario (@usuario)..." oninput="buscarEnHoF()" autocomplete="off" style="font-size: 0.85rem; padding: 8px 12px;">
         </div>
+
         <ul id="hallOfFameList" class="custom-list">
             <li class="custom-item" style="justify-content: center; color: var(--muted); background: transparent; border: 1px dashed #334155;">
                 ⏳ Cargando ranking histórico...
@@ -835,11 +822,9 @@
         <button id="btnToggleHistory" class="btn-toggle-view hidden" onclick="toggleHistoryView()">⬇️ Ver todo el historial</button>
     </div>
 
-    <!-- ===== PANEL DE ADMINISTRACIÓN ===== -->
     <div id="adminPanel" class="card admin-panel hidden">
-        <h2>🛠️ Panel de Control</h2>
+        <h2>🛠️ Panel de Control (Administrador)</h2>
 
-        <!-- SECCIÓN PRINCIPAL: SORTEO -->
         <div class="admin-section">
             <label><b>📅 Mes correspondiente al Sorteo:</b></label>
             <select id="monthSelect" style="margin-top: 8px;">
@@ -858,16 +843,20 @@
                 <option value="Diciembre">Diciembre</option>
             </select>
             <button style="margin-top: 10px; background-color: var(--accent);" onclick="guardarMesSorteo()">💾 GUARDAR MES DEL SORTEO</button>
+        </div>
 
-            <button class="telegram-btn" onclick="importarDesdeTelegram()" style="margin-top: 15px;">📲 CARGAR ÚLTIMA LISTA DE TELEGRAM</button>
+        <div class="admin-section">
+            <button class="telegram-btn" onclick="importarDesdeTelegram()">📲 CARGAR ÚLTIMA LISTA DE TELEGRAM</button>
 
-            <label style="margin-top: 10px; display: block;"><b>1. Participantes:</b></label>
+            <label><b>1. Participantes:</b></label>
             <textarea id="listInput" placeholder="1-@M_1_c_h_3_l&#10;2-@cerebrosolido" oninput="calcularYMostrarProbabilidades()"></textarea>
 
-            <label style="margin-top: 10px; display: block;"><b>2. Excluidos / Lista Negra (1 por línea):</b></label>
+            <br><br>
+            <label><b>2. Excluidos / Lista Negra (1 por línea):</b></label>
             <textarea id="blacklistInput" placeholder="@usuario_excluido1&#10;@usuario_excluido2"></textarea>
 
-            <label style="margin-top: 10px; display: block;"><b>3. Fecha y Hora Exacta del Sorteo (Opcional):</b></label>
+            <br><br>
+            <label><b>3. Fecha y Hora Exacta del Sorteo (Opcional):</b></label>
             <div class="datetime-group" style="margin-top: 6px;">
                 <input type="hidden" id="drawDateInput" value="">
                 <div class="retro-date-picker" id="retroDatePicker">
@@ -920,16 +909,11 @@
             <button class="admin-btn" onclick="programarOEjecutarSorteo()">🎲 GUARDAR Y PROGRAMAR SORTEO</button>
         </div>
 
-        <!-- BOTÓN PARA MOSTRAR/OCULTAR AJUSTES AVANZADOS -->
-        <button class="btn-advanced-toggle" id="btnAdvancedToggle" onclick="toggleAdvancedSettings()">
-            <span>⚙️ Ajustes Avanzados</span>
-            <span class="toggle-icon">▼</span>
-        </button>
+        <button id="btnToggleAdvancedAdmin" class="btn-toggle-view" onclick="toggleAdvancedAdmin()" style="width: 100%; margin-top: 10px; font-weight: bold;">⚙️ Mostrar Opciones Avanzadas</button>
 
-        <!-- AJUSTES AVANZADOS (ocultos por defecto) -->
-        <div class="advanced-settings-wrapper" id="advancedSettingsWrapper">
+        <div id="advancedAdminConfig" class="hidden" style="margin-top: 15px; display: flex; flex-direction: column; gap: 12px;">
 
-            <div class="admin-section">
+            <div class="admin-section" style="margin-bottom: 0;">
                 <label><b>➕ Añadir Ganador(es) Anterior(es) al Historial:</b></label>
                 <p style="font-size: 0.8rem; color: var(--muted); margin: 4px 0 8px 0;">
                     Introduce los usuarios y selecciona el mes y año en el que obtuvieron el premio.
@@ -937,6 +921,7 @@
                 <textarea id="manualUserAdmin" placeholder="@usuario1&#10;@usuario2, @usuario3" style="height: 60px;"></textarea>
                 
                 <label style="margin-top: 8px; display: block; font-size: 0.85rem;"><b>📅 Mes y Año del Premio (opcional):</b></label>
+                
                 <input type="hidden" id="manualWinnerMonth" value="">
                 <div class="retro-time-picker" id="retroMonthPicker" style="margin-top: 4px; margin-bottom: 8px;">
                     <button type="button" class="retro-time-display" id="retroMonthDisplay" aria-haspopup="dialog" aria-expanded="false">
@@ -965,7 +950,7 @@
                 <button style="background-color: #0284c7;" onclick="agregarGanadorManual()">➕ AÑADIR AL HISTORIAL</button>
             </div>
 
-            <div class="admin-section" style="border: 1px solid var(--gold); background: rgba(245, 158, 11, 0.05);">
+            <div class="admin-section" style="border: 1px solid var(--gold); background: rgba(245, 158, 11, 0.05); margin-bottom: 0;">
                 <label style="color: var(--gold);"><b>👾 Gestión del Hall of Fame (Histórico):</b></label>
                 <p style="font-size: 0.8rem; color: var(--muted); margin: 4px 0 8px 0;">
                     Los juegos de la lista se sumarán automáticamente al ranking histórico al momento de programar o ejecutar el sorteo.
@@ -977,13 +962,14 @@
                 <button style="background-color: var(--accent); margin-top: 5px;" onclick="guardarHoFManual()">💾 SOBRESCRIBIR HALL OF FAME</button>
             </div>
 
-            <div class="admin-section" style="border: 1px solid var(--accent); background: rgba(99, 102, 241, 0.08);">
+            <div class="admin-section" style="border: 1px solid var(--accent); background: rgba(99, 102, 241, 0.08); margin-bottom: 0;">
                 <label><b>💾 Copias de Seguridad y Restauración:</b></label>
                 <p style="font-size: 0.8rem; color: var(--muted); margin: 4px 0 10px 0;">
                     Puedes guardar un punto de restauración en Firebase antes de hacer sorteos, o descargarte una copia física a tu PC.
                 </p>
 
                 <button style="background-color: #0284c7; margin-bottom: 10px;" onclick="crearBackupManual()">📀 COPIA EN FIREBASE (ESTÁNDAR)</button>
+
                 <button style="background-color: #22c55e; margin-bottom: 10px;" onclick="crearBackupGitHubManual()">🖴 COPIA EN GITHUB (SSD)</button>
 
                 <label style="font-size: 0.85rem; margin-top: 8px; display: block;"><b>📅 Seleccionar Copia para Restaurar o Borrar:</b></label>
@@ -1006,6 +992,7 @@
             <button class="warning-btn" onclick="borrarUltimoSorteo()">↩️ BORRAR ÚLTIMO SORTEO</button>
             <button class="clear-btn" onclick="borrarTodo()">🧹 BORRAR TODO</button>
         </div>
+
     </div>
 
     <div class="footer-buttons-group">
@@ -1062,15 +1049,16 @@
     let isHistoryExpanded = false;
     let isHoFExpanded = false; 
     
-    let hofSearchQuery = "";
-    let winnersSearchQuery = "";
+    let hofSearchQuery = ""; // Término de búsqueda en el Hall of Fame
+    let winnersSearchQuery = ""; // Término de búsqueda en Ganadores
     
     let rawHistoryItems = [];
-    let rawHoFItems = [];
+    let rawHoFItems = []; // Array que viene de Firebase
     
     let isAdminLoggedIn = false;
     let isUserEditingList = false;
     let isHoFEditing = false;
+    let isAdvancedAdminVisible = false;
     
     let lastRenderedWinnersState = "";
     let lastRenderedHistoryState = "";
@@ -1088,23 +1076,48 @@
     const SLOT_REVEAL_MS = 30000;
 
     const FRASES_VIDEOJUEGOS = [
-        "¡Mamma mia!", "¡Hadouken!", "¡Finish Him!", "¡Hazte con todos!",
-        "¡Pero qué clase de brujería es esta!", "¡Allé voy!", "¡Me alegron!",
-        "Preservativo de la Commonwealth", "Salida al fósforo", "¡Fuego en el agujero!",
-        "¿Quieres ir a ver el comida?", "¿Qué es un hombre? Una pequeña pila miserable de secretos.",
-        "El espacio-tiempo está torcido", "¡He sido herido en la rodilla por una flecha!",
-        "¡Detrás de ti, imbécil!", "¡Fatality!", "¡Es peligroso ir solo! ¡Coge esto!",
-        "¡Get over here!", "¡Wololo!", "El pastel es una mentira", "¡Alabad al sol!",
-        "La guerra no cambia nunca", "¡Snake! ¡Snaaaaake!", "El hombre elige, el esclavo obedece",
-        "¿Te he contado la definición de locura?", "Despierta y huele las cenizas",
-        "No te disculpes, sé mejor", "Mantente alerta y escucha",
-        "¡Saaaaaluuuuudos, buscador de la Cámara!", "Toda tu base nos pertenece",
-        "¡Wasted!", "Eres un maldito desastre, John Marston",
-        "¡No pasará nada malo por usar el cañón magnético!", "¡Congelación!",
-        "Siento que mi cuerpo está listo", "¿Quieres pasar un mal rato?",
-        "¡Objection!", "Un héroe no necesita hablar",
-        "No hay más héroes en este maldito lugar", "¡Cuidado con los zombis, que muerden!",
-        "¡Flawless Victory!", "¡INSERT COIN!"
+        "¡Mamma mia!",
+        "¡Hadouken!",
+        "¡Finish Him!",
+        "¡Hazte con todos!",
+        "¡Pero qué clase de brujería es esta!",
+        "¡Allé voy!",
+        "¡Me alegron!",
+        "Preservativo de la Commonwealth",
+        "Salida al fósforo",
+        "¡Fuego en el agujero!",
+        "¿Quieres ir a ver el comida?",
+        "¿Qué es un hombre? Una pequeña pila miserable de secretos.",
+        "El espacio-tiempo está torcido",
+        "¡He sido herido en la rodilla por una flecha!",
+        "¡Detrás de ti, imbécil!",
+        "¡Fatality!",
+        "¡Es peligroso ir solo! ¡Coge esto!",
+        "¡Get over here!",
+        "¡Wololo!",
+        "El pastel es una mentira",
+        "¡Alabad al sol!",
+        "La guerra no cambia nunca",
+        "¡Snake! ¡Snaaaaake!",
+        "El hombre elige, el esclavo obedece",
+        "¿Te he contado la definición de locura?",
+        "Despierta y huele las cenizas",
+        "No te disculpes, sé mejor",
+        "Mantente alerta y escucha",
+        "¡Saaaaaluuuuudos, buscador de la Cámara!",
+        "Toda tu base nos pertenece",
+        "¡Wasted!",
+        "Eres un maldito desastre, John Marston",
+        "¡No pasará nada malo por usar el cañón magnético!",
+        "¡Congelación!",
+        "Siento que mi cuerpo está listo",
+        "¿Quieres pasar un mal rato?",
+        "¡Objection!",
+        "Un héroe no necesita hablar",
+        "No hay más héroes en este maldito lugar",
+        "¡Cuidado con los zombis, que muerden!",
+        "¡Flawless Victory!",
+        "¡INSERT COIN!"
     ];
 
     function fraseVideojuegoAleatoria() {
@@ -1114,23 +1127,6 @@
     let adminClicks = 0;
     let adminClickTimer = null;
     const nombresMeses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
-
-    // ============================================================
-    //  FUNCIÓN PARA ALTERNAR AJUSTES AVANZADOS
-    // ============================================================
-    function toggleAdvancedSettings() {
-        const wrapper = document.getElementById('advancedSettingsWrapper');
-        const btn = document.getElementById('btnAdvancedToggle');
-        if (wrapper.classList.contains('open')) {
-            wrapper.classList.remove('open');
-            btn.classList.remove('open');
-            btn.innerHTML = '<span>⚙️ Ajustes Avanzados</span><span class="toggle-icon">▼</span>';
-        } else {
-            wrapper.classList.add('open');
-            btn.classList.add('open');
-            btn.innerHTML = '<span>⚙️ Ajustes Avanzados</span><span class="toggle-icon">▲</span>';
-        }
-    }
 
     // ============================================================
     //  FUNCIONES DE CONGELACIÓN (ANTI-SPOILER + ANTI PARPADEO)
@@ -1145,7 +1141,7 @@
             let freezeUntil = 0;
 
             if (programData && typeof programData === 'object') {
-                const tieneSuspense = programData.revealAt !== undefined;
+                const tieneSuspense = programData.revealAt !== undefined || (programData.ganador !== undefined && programData.timestamp !== undefined);
                 const esProgramado = programData.status === 'programado' || programData.status === 'procesando';
 
                 if (esProgramado && programData.targetTime) {
@@ -1164,6 +1160,7 @@
                 });
             }
 
+            // Calculo de Ganadores de sorteos
             let mapaConteo = {};
             historyToRender.forEach(function(item) {
                 if(item && item.user) {
@@ -1173,6 +1170,7 @@
             });
             let winnersCountToRender = Object.keys(mapaConteo).map(usr => ({ user: usr, total: mapaConteo[usr] })).sort((a, b) => b.total - a.total);
 
+            // Generamos las huellas de estado (incluyendo las queries de búsqueda)
             const newStateWinners = JSON.stringify({ exp: isWinnersExpanded, list: winnersCountToRender, query: winnersSearchQuery });
             const newStateHistory = JSON.stringify({ exp: isHistoryExpanded, list: historyToRender });
             const newStateHoF = JSON.stringify({ exp: isHoFExpanded, list: hofToRender, query: hofSearchQuery });
@@ -1234,6 +1232,7 @@
             Object.keys(data).forEach(function(key) {
                 rawHoFItems.push(data[key]);
             });
+            // Ordenar por total de juegos mayor a menor
             rawHoFItems.sort((a, b) => b.total - a.total);
             
             rawHoFItems.forEach(item => {
@@ -1241,6 +1240,7 @@
             });
         }
         
+        // Rellenar la caja del admin solo si no está escribiendo en ella
         if (!isHoFEditing) {
             const manualInput = document.getElementById('hofManualInput');
             if (manualInput) manualInput.value = manualText.trim();
@@ -1592,6 +1592,9 @@
         });
     }
 
+    // ============================================================
+    //  BACKUP MANUAL EN GITHUB MEDIANTE CLOUDFLARE WORKER
+    // ============================================================
     async function crearBackupGitHubManual() {
         if (!isAdminLoggedIn) {
             alert("❌ No tienes permisos de administrador.");
@@ -1833,6 +1836,36 @@
         if (!mes) return alert("Por favor, selecciona un mes del desplegable.");
         if (confirm("¿Confirmas que deseas cambiar el título del sorteo al mes de " + mes + "?")) {
             db.ref('mes_sorteo').set(mes).then(() => alert("¡Mes actualizado con éxito!"));
+        }
+    }
+
+    // ============================================================
+    //  TOGGLE PANEL AVANZADO (NUEVO)
+    // ============================================================
+    function toggleAdminPanel() {
+        const pass = prompt("Introduce la clave de administrador:");
+        if (pass && btoa(pass) === "cGF0cnVsbGExMjM=") {
+            isAdminLoggedIn = true;
+            const panel = document.getElementById('adminPanel');
+            if(panel) panel.classList.remove('hidden');
+            importarDesdeTelegram(false);
+            refrescarHistorialAntiSpoiler();
+            cargarListaBackups();
+        } else if (pass !== null) {
+            alert("Contraseña incorrecta.");
+        }
+    }
+
+    function toggleAdvancedAdmin() {
+        isAdvancedAdminVisible = !isAdvancedAdminVisible;
+        const panel = document.getElementById('advancedAdminConfig');
+        const btn = document.getElementById('btnToggleAdvancedAdmin');
+        if (isAdvancedAdminVisible) {
+            panel.classList.remove('hidden');
+            btn.innerText = '⚙️ Ocultar Opciones Avanzadas';
+        } else {
+            panel.classList.add('hidden');
+            btn.innerText = '⚙️ Mostrar Opciones Avanzadas';
         }
     }
 
@@ -2167,7 +2200,7 @@
     }
 
     // ============================================================
-    //  OBSERVADOR DE SORTEO ACTUAL - MODIFICADO
+    //  OBSERVADOR DE SORTEO ACTUAL
     // ============================================================
     db.ref('sorteo_actual').on('value', function(snapshot) {
         try {
@@ -2191,11 +2224,12 @@
                 
             } else if (data && data.ganador) {
                 if(waitingCard) waitingCard.classList.add('hidden');
-                const revealAt = Number(data.revealAt) || 0;
+                
+                // Calculamos el final de la animación sumando 30s al momento en que el Worker hizo el sorteo
+                const revealAt = Number(data.revealAt) || (data.timestamp ? data.timestamp + SLOT_REVEAL_MS : 0);
                 const restante = revealAt - Date.now();
 
-                // Si hay revealAt y queda tiempo, mostrar cuenta atrás de 30s
-                if (revealAt > 0 && restante > 0) {
+                if (restante > 0) {
                     if(winnerCard) winnerCard.style.display = 'none';
                     finalizarTragaperras(data.ganador, revealAt);
                     setTimeout(() => {
@@ -2206,7 +2240,6 @@
                         }
                     }, restante + 100);
                 } else {
-                    // Si no hay revealAt o ya pasó el tiempo, mostrar resultado inmediato
                     detenerTragaperras();
                     mostrarGanador(data);
                 }
@@ -2269,282 +2302,6 @@
         if(slot) slot.classList.remove('active');
         
         verificarRepetidoVisual();
-    }
-
-    function calcularYEjecutarTirada(rawLinesStr, rawBlacklistStr, animarResultado = true) {
-        const rawLines = rawLinesStr.split('\n');
-        const rawBlacklist = rawBlacklistStr.split('\n');
-
-        let participantesValidos = [];
-        rawLines.forEach(function(line) {
-            let lineaLimpia = line.trim();
-            if (!lineaLimpia) return;
-            const matchUser = lineaLimpia.match(/@[\w_.-]+/i);
-            if (matchUser) {
-                let boletoLimpio = lineaLimpia.replace(/PUNTO\s+EXTRA\s*/gi, '').trim();
-                participantesValidos.push({ ticket: boletoLimpio, user: matchUser[0] });
-            }
-        });
-
-        const total = participantesValidos.length;
-        if (total === 0) return;
-
-        const blacklist = rawBlacklist.map(u => u.trim().toLowerCase()).filter(u => u.length > 0);
-
-        let log = [];
-        let ganadorEncontrado = null;
-        let indexGanador = -1;
-        let listaCopia = participantesValidos.slice();
-
-        while (listaCopia.length > 0) {
-            const indexAleatorio = obtenerIndiceCriptografico(listaCopia.length);
-            const entrada = listaCopia[indexAleatorio];
-            const usuarioMinusculas = entrada.user.toLowerCase();
-
-            if (blacklist.indexOf(usuarioMinusculas) !== -1) {
-                log.push("❌ Descartado: " + entrada.ticket + " (" + entrada.user + " está en la Lista Negra)");
-                listaCopia.splice(indexAleatorio, 1);
-            } else {
-                ganadorEncontrado = entrada;
-                indexGanador = participantesValidos.findIndex(p => p.ticket === entrada.ticket);
-                log.push("✅ ¡TIRADA GANADORA!: " + entrada.ticket);
-                break;
-            }
-        }
-
-        if (!ganadorEncontrado) return;
-
-        let anteriores = [], posteriores = [], usuariosUsados = {};
-        usuariosUsados[ganadorEncontrado.user.toLowerCase()] = true;
-
-        let curr = indexGanador - 1, cntAnt = 0;
-        while (anteriores.length < 2 && cntAnt < total) {
-            if (curr < 0) curr = total - 1;
-            let cand = participantesValidos[curr];
-            if (!usuariosUsados[cand.user.toLowerCase()]) {
-                anteriores.unshift(cand);
-                usuariosUsados[cand.user.toLowerCase()] = true;
-            }
-            curr--; cntAnt++;
-        }
-
-        curr = indexGanador + 1; let cntPost = 0;
-        while (posteriores.length < 2 && cntPost < total) {
-            if (curr >= total) curr = 0;
-            let cand = participantesValidos[curr];
-            if (!usuariosUsados[cand.user.toLowerCase()]) {
-                posteriores.push(cand);
-                usuariosUsados[cand.user.toLowerCase()] = true;
-            }
-            curr++; cntPost++;
-        }
-
-        const arcadeGroup = anteriores.concat([ganadorEncontrado], posteriores);
-        const ahora = new Date();
-        const fechaFormateada = `${nombresMeses[ahora.getMonth()]} ${ahora.getFullYear()}`;
-
-        const fraseGanador = fraseVideojuegoAleatoria();
-
-        db.ref('historial_ganadores').push({
-            user: ganadorEncontrado.user,
-            ticket: ganadorEncontrado.ticket,
-            fecha: fechaFormateada,
-            timestamp: Date.now() + Math.random()
-        });
-
-        const resultadoData = {
-            ganador: ganadorEncontrado,
-            arcadeGroup: arcadeGroup,
-            log: log,
-            timestamp: Date.now(),
-            frase: fraseGanador,
-            rawLines: rawLinesStr,        
-            rawBlacklist: rawBlacklistStr 
-        };
-
-        // Solo añadir revealAt si es un sorteo programado (con animación)
-        if (animarResultado) {
-            resultadoData.revealAt = Date.now() + SLOT_REVEAL_MS;
-        }
-
-        db.ref('sorteo_actual').set(resultadoData);
-    }
-
-    // ============================================================
-    //  RENDERIZADO DE LISTAS
-    // ============================================================
-    db.ref('historial_ganadores').on('value', function(snapshot) {
-        const data = snapshot.val();
-        rawHistoryItems = [];
-        if (data) {
-            Object.keys(data).forEach(function(key) {
-                const item = data[key];
-                item.key = key;
-                rawHistoryItems.push(item);
-            });
-            rawHistoryItems.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-        }
-        
-        refrescarHistorialAntiSpoiler();
-    });
-
-    function renderWinnersList(list) {
-        const listEl = document.getElementById('winnersCountList');
-        const btn = document.getElementById('btnToggleWinners');
-        if(!listEl) return;
-        
-        listEl.innerHTML = '';
-        if (list.length === 0) {
-            listEl.innerHTML = '<li style="text-align: center; color: var(--muted);">Sin historial de ganadores guardado.</li>';
-            if(btn) btn.classList.add('hidden');
-            return;
-        }
-
-        const listWithRank = list.map((item, idx) => ({ ...item, rank: idx + 1 }));
-        let itemsToDisplay = [];
-        const isSearching = winnersSearchQuery.length > 0;
-
-        if (isSearching) {
-            itemsToDisplay = listWithRank.filter(item => item.user.toLowerCase().includes(winnersSearchQuery));
-            if (btn) btn.classList.add('hidden');
-            if (itemsToDisplay.length === 0) {
-                listEl.innerHTML = '<li style="text-align: center; color: var(--muted); padding: 6px;">No se encontró a ningún ganador con ese nombre.</li>';
-                return;
-            }
-        } else {
-            itemsToDisplay = isWinnersExpanded ? listWithRank : listWithRank.slice(0, 3);
-            if (btn) {
-                if (list.length > 3) {
-                    btn.classList.remove('hidden');
-                    btn.innerText = isWinnersExpanded ? '⬆️ Mostrar solo los 3 principales' : '⬇️ Ver todos los usuarios premiados (' + list.length + ')';
-                } else {
-                    btn.classList.add('hidden');
-                }
-            }
-        }
-
-        itemsToDisplay.forEach(function(item) {
-            const li = document.createElement('li');
-            li.className = 'custom-item';
-            const textoVez = item.total === 1 ? 'vez premiado' : 'veces premiado';
-            
-            let medallaIcono = '';
-            if (item.rank === 1) medallaIcono = '🥇 ';
-            else if (item.rank === 2) medallaIcono = '🥈 ';
-            else if (item.rank === 3) medallaIcono = '🥉 ';
-            else medallaIcono = `<span style="color: var(--muted); font-size: 0.8rem; margin-right: 4px;">#${item.rank}</span>`;
-            
-            li.innerHTML = '<div class="custom-item-text"><strong>' + medallaIcono + item.user + '</strong></div><span class="item-badge">' + item.total + ' ' + textoVez + '</span>';
-            listEl.appendChild(li);
-        });
-    }
-
-    function renderHoFList(list) {
-        const listEl = document.getElementById('hallOfFameList');
-        const btn = document.getElementById('btnToggleHoF');
-        if(!listEl) return;
-        
-        listEl.innerHTML = '';
-        if (list.length === 0) {
-            listEl.innerHTML = '<li style="text-align: center; color: var(--muted);">Aún no hay datos de juegos pasados.</li>';
-            if(btn) btn.classList.add('hidden');
-            return;
-        }
-        
-        const listWithRank = list.map((item, idx) => ({ ...item, rank: idx + 1 }));
-        
-        let itemsToDisplay = [];
-        const isSearching = hofSearchQuery.length > 0;
-
-        if (isSearching) {
-            itemsToDisplay = listWithRank.filter(item => item.user.toLowerCase().includes(hofSearchQuery));
-            if (btn) btn.classList.add('hidden'); 
-            if (itemsToDisplay.length === 0) {
-                listEl.innerHTML = '<li style="text-align: center; color: var(--muted); padding: 6px;">No se encontró a ningún participante con ese nombre.</li>';
-                return;
-            }
-        } else {
-            itemsToDisplay = isHoFExpanded ? listWithRank : listWithRank.slice(0, 3); 
-            if (btn) {
-                if (list.length > 3) {
-                    btn.classList.remove('hidden');
-                    btn.innerText = isHoFExpanded ? '⬆️ Mostrar solo el Top 3' : '⬇️ Ver todo el Hall of Fame (' + list.length + ')';
-                } else {
-                    btn.classList.add('hidden');
-                }
-            }
-        }
-
-        itemsToDisplay.forEach(function(item) {
-            const li = document.createElement('li');
-            li.className = 'custom-item';
-            
-            const textoJuegos = item.total === 1 ? 'juego' : 'juegos';
-            
-            let iconoOId = '';
-            if (item.rank === 1) iconoOId = '🥇 ';
-            else if (item.rank === 2) iconoOId = '🥈 ';
-            else if (item.rank === 3) iconoOId = '🥉 ';
-            else iconoOId = `<span style="color: var(--muted); font-size: 0.8rem; margin-right: 4px;">#${item.rank}</span>`;
-            
-            li.innerHTML = '<div class="custom-item-text"><strong>' + iconoOId + item.user + '</strong></div><span class="item-badge" style="background: var(--success);">' + item.total + ' ' + textoJuegos + '</span>';
-            listEl.appendChild(li);
-        });
-    }
-
-    function renderHistoryList(list) {
-        const listEl = document.getElementById('historyList');
-        const btn = document.getElementById('btnToggleHistory');
-        if(!listEl) return;
-        
-        listEl.innerHTML = '';
-        if (list.length === 0) {
-            listEl.innerHTML = '<li style="text-align: center; color: var(--muted);">Sin sorteos registrados.</li>';
-            if(btn) btn.classList.add('hidden');
-            return;
-        }
-        const visibleItems = isHistoryExpanded ? list : list.slice(0, 3);
-        visibleItems.forEach(function(item) {
-            const li = document.createElement('li');
-            li.className = 'custom-item';
-            let deleteBtnHtml = '';
-            if (isAdminLoggedIn) {
-                deleteBtnHtml = `<button class="delete-item-btn" onclick="borrarGanadorEspecifico('${item.key}', '${item.user}', '${item.fecha}')">🗑️ Borrar</button>`;
-            }
-            
-            li.innerHTML = '<div class="custom-item-text"><strong>' + item.user + '</strong></div>' +
-                           '<div style="display:flex; align-items:center; gap:6px;"><div style="font-size: 0.75rem; color: var(--muted);">' + item.fecha + '</div>' + deleteBtnHtml + '</div>';
-            listEl.appendChild(li);
-        });
-        if (list.length > 3) {
-            if(btn) {
-                btn.classList.remove('hidden');
-                btn.innerText = isHistoryExpanded ? '⬆️ Mostrar solo los últimos 3 sorteos' : '⬇️ Ver todo el historial (' + list.length + ')';
-            }
-        } else {
-            if(btn) btn.classList.add('hidden');
-        }
-    }
-
-    function toggleWinnersView() { isWinnersExpanded = !isWinnersExpanded; refrescarHistorialAntiSpoiler(); }
-    function toggleHistoryView() { isHistoryExpanded = !isHistoryExpanded; refrescarHistorialAntiSpoiler(); }
-    function toggleHoFView() { isHoFExpanded = !isHoFExpanded; refrescarHistorialAntiSpoiler(); }
-
-    // ============================================================
-    //  ADMIN - BORRADOS BLINDADOS
-    // ============================================================
-    function toggleAdminPanel() {
-        const pass = prompt("Introduce la clave de administrador:");
-        if (pass && btoa(pass) === "cGF0cnVsbGExMjM=") {
-            isAdminLoggedIn = true;
-            const panel = document.getElementById('adminPanel');
-            if(panel) panel.classList.remove('hidden');
-            importarDesdeTelegram(false);
-            refrescarHistorialAntiSpoiler();
-            cargarListaBackups();
-        } else if (pass !== null) {
-            alert("Contraseña incorrecta.");
-        }
     }
 
     function borrarUltimoSorteo() {
@@ -2615,21 +2372,29 @@
 
         if (!rawLines) return alert("Pega o importa la lista de participantes.");
 
-        // SORTEO INMEDIATO (sin hora) → animarResultado = false
+        // Si NO hay hora seleccionada (cadena vacía o "--:--") → SORTEO INMEDIATO
         if (!timeVal || timeVal === "--:--" || timeVal.trim() === "") {
             if (confirm("El sorteo se realizará de inmediato y se consolidará el Hall of Fame Histórico. ¿Continuar?")) {
                 detenerTragaperras();
                 mostrarRecreativa(true);
                 const slotStatus = document.getElementById('slotStatus');
                 if(slotStatus) slotStatus.innerText = '🎰 SORTEO INMEDIATO...';
-                calcularYEjecutarTirada(rawLines, rawBlacklist, false); // <-- SIN animación
-                sumarJuegosAlHoF(true); 
-                alert("¡Sorteo finalizado y Hall of Fame actualizado!");
+                
+                let targetInmediato = Date.now() + 1000;
+                
+                db.ref('sorteo_actual').set({
+                    status: 'programado',
+                    targetTime: targetInmediato,
+                    rawLines: rawLines,
+                    rawBlacklist: rawBlacklist
+                }).then(() => {
+                    sumarJuegosAlHoF(true); 
+                });
             }
             return;
         }
 
-        // SORTEO PROGRAMADO (con hora) → animarResultado = true (30 segundos)
+        // Si hay hora, se programa (con animación de 30 segundos)
         const timeParts = timeVal.split(':');
         let targetDate = new Date();
 
@@ -2640,11 +2405,11 @@
 
         targetDate.setHours(parseInt(timeParts[0], 10), parseInt(timeParts[1], 10), 0, 0);
 
+        // Si no hay fecha y la hora ya pasó, se programa para mañana
         if (!dateVal && targetDate.getTime() <= Date.now()) {
             targetDate.setDate(targetDate.getDate() + 1);
         }
 
-        // Guardar como programado
         db.ref('sorteo_actual').set({
             status: 'programado',
             targetTime: targetDate.getTime(),
@@ -2652,7 +2417,7 @@
             rawBlacklist: rawBlacklist
         }).then(() => {
             sumarJuegosAlHoF(true); 
-            alert("¡Sorteo programado con éxito! Se mostrará con cuenta atrás de 30 segundos.");
+            alert("¡Sorteo programado con éxito!");
         }).catch(error => {
             console.error('Error guardando el sorteo:', error);
             alert('❌ No se pudo programar el sorteo.');
@@ -2745,6 +2510,7 @@
 
         document.addEventListener("click", e => {
             if (!picker.contains(e.target) && !panel.classList.contains("hidden")) {
+                // Al hacer click fuera: revertimos el estado al último valor guardado (o nulo)
                 selected = parse(input.value); 
                 panel.classList.add("hidden");
             }
@@ -2755,9 +2521,6 @@
         else text.textContent = "--/--/----";
     }
 
-    // ============================================================
-    //  initRetroTimePicker - empieza a las 21:00
-    // ============================================================
     function initRetroTimePicker() {
         const valueInput = document.getElementById("drawTimeInput");
         const display = document.getElementById("retroTimeDisplay");
@@ -2770,8 +2533,7 @@
         const picker = document.getElementById("retroTimePicker");
         if (!valueInput || !display || !displayValue || !panel || !hourWheel || !minuteWheel || !confirmBtn || !picker) return;
 
-        let hour = 21;
-        let minute = 0;
+        let hour = 0, minute = 0;
         let hasSelected = false;
         const pad = n => String(n).padStart(2, "0");
 
@@ -2803,21 +2565,25 @@
         }
 
         function setFromCurrentTime() {
-            const currentVal = valueInput.value;
-            const match = /^(\d{2}):(\d{2})$/.exec(currentVal);
-            if (match && currentVal !== "--:--") {
-                hour = Number(match[1]);
-                minute = Number(match[2]);
-            } else {
-                hour = 21;
-                minute = 0;
-            }
+            const now = new Date();
+            hour = now.getHours();
+            minute = now.getMinutes();
             hasSelected = true;
         }
 
         display.addEventListener("click", event => {
             event.stopPropagation();
-            setFromCurrentTime();
+            if (!hasSelected) setFromCurrentTime();
+            else {
+                const match = /^(\d{2}):(\d{2})$/.exec(valueInput.value || "");
+                if (match) {
+                    hour = Number(match[1]);
+                    minute = Number(match[2]);
+                    hasSelected = true;
+                } else {
+                    setFromCurrentTime();
+                }
+            }
             render();
             panel.classList.remove("hidden");
             display.setAttribute("aria-expanded", "true");
@@ -2883,7 +2649,7 @@
             }
         });
 
-        displayValue.textContent = "21:00";
+        displayValue.textContent = "--:--";
         valueInput.value = "";
     }
 
