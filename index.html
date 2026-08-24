@@ -1,4 +1,4 @@
-original_html = """<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -24,6 +24,9 @@ original_html = """<!DOCTYPE html>
     <link rel="icon" type="image/png" sizes="32x32" href="logo.png?v=2">
     <link rel="icon" type="image/png" sizes="16x16" href="logo.png?v=2">
     <link rel="apple-touch-icon" sizes="180x180" href="logo.png?v=2">
+
+    <!-- CANVAS-CONFETTI CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1"></script>
 
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -835,9 +838,11 @@ original_html = """<!DOCTYPE html>
         <button id="btnToggleHistory" class="btn-toggle-view hidden" onclick="toggleHistoryView()">⬇️ Ver todo el historial</button>
     </div>
 
+    <!-- ===== PANEL DE ADMINISTRACIÓN (CON AJUSTES AVANZADOS OCULTOS) ===== -->
     <div id="adminPanel" class="card admin-panel hidden">
         <h2>🛠️ Panel de Control</h2>
 
+        <!-- SECCIÓN PRINCIPAL: SORTEO -->
         <div class="admin-section">
             <label><b>📅 Mes correspondiente al Sorteo:</b></label>
             <select id="monthSelect" style="margin-top: 8px;">
@@ -918,13 +923,16 @@ original_html = """<!DOCTYPE html>
             <button class="admin-btn" onclick="programarOEjecutarSorteo()">🎲 GUARDAR Y PROGRAMAR SORTEO</button>
         </div>
 
+        <!-- ===== BOTÓN PARA MOSTRAR/OCULTAR AJUSTES AVANZADOS ===== -->
         <button class="btn-advanced-toggle" id="btnAdvancedToggle" onclick="toggleAdvancedSettings()">
             <span>⚙️ Ajustes Avanzados</span>
             <span class="toggle-icon">▼</span>
         </button>
 
+        <!-- ===== AJUSTES AVANZADOS (ocultos por defecto) ===== -->
         <div class="advanced-settings-wrapper" id="advancedSettingsWrapper">
 
+            <!-- Añadir Ganadores Manuales -->
             <div class="admin-section">
                 <label><b>➕ Añadir Ganador(es) Anterior(es) al Historial:</b></label>
                 <p style="font-size: 0.8rem; color: var(--muted); margin: 4px 0 8px 0;">
@@ -961,6 +969,7 @@ original_html = """<!DOCTYPE html>
                 <button style="background-color: #0284c7;" onclick="agregarGanadorManual()">➕ AÑADIR AL HISTORIAL</button>
             </div>
 
+            <!-- Gestión del Hall of Fame -->
             <div class="admin-section" style="border: 1px solid var(--gold); background: rgba(245, 158, 11, 0.05);">
                 <label style="color: var(--gold);"><b>👾 Gestión del Hall of Fame (Histórico):</b></label>
                 <p style="font-size: 0.8rem; color: var(--muted); margin: 4px 0 8px 0;">
@@ -973,6 +982,7 @@ original_html = """<!DOCTYPE html>
                 <button style="background-color: var(--accent); margin-top: 5px;" onclick="guardarHoFManual()">💾 SOBRESCRIBIR HALL OF FAME</button>
             </div>
 
+            <!-- Copias de Seguridad -->
             <div class="admin-section" style="border: 1px solid var(--accent); background: rgba(99, 102, 241, 0.08);">
                 <label><b>💾 Copias de Seguridad y Restauración:</b></label>
                 <p style="font-size: 0.8rem; color: var(--muted); margin: 4px 0 10px 0;">
@@ -999,6 +1009,7 @@ original_html = """<!DOCTYPE html>
                 </div>
             </div>
 
+            <!-- Botones de Borrado -->
             <button class="warning-btn" onclick="borrarUltimoSorteo()">↩️ BORRAR ÚLTIMO SORTEO</button>
             <button class="clear-btn" onclick="borrarTodo()">🧹 BORRAR TODO</button>
         </div>
@@ -1126,6 +1137,90 @@ original_html = """<!DOCTYPE html>
             btn.classList.add('open');
             btn.innerHTML = '<span>⚙️ Ajustes Avanzados</span><span class="toggle-icon">▲</span>';
         }
+    }
+
+    // ============================================================
+    //  FUNCIÓN PARA LANZAR FUEGOS ARTIFICIALES
+    // ============================================================
+    function lanzarFuegosArtificiales() {
+        if (typeof confetti !== 'function') return;
+        
+        // Lanzar múltiples ráfagas de confeti
+        const duracion = 5 * 1000; // 5 segundos
+        const animationEnd = Date.now() + duracion;
+        const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+
+        function randomInRange(min, max) {
+            return Math.random() * (max - min) + min;
+        }
+
+        const interval = setInterval(function() {
+            const timeLeft = animationEnd - Date.now();
+
+            if (timeLeft <= 0) {
+                return clearInterval(interval);
+            }
+
+            const particleCount = 50 * (timeLeft / duracion);
+            
+            // Confeti desde la izquierda
+            confetti({
+                ...defaults,
+                particleCount: Math.floor(particleCount),
+                origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }
+            });
+            
+            // Confeti desde la derecha
+            confetti({
+                ...defaults,
+                particleCount: Math.floor(particleCount),
+                origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }
+            });
+            
+            // Confeti desde arriba
+            confetti({
+                ...defaults,
+                particleCount: Math.floor(particleCount / 2),
+                origin: { x: randomInRange(0.3, 0.7), y: Math.random() - 0.3 }
+            });
+        }, 250);
+
+        // Ráfaga inicial grande
+        setTimeout(() => {
+            confetti({
+                particleCount: 150,
+                spread: 70,
+                origin: { y: 0.6 }
+            });
+        }, 100);
+
+        // Segunda ráfaga
+        setTimeout(() => {
+            confetti({
+                particleCount: 100,
+                spread: 100,
+                origin: { y: 0.5, x: 0.3 }
+            });
+        }, 500);
+
+        // Tercera ráfaga
+        setTimeout(() => {
+            confetti({
+                particleCount: 100,
+                spread: 100,
+                origin: { y: 0.5, x: 0.7 }
+            });
+        }, 800);
+
+        // Cuarta ráfaga (morada/dorada)
+        setTimeout(() => {
+            confetti({
+                particleCount: 120,
+                spread: 80,
+                origin: { y: 0.4 },
+                colors: ['#ffd700', '#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#ff69b4', '#dda0dd']
+            });
+        }, 1200);
     }
 
     // ============================================================
@@ -1628,11 +1723,11 @@ original_html = """<!DOCTYPE html>
                 throw new Error(resultado.error || `Cloudflare respondió ${response.status}`);
             }
 
-            alert("✅ Copia guardada correctamente en GitHub.\\n\\nArchivo: " + resultado.archivo);
+            alert("✅ Copia guardada correctamente en GitHub.\n\nArchivo: " + resultado.archivo);
 
         } catch (error) {
             console.error("Error creando backup manual en GitHub:", error);
-            alert("❌ No se pudo crear la copia en GitHub.\\n\\n" + error.message);
+            alert("❌ No se pudo crear la copia en GitHub.\n\n" + error.message);
         }
     }
 
@@ -1659,7 +1754,7 @@ original_html = """<!DOCTYPE html>
             alert("Por favor, selecciona una copia de seguridad del desplegable.");
             return;
         }
-        if (confirm(`⚠️ ¿Estás seguro de RESTAURAR la copia "${clave}"?\\n\\nEsto sobrescribirá los datos con los guardados en ese momento.`)) {
+        if (confirm(`⚠️ ¿Estás seguro de RESTAURAR la copia "${clave}"?\n\nEsto sobrescribirá los datos con los guardados en ese momento.`)) {
             db.ref('backups/' + clave).once('value', function(snapshot) {
                 const data = snapshot.val();
                 if (!data) {
@@ -1684,7 +1779,7 @@ original_html = """<!DOCTYPE html>
         }
         const select = document.getElementById('backupSelect');
         const textoSeleccionado = select.options[select.selectedIndex].text;
-        if (confirm(`⚠️ ¿Estás seguro de que deseas ELIMINAR permanentemente la copia de seguridad?\\n\\n"${textoSeleccionado}"`)) {
+        if (confirm(`⚠️ ¿Estás seguro de que deseas ELIMINAR permanentemente la copia de seguridad?\n\n"${textoSeleccionado}"`)) {
             db.ref('backups/' + clave).remove().then(function() {
                 alert("🗑️ Copia de seguridad eliminada con éxito.");
             });
@@ -1772,18 +1867,18 @@ original_html = """<!DOCTYPE html>
             if (!messages || messages.length === 0) return;
             
             let ultimaListaEncontrada = "";
-            const regexPatronLista = /\\d+[\\s-]*@[\w_.-]+/i; 
+            const regexPatronLista = /\d+[\s-]*@[\w_.-]+/i; 
             
             for (let i = messages.length - 1; i >= 0; i--) {
-                let htmlTemp = messages[i].innerHTML.replace(/<br\s*[\/]?>/gi, "\\n");
+                let htmlTemp = messages[i].innerHTML.replace(/<br\s*[\/]?>/gi, "\n");
                 let tempDiv = document.createElement("div");
                 tempDiv.innerHTML = htmlTemp;
                 let plainText = tempDiv.textContent || tempDiv.innerText || "";
                 if (regexPatronLista.test(plainText)) {
-                    const lineas = plainText.split('\\n');
+                    const lineas = plainText.split('\n');
                     const lineasFiltradas = lineas.map(l => l.trim()).filter(l => regexPatronLista.test(l) || /EXTRA/i.test(l));
                     if (lineasFiltradas.length > 0) {
-                        ultimaListaEncontrada = lineasFiltradas.join('\\n');
+                        ultimaListaEncontrada = lineasFiltradas.join('\n');
                         break;
                     }
                 }
@@ -1793,7 +1888,7 @@ original_html = """<!DOCTYPE html>
                 if(listInput) listInput.value = ultimaListaEncontrada;
                 guardarParticipantesFirebase();
                 calcularYMostrarProbabilidades();
-                const totalCargados = ultimaListaEncontrada.split('\\n').filter(l => regexPatronLista.test(l)).length;
+                const totalCargados = ultimaListaEncontrada.split('\n').filter(l => regexPatronLista.test(l)).length;
                 if (esManual) alert(`¡Éxito! Se ha cargado la última lista con ${totalCargados} participantes.`);
             } else if (esManual) {
                 alert("No se encontró ningún mensaje reciente que contenga una lista.");
@@ -1839,7 +1934,7 @@ original_html = """<!DOCTYPE html>
         const rawLinesStr = document.getElementById('listInput').value.trim();
         if (!rawLinesStr) return;
 
-        const rawLines = rawLinesStr.split('\\n');
+        const rawLines = rawLinesStr.split('\n');
         let juegosASumar = {};
         let bloqueExtraActivado = false;
 
@@ -1882,7 +1977,7 @@ original_html = """<!DOCTYPE html>
     function restarJuegosDelHoF(rawLinesStr) {
         if (!rawLinesStr) return;
 
-        const rawLines = rawLinesStr.split('\\n');
+        const rawLines = rawLinesStr.split('\n');
         let juegosARestar = {};
         let bloqueExtraActivado = false;
 
@@ -1938,7 +2033,7 @@ original_html = """<!DOCTYPE html>
         
         let newHoF = {};
         if (inputStr) {
-            const lineas = inputStr.split('\\n');
+            const lineas = inputStr.split('\n');
             lineas.forEach(line => {
                 let partes = line.split('=');
                 if (partes.length === 2) {
@@ -1977,7 +2072,7 @@ original_html = """<!DOCTYPE html>
             const ahora = new Date();
             fechaTexto = `${nombresMeses[ahora.getMonth()]} ${ahora.getFullYear()}`;
         }
-        const usuarios = inputVal.split(/[\\n,\\s]+/).map(u => u.trim()).filter(u => u.length > 0);
+        const usuarios = inputVal.split(/[\n,\s]+/).map(u => u.trim()).filter(u => u.length > 0);
         let añadidos = 0;
         usuarios.forEach(function(usr) {
             let userFinal = usr.startsWith('@') ? usr : '@' + usr;
@@ -2156,7 +2251,7 @@ original_html = """<!DOCTYPE html>
 
     function obtenerDigitosPremiados(ganador) {
         if(!ganador || !ganador.ticket) return ['0','0','0'];
-        const match = String(ganador.ticket).match(/^(\\d+)/);
+        const match = String(ganador.ticket).match(/^(\d+)/);
         const numero = match ? match[1] : '0';
         const numero3 = numero.slice(-3).padStart(3, '0');
         return [numero3.charAt(0), numero3.charAt(1), numero3.charAt(2)];
@@ -2218,7 +2313,7 @@ original_html = """<!DOCTYPE html>
                 if(wQuote) wQuote.innerText = fraseFinal;
                 
                 let numeroBoleto = data.ganador.ticket;
-                const matchNum = String(data.ganador.ticket || '').match(/^(\\d+)/);
+                const matchNum = String(data.ganador.ticket || '').match(/^(\d+)/);
                 if (matchNum) {
                     numeroBoleto = "Boleto premiado Nº " + matchNum[1];
                 } else {
@@ -2262,12 +2357,15 @@ original_html = """<!DOCTYPE html>
         const slot = document.getElementById('slotMachineCard');
         if(slot) slot.classList.remove('active');
         
+        // LANZAR FUEGOS ARTIFICIALES CUANDO SE MUESTRA EL GANADOR
+        lanzarFuegosArtificiales();
+        
         verificarRepetidoVisual();
     }
 
     function calcularYEjecutarTirada(rawLinesStr, rawBlacklistStr, animarResultado = true) {
-        const rawLines = rawLinesStr.split('\\n');
-        const rawBlacklist = rawBlacklistStr.split('\\n');
+        const rawLines = rawLinesStr.split('\n');
+        const rawBlacklist = rawBlacklistStr.split('\n');
 
         let participantesValidos = [];
         rawLines.forEach(function(line) {
@@ -2541,7 +2639,7 @@ original_html = """<!DOCTYPE html>
     }
 
     function borrarUltimoSorteo() {
-        if (confirm("⚠️ ¿Deseas BORRAR el último sorteo (o la programación actual)?\\n\\nEsto también RESTARÁ los puntos sumados al Hall of Fame basándose en la lista original del sorteo.")) {
+        if (confirm("⚠️ ¿Deseas BORRAR el último sorteo (o la programación actual)?\n\nEsto también RESTARÁ los puntos sumados al Hall of Fame basándose en la lista original del sorteo.")) {
             
             db.ref('sorteo_actual').once('value', function(snapActual) {
                 const dataSorteo = snapActual.val();
@@ -2571,7 +2669,7 @@ original_html = """<!DOCTYPE html>
     }
 
     function borrarTodo() {
-        if (confirm("⚠️ ¿Deseas BORRAR TODO? Esto eliminará:\\n- El sorteo actual\\n- El historial de ganadores\\n- El Hall of Fame al completo\\n- La lista de participantes\\n\\nEsta acción es irreversible.")) {
+        if (confirm("⚠️ ¿Deseas BORRAR TODO? Esto eliminará:\n- El sorteo actual\n- El historial de ganadores\n- El Hall of Fame al completo\n- La lista de participantes\n\nEsta acción es irreversible.")) {
             const el1 = document.getElementById('listInput');
             const el2 = document.getElementById('blacklistInput');
             const el3 = document.getElementById('drawDateInput');
@@ -2673,7 +2771,7 @@ original_html = """<!DOCTYPE html>
         let view = new Date(now.getFullYear(), now.getMonth(), 1);
 
         function parse(s) {
-            const m = /^(\\d{4})-(\\d{2})-(\\d{2})$/.exec(s || "");
+            const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || "");
             return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null;
         }
 
@@ -2795,7 +2893,7 @@ original_html = """<!DOCTYPE html>
         // Al abrir, siempre usa 21:00 si no hay valor guardado
         function setFromCurrentTime() {
             const currentVal = valueInput.value;
-            const match = /^(\\d{2}):(\\d{2})$/.exec(currentVal);
+            const match = /^(\d{2}):(\d{2})$/.exec(currentVal);
             if (match && currentVal !== "--:--") {
                 hour = Number(match[1]);
                 minute = Number(match[2]);
@@ -2861,7 +2959,7 @@ original_html = """<!DOCTYPE html>
 
         document.addEventListener("click", e => {
             if (!picker.contains(e.target) && !panel.classList.contains("hidden")) {
-                const match = /^(\\d{2}):(\\d{2})$/.exec(valueInput.value || "");
+                const match = /^(\d{2}):(\d{2})$/.exec(valueInput.value || "");
                 if (match) {
                     hour = Number(match[1]);
                     minute = Number(match[2]);
@@ -2938,7 +3036,7 @@ original_html = """<!DOCTYPE html>
             event.stopPropagation();
             if (!hasSelected) setFromCurrentDate();
             else {
-                const match = /^(\\d{4})-(\\d{2})$/.exec(valueInput.value || "");
+                const match = /^(\d{4})-(\d{2})$/.exec(valueInput.value || "");
                 if (match) {
                     year = Number(match[1]);
                     month = Number(match[2]);
@@ -3002,7 +3100,7 @@ original_html = """<!DOCTYPE html>
 
         document.addEventListener("click", e => {
             if (!picker.contains(e.target) && !panel.classList.contains("hidden")) {
-                const match = /^(\\d{4})-(\\d{2})$/.exec(valueInput.value || "");
+                const match = /^(\d{4})-(\d{2})$/.exec(valueInput.value || "");
                 if (match) {
                     year = Number(match[1]);
                     month = Number(match[2]);
@@ -3021,68 +3119,3 @@ original_html = """<!DOCTYPE html>
 </script>
 </body>
 </html>
-"""
-
-# 1. Add canvas-confetti script after firebase script
-target_head = '<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>'
-replacement_head = target_head + '\n    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>'
-
-modified_html = original_html.replace(target_head, replacement_head)
-
-# 2. Add lanzarFuegosArtificiales and update mostrarGanador
-target_func = """    function mostrarGanador(data) {
-        const winnerCard = document.getElementById('winnerCard');
-        if(winnerCard) winnerCard.style.display = 'block';
-        const slot = document.getElementById('slotMachineCard');
-        if(slot) slot.classList.remove('active');
-        
-        verificarRepetidoVisual();
-    }"""
-
-replacement_func = """    function lanzarFuegosArtificiales() {
-        var duration = 4000;
-        var animationEnd = Date.now() + duration;
-        var defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 9999 };
-
-        function randomInRange(min, max) {
-            return Math.random() * (max - min) + min;
-        }
-
-        var interval = setInterval(function() {
-            var timeLeft = animationEnd - Date.now();
-
-            if (timeLeft <= 0) {
-                return clearInterval(interval);
-            }
-
-            var particleCount = 50 * (timeLeft / duration);
-            
-            confetti(Object.assign({}, defaults, { 
-                particleCount, 
-                origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 },
-                colors: ['#f59e0b', '#6366f1', '#22c55e', '#ef4444', '#ffffff']
-            }));
-            confetti(Object.assign({}, defaults, { 
-                particleCount, 
-                origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 },
-                colors: ['#f59e0b', '#6366f1', '#22c55e', '#ef4444', '#ffffff']
-            }));
-        }, 250);
-    }
-
-    function mostrarGanador(data) {
-        const winnerCard = document.getElementById('winnerCard');
-        if(winnerCard) winnerCard.style.display = 'block';
-        const slot = document.getElementById('slotMachineCard');
-        if(slot) slot.classList.remove('active');
-        
-        verificarRepetidoVisual();
-        lanzarFuegosArtificiales();
-    }"""
-
-modified_html = modified_html.replace(target_func, replacement_func)
-
-with open("index.html", "w", encoding="utf-8") as f:
-    f.write(modified_html)
-
-print("HTML updated successfully and saved to index.html")
