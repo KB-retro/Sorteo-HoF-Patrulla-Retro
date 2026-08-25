@@ -1217,67 +1217,83 @@
     // ============================================================
     //  FUNCIONES DE CONGELACIÓN (ANTI-SPOILER + ANTI PARPADEO)
     // ============================================================
+
     function refrescarHistorialAntiSpoiler() {
-        try {
-            let historyToRender = rawHistoryItems || [];
-            let hofToRender = rawHoFItems || [];
+    try {
+        let historyToRender = rawHistoryItems || [];
+        let hofToRender = rawHoFItems || [];
 
-            const ahora = Date.now();
-            let enCongelacion = false;
-            let freezeUntil = 0;
+        const ahora = Date.now();
+        let enCongelacion = false;
+        let freezeUntil = 0;
 
-            if (programData && typeof programData === 'object') {
-                const tieneSuspense = programData.revealAt !== undefined;
-                const esProgramado = programData.status === 'programado' || programData.status === 'procesando';
+        if (programData && typeof programData === 'object') {
+            const tieneSuspense = programData.revealAt !== undefined;
+            const esProgramado = programData.status === 'programado' || programData.status === 'procesando';
 
-                if (esProgramado && programData.targetTime) {
-                    freezeUntil = programData.targetTime + 120000;
-                    if (ahora > (programData.targetTime - 60000) && ahora < freezeUntil) enCongelacion = true;
-                } else if (tieneSuspense && programData.timestamp) {
-                    freezeUntil = programData.timestamp + 120000;
-                    if (ahora < freezeUntil) enCongelacion = true;
-                }
+            if (esProgramado && programData.targetTime) {
+                freezeUntil = programData.targetTime + 120000;
+                if (ahora > (programData.targetTime - 60000) && ahora < freezeUntil) enCongelacion = true;
+            } else if (tieneSuspense && programData.timestamp) {
+                freezeUntil = programData.timestamp + 120000;
+                if (ahora < freezeUntil) enCongelacion = true;
             }
-
-            if (enCongelacion) {
-                historyToRender = historyToRender.filter(item => {
-                    const itemTime = item.timestamp || 0;
-                    return itemTime < (ahora - 120000); 
-                });
-            }
-
-            let mapaConteo = {};
-            historyToRender.forEach(function(item) {
-                if(item && item.user) {
-                    const userKey = item.user;
-                    mapaConteo[userKey] = (mapaConteo[userKey] || 0) + 1;
-                }
-            });
-            let winnersCountToRender = Object.keys(mapaConteo).map(usr => ({ user: usr, total: mapaConteo[usr] })).sort((a, b) => b.total - a.total);
-
-            const newStateWinners = JSON.stringify({ exp: isWinnersExpanded, list: winnersCountToRender, query: winnersSearchQuery });
-            const newStateHistory = JSON.stringify({ exp: isHistoryExpanded, list: historyToRender });
-            const newStateHoF = JSON.stringify({ exp: isHoFExpanded, list: hofToRender, query: hofSearchQuery });
-
-            if (lastRenderedWinnersState !== newStateWinners) {
-                renderWinnersList(winnersCountToRender);
-                lastRenderedWinnersState = newStateWinners;
-            }
-
-            if (lastRenderedHistoryState !== newStateHistory) {
-                renderHistoryList(historyToRender);
-                lastRenderedHistoryState = newStateHistory;
-            }
-            
-            if (lastRenderedHoFState !== newStateHoF) {
-                renderHoFList(hofToRender);
-                lastRenderedHoFState = newStateHoF;
-            }
-            
-        } catch (e) {
-            console.error("Error silencioso en anti-spoiler:", e);
         }
+
+        if (enCongelacion) {
+            historyToRender = historyToRender.filter(item => {
+                const itemTime = item.timestamp || 0;
+                return itemTime < (ahora - 120000); 
+            });
+        }
+
+        let mapaConteo = {};
+        historyToRender.forEach(function(item) {
+            if(item && item.user) {
+                const userKey = item.user;
+                mapaConteo[userKey] = (mapaConteo[userKey] || 0) + 1;
+            }
+        });
+        let winnersCountToRender = Object.keys(mapaConteo).map(usr => ({ user: usr, total: mapaConteo[usr] })).sort((a, b) => b.total - a.total);
+
+        const newStateWinners = JSON.stringify({ exp: isWinnersExpanded, list: winnersCountToRender, query: winnersSearchQuery });
+        const newStateHistory = JSON.stringify({ exp: isHistoryExpanded, list: historyToRender });
+        const newStateHoF = JSON.stringify({ exp: isHoFExpanded, list: hofToRender, query: hofSearchQuery });
+
+        if (lastRenderedWinnersState !== newStateWinners) {
+            renderWinnersList(winnersCountToRender);
+            lastRenderedWinnersState = newStateWinners;
+        }
+
+        if (lastRenderedHistoryState !== newStateHistory) {
+            renderHistoryList(historyToRender);
+            lastRenderedHistoryState = newStateHistory;
+        }
+        
+        if (lastRenderedHoFState !== newStateHoF) {
+            renderHoFList(hofToRender);
+            lastRenderedHoFState = newStateHoF;
+        }
+
+        // ===== NUEVO: Asegurar que las listas nunca estén vacías =====
+        // Esto evita que se vea el fondo gris cuando no hay datos
+        const listas = [
+            { id: 'winnersCountList', mensaje: 'Sin historial de ganadores guardado.' },
+            { id: 'hallOfFameList', mensaje: 'Aún no hay datos de juegos pasados.' },
+            { id: 'historyList', mensaje: 'Sin sorteos registrados.' }
+        ];
+
+        listas.forEach(function(lista) {
+            const el = document.getElementById(lista.id);
+            if (el && el.children.length === 0) {
+                el.innerHTML = '<li class="custom-item" style="justify-content: center; color: var(--muted); background: transparent; border: 1px dashed #334155;">' + lista.mensaje + '</li>';
+            }
+        });
+        
+    } catch (e) {
+        console.error("Error silencioso en anti-spoiler:", e);
     }
+}
 
     // ============================================================
     //  FUNCIONES DE BÚSQUEDA EN LISTAS
