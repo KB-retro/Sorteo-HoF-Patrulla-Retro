@@ -807,11 +807,7 @@
         <div style="margin-top: 10px; margin-bottom: 10px;">
             <input type="text" id="winnersSearchInput" placeholder="🔍 Buscar usuario (@usuario)..." oninput="buscarEnWinners()" autocomplete="off" style="font-size: 0.85rem; padding: 8px 12px;">
         </div>
-        <ul id="winnersCountList" class="custom-list">
-            <li class="custom-item" style="justify-content: center; color: var(--muted); background: transparent; border: 1px dashed #334155;">
-                ⏳ Cargando datos del servidor...
-            </li>
-        </ul>
+        <ul id="winnersCountList" class="custom-list"></ul>
         <button id="btnToggleWinners" class="btn-toggle-view hidden" onclick="toggleWinnersView()">⬇️ Ver todos los usuarios premiados</button>
     </div>
 
@@ -820,29 +816,20 @@
         <div style="margin-top: 10px; margin-bottom: 10px;">
             <input type="text" id="hofSearchInput" placeholder="🔍 Buscar usuario (@usuario)..." oninput="buscarEnHoF()" autocomplete="off" style="font-size: 0.85rem; padding: 8px 12px;">
         </div>
-        <ul id="hallOfFameList" class="custom-list">
-            <li class="custom-item" style="justify-content: center; color: var(--muted); background: transparent; border: 1px dashed #334155;">
-                ⏳ Cargando ranking histórico...
-            </li>
-        </ul>
+        <ul id="hallOfFameList" class="custom-list"></ul>
         <button id="btnToggleHoF" class="btn-toggle-view hidden" onclick="toggleHoFView()">⬇️ Ver todo el Hall of Fame</button>
     </div>
 
     <div id="historyCard" class="card">
         <h3>📜 Historial de Ganadores 📜</h3>
-        <ul id="historyList" class="custom-list">
-            <li class="custom-item" style="justify-content: center; color: var(--muted); background: transparent; border: 1px dashed #334155;">
-                ⏳ Cargando sorteos anteriores...
-            </li>
-        </ul>
+        <ul id="historyList" class="custom-list"></ul>
         <button id="btnToggleHistory" class="btn-toggle-view hidden" onclick="toggleHistoryView()">⬇️ Ver todo el historial</button>
     </div>
 
-    <!-- ===== PANEL DE ADMINISTRACIÓN (CON AJUSTES AVANZADOS OCULTOS) ===== -->
+    <!-- ===== PANEL DE ADMINISTRACIÓN ===== -->
     <div id="adminPanel" class="card admin-panel hidden">
         <h2>🛠️ Panel de Control</h2>
 
-        <!-- SECCIÓN PRINCIPAL: SORTEO -->
         <div class="admin-section">
             <label><b>📅 Mes correspondiente al Sorteo:</b></label>
             <select id="monthSelect" style="margin-top: 8px;">
@@ -923,16 +910,12 @@
             <button class="admin-btn" onclick="programarOEjecutarSorteo()">🎲 GUARDAR Y PROGRAMAR SORTEO</button>
         </div>
 
-        <!-- ===== BOTÓN PARA MOSTRAR/OCULTAR AJUSTES AVANZADOS ===== -->
         <button class="btn-advanced-toggle" id="btnAdvancedToggle" onclick="toggleAdvancedSettings()">
             <span>⚙️ Ajustes Avanzados</span>
             <span class="toggle-icon">▼</span>
         </button>
 
-        <!-- ===== AJUSTES AVANZADOS (ocultos por defecto) ===== -->
         <div class="advanced-settings-wrapper" id="advancedSettingsWrapper">
-
-            <!-- Añadir Ganadores Manuales -->
             <div class="admin-section">
                 <label><b>➕ Añadir Ganador(es) Anterior(es) al Historial:</b></label>
                 <p style="font-size: 0.8rem; color: var(--muted); margin: 4px 0 8px 0;">
@@ -969,7 +952,6 @@
                 <button style="background-color: #0284c7;" onclick="agregarGanadorManual()">➕ AÑADIR AL HISTORIAL</button>
             </div>
 
-            <!-- Gestión del Hall of Fame -->
             <div class="admin-section" style="border: 1px solid var(--gold); background: rgba(245, 158, 11, 0.05);">
                 <label style="color: var(--gold);"><b>👾 Gestión del Hall of Fame (Histórico):</b></label>
                 <p style="font-size: 0.8rem; color: var(--muted); margin: 4px 0 8px 0;">
@@ -982,7 +964,6 @@
                 <button style="background-color: var(--accent); margin-top: 5px;" onclick="guardarHoFManual()">💾 SOBRESCRIBIR HALL OF FAME</button>
             </div>
 
-            <!-- Copias de Seguridad -->
             <div class="admin-section" style="border: 1px solid var(--accent); background: rgba(99, 102, 241, 0.08);">
                 <label><b>💾 Copias de Seguridad y Restauración:</b></label>
                 <p style="font-size: 0.8rem; color: var(--muted); margin: 4px 0 10px 0;">
@@ -1009,7 +990,6 @@
                 </div>
             </div>
 
-            <!-- Botones de Borrado -->
             <button class="warning-btn" onclick="borrarUltimoSorteo()">↩️ BORRAR ÚLTIMO SORTEO</button>
             <button class="clear-btn" onclick="borrarTodo()">🧹 BORRAR TODO</button>
         </div>
@@ -1079,10 +1059,6 @@
     let isUserEditingList = false;
     let isHoFEditing = false;
     
-    let lastRenderedWinnersState = "";
-    let lastRenderedHistoryState = "";
-    let lastRenderedHoFState = "";
-    
     let cacheJuegosSheets = null;
     let ultimaCargaSheets = 0;
 
@@ -1123,6 +1099,67 @@
     const nombresMeses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
     // ============================================================
+    //  FUNCIÓN PARA LANZAR FUEGOS ARTIFICIALES
+    // ============================================================
+    function lanzarFuegosArtificiales() {
+        if (typeof confetti !== 'function') return;
+        
+        const duracion = 5 * 1000;
+        const animationEnd = Date.now() + duracion;
+        const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+
+        function randomInRange(min, max) {
+            return Math.random() * (max - min) + min;
+        }
+
+        const interval = setInterval(function() {
+            const timeLeft = animationEnd - Date.now();
+            if (timeLeft <= 0) return clearInterval(interval);
+
+            const particleCount = 50 * (timeLeft / duracion);
+            
+            confetti({
+                ...defaults,
+                particleCount: Math.floor(particleCount),
+                origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }
+            });
+            
+            confetti({
+                ...defaults,
+                particleCount: Math.floor(particleCount),
+                origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }
+            });
+            
+            confetti({
+                ...defaults,
+                particleCount: Math.floor(particleCount / 2),
+                origin: { x: randomInRange(0.3, 0.7), y: Math.random() - 0.3 }
+            });
+        }, 250);
+
+        setTimeout(() => {
+            confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+        }, 100);
+
+        setTimeout(() => {
+            confetti({ particleCount: 100, spread: 100, origin: { y: 0.5, x: 0.3 } });
+        }, 500);
+
+        setTimeout(() => {
+            confetti({ particleCount: 100, spread: 100, origin: { y: 0.5, x: 0.7 } });
+        }, 800);
+
+        setTimeout(() => {
+            confetti({
+                particleCount: 120,
+                spread: 80,
+                origin: { y: 0.4 },
+                colors: ['#ffd700', '#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#ff69b4', '#dda0dd']
+            });
+        }, 1200);
+    }
+
+    // ============================================================
     //  FUNCIÓN PARA ALTERNAR AJUSTES AVANZADOS
     // ============================================================
     function toggleAdvancedSettings() {
@@ -1140,88 +1177,149 @@
     }
 
     // ============================================================
-    //  FUNCIÓN PARA LANZAR FUEGOS ARTIFICIALES
+    //  RENDERIZADO DE LISTAS - VERSIÓN SIN PARPADEOS
     // ============================================================
-    function lanzarFuegosArtificiales() {
-        if (typeof confetti !== 'function') return;
+    function renderWinnersList(list) {
+        const listEl = document.getElementById('winnersCountList');
+        const btn = document.getElementById('btnToggleWinners');
+        if (!listEl) return;
         
-        // Lanzar múltiples ráfagas de confeti
-        const duracion = 5 * 1000; // 5 segundos
-        const animationEnd = Date.now() + duracion;
-        const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
-
-        function randomInRange(min, max) {
-            return Math.random() * (max - min) + min;
+        // Guardar el estado del botón antes de modificar
+        let btnState = btn ? btn.style.display : '';
+        
+        if (!list || list.length === 0) {
+            listEl.innerHTML = '<li class="custom-item" style="justify-content: center; color: var(--muted); background: transparent; border: 1px dashed #334155;">Sin historial de ganadores guardado.</li>';
+            if (btn) btn.classList.add('hidden');
+            return;
         }
 
-        const interval = setInterval(function() {
-            const timeLeft = animationEnd - Date.now();
+        const listWithRank = list.map((item, idx) => ({ ...item, rank: idx + 1 }));
+        let itemsToDisplay = [];
+        const isSearching = winnersSearchQuery && winnersSearchQuery.length > 0;
 
-            if (timeLeft <= 0) {
-                return clearInterval(interval);
+        if (isSearching) {
+            itemsToDisplay = listWithRank.filter(item => item.user.toLowerCase().includes(winnersSearchQuery));
+            if (btn) btn.classList.add('hidden');
+            if (itemsToDisplay.length === 0) {
+                listEl.innerHTML = '<li class="custom-item" style="justify-content: center; color: var(--muted); padding: 6px;">No se encontró a ningún ganador con ese nombre.</li>';
+                return;
             }
+        } else {
+            itemsToDisplay = isWinnersExpanded ? listWithRank : listWithRank.slice(0, 3);
+            if (btn) {
+                if (list.length > 3) {
+                    btn.classList.remove('hidden');
+                    btn.innerText = isWinnersExpanded ? '⬆️ Mostrar solo los 3 principales' : '⬇️ Ver todos los usuarios premiados (' + list.length + ')';
+                } else {
+                    btn.classList.add('hidden');
+                }
+            }
+        }
 
-            const particleCount = 50 * (timeLeft / duracion);
-            
-            // Confeti desde la izquierda
-            confetti({
-                ...defaults,
-                particleCount: Math.floor(particleCount),
-                origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }
-            });
-            
-            // Confeti desde la derecha
-            confetti({
-                ...defaults,
-                particleCount: Math.floor(particleCount),
-                origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }
-            });
-            
-            // Confeti desde arriba
-            confetti({
-                ...defaults,
-                particleCount: Math.floor(particleCount / 2),
-                origin: { x: randomInRange(0.3, 0.7), y: Math.random() - 0.3 }
-            });
-        }, 250);
+        // Construir HTML completo y reemplazar solo si cambió
+        const newHTML = itemsToDisplay.map(function(item) {
+            const textoVez = item.total === 1 ? 'vez premiado' : 'veces premiado';
+            let medallaIcono = '';
+            if (item.rank === 1) medallaIcono = '🥇 ';
+            else if (item.rank === 2) medallaIcono = '🥈 ';
+            else if (item.rank === 3) medallaIcono = '🥉 ';
+            else medallaIcono = `<span style="color: var(--muted); font-size: 0.8rem; margin-right: 4px;">#${item.rank}</span>`;
+            return `<li class="custom-item"><div class="custom-item-text"><strong>${medallaIcono}${item.user}</strong></div><span class="item-badge">${item.total} ${textoVez}</span></li>`;
+        }).join('');
 
-        // Ráfaga inicial grande
-        setTimeout(() => {
-            confetti({
-                particleCount: 150,
-                spread: 70,
-                origin: { y: 0.6 }
-            });
-        }, 100);
-
-        // Segunda ráfaga
-        setTimeout(() => {
-            confetti({
-                particleCount: 100,
-                spread: 100,
-                origin: { y: 0.5, x: 0.3 }
-            });
-        }, 500);
-
-        // Tercera ráfaga
-        setTimeout(() => {
-            confetti({
-                particleCount: 100,
-                spread: 100,
-                origin: { y: 0.5, x: 0.7 }
-            });
-        }, 800);
-
-        // Cuarta ráfaga (morada/dorada)
-        setTimeout(() => {
-            confetti({
-                particleCount: 120,
-                spread: 80,
-                origin: { y: 0.4 },
-                colors: ['#ffd700', '#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#ff69b4', '#dda0dd']
-            });
-        }, 1200);
+        // Solo reemplazar si realmente cambió
+        if (listEl.innerHTML !== newHTML) {
+            listEl.innerHTML = newHTML;
+        }
     }
+
+    function renderHoFList(list) {
+        const listEl = document.getElementById('hallOfFameList');
+        const btn = document.getElementById('btnToggleHoF');
+        if (!listEl) return;
+        
+        if (!list || list.length === 0) {
+            listEl.innerHTML = '<li class="custom-item" style="justify-content: center; color: var(--muted); background: transparent; border: 1px dashed #334155;">Aún no hay datos de juegos pasados.</li>';
+            if (btn) btn.classList.add('hidden');
+            return;
+        }
+        
+        const listWithRank = list.map((item, idx) => ({ ...item, rank: idx + 1 }));
+        let itemsToDisplay = [];
+        const isSearching = hofSearchQuery && hofSearchQuery.length > 0;
+
+        if (isSearching) {
+            itemsToDisplay = listWithRank.filter(item => item.user.toLowerCase().includes(hofSearchQuery));
+            if (btn) btn.classList.add('hidden');
+            if (itemsToDisplay.length === 0) {
+                listEl.innerHTML = '<li class="custom-item" style="justify-content: center; color: var(--muted); padding: 6px;">No se encontró a ningún participante con ese nombre.</li>';
+                return;
+            }
+        } else {
+            itemsToDisplay = isHoFExpanded ? listWithRank : listWithRank.slice(0, 3);
+            if (btn) {
+                if (list.length > 3) {
+                    btn.classList.remove('hidden');
+                    btn.innerText = isHoFExpanded ? '⬆️ Mostrar solo el Top 3' : '⬇️ Ver todo el Hall of Fame (' + list.length + ')';
+                } else {
+                    btn.classList.add('hidden');
+                }
+            }
+        }
+
+        const newHTML = itemsToDisplay.map(function(item) {
+            const textoJuegos = item.total === 1 ? 'juego' : 'juegos';
+            let iconoOId = '';
+            if (item.rank === 1) iconoOId = '🥇 ';
+            else if (item.rank === 2) iconoOId = '🥈 ';
+            else if (item.rank === 3) iconoOId = '🥉 ';
+            else iconoOId = `<span style="color: var(--muted); font-size: 0.8rem; margin-right: 4px;">#${item.rank}</span>`;
+            return `<li class="custom-item"><div class="custom-item-text"><strong>${iconoOId}${item.user}</strong></div><span class="item-badge" style="background: var(--success);">${item.total} ${textoJuegos}</span></li>`;
+        }).join('');
+
+        if (listEl.innerHTML !== newHTML) {
+            listEl.innerHTML = newHTML;
+        }
+    }
+
+    function renderHistoryList(list) {
+        const listEl = document.getElementById('historyList');
+        const btn = document.getElementById('btnToggleHistory');
+        if (!listEl) return;
+        
+        if (!list || list.length === 0) {
+            listEl.innerHTML = '<li class="custom-item" style="justify-content: center; color: var(--muted); background: transparent; border: 1px dashed #334155;">Sin sorteos registrados.</li>';
+            if (btn) btn.classList.add('hidden');
+            return;
+        }
+        
+        const visibleItems = isHistoryExpanded ? list : list.slice(0, 3);
+        
+        const newHTML = visibleItems.map(function(item) {
+            let deleteBtnHtml = '';
+            if (isAdminLoggedIn) {
+                deleteBtnHtml = `<button class="delete-item-btn" onclick="borrarGanadorEspecifico('${item.key}', '${item.user}', '${item.fecha}')">🗑️ Borrar</button>`;
+            }
+            return `<li class="custom-item"><div class="custom-item-text"><strong>${item.user}</strong></div><div style="display:flex; align-items:center; gap:6px;"><div style="font-size: 0.75rem; color: var(--muted);">${item.fecha}</div>${deleteBtnHtml}</div></li>`;
+        }).join('');
+
+        if (listEl.innerHTML !== newHTML) {
+            listEl.innerHTML = newHTML;
+        }
+        
+        if (list.length > 3) {
+            if (btn) {
+                btn.classList.remove('hidden');
+                btn.innerText = isHistoryExpanded ? '⬆️ Mostrar solo los últimos 3 sorteos' : '⬇️ Ver todo el historial (' + list.length + ')';
+            }
+        } else {
+            if (btn) btn.classList.add('hidden');
+        }
+    }
+
+    function toggleWinnersView() { isWinnersExpanded = !isWinnersExpanded; refrescarHistorialAntiSpoiler(); }
+    function toggleHistoryView() { isHistoryExpanded = !isHistoryExpanded; refrescarHistorialAntiSpoiler(); }
+    function toggleHoFView() { isHoFExpanded = !isHoFExpanded; refrescarHistorialAntiSpoiler(); }
 
     // ============================================================
     //  FUNCIONES DE CONGELACIÓN (ANTI-SPOILER + ANTI PARPADEO)
@@ -1264,24 +1362,9 @@
             });
             let winnersCountToRender = Object.keys(mapaConteo).map(usr => ({ user: usr, total: mapaConteo[usr] })).sort((a, b) => b.total - a.total);
 
-            const newStateWinners = JSON.stringify({ exp: isWinnersExpanded, list: winnersCountToRender, query: winnersSearchQuery });
-            const newStateHistory = JSON.stringify({ exp: isHistoryExpanded, list: historyToRender });
-            const newStateHoF = JSON.stringify({ exp: isHoFExpanded, list: hofToRender, query: hofSearchQuery });
-
-            if (lastRenderedWinnersState !== newStateWinners) {
-                renderWinnersList(winnersCountToRender);
-                lastRenderedWinnersState = newStateWinners;
-            }
-
-            if (lastRenderedHistoryState !== newStateHistory) {
-                renderHistoryList(historyToRender);
-                lastRenderedHistoryState = newStateHistory;
-            }
-            
-            if (lastRenderedHoFState !== newStateHoF) {
-                renderHoFList(hofToRender);
-                lastRenderedHoFState = newStateHoF;
-            }
+            renderWinnersList(winnersCountToRender);
+            renderHistoryList(historyToRender);
+            renderHoFList(hofToRender);
             
         } catch (e) {
             console.error("Error silencioso en anti-spoiler:", e);
@@ -1351,6 +1434,100 @@
     listInputEl.addEventListener('input', function() {
         calcularYMostrarProbabilidades();
         db.ref('sorteo_participantes_raw').set(this.value);
+    });
+
+    // ============================================================
+    //  OBSERVADOR DE SORTEO ACTUAL
+    // ============================================================
+    db.ref('sorteo_actual').on('value', function(snapshot) {
+        try {
+            const data = snapshot.val();
+            
+            programData = data || { status: 'inactivo' };
+            
+            if (timerInterval) clearInterval(timerInterval);
+            detenerTragaperras();
+
+            const slot = document.getElementById('slotMachineCard');
+            const winnerCard = document.getElementById('winnerCard');
+            const waitingCard = document.getElementById('waitingCard');
+
+            if (data && data.status === 'programado' && data.targetTime) {
+                if(winnerCard) winnerCard.style.display = 'none';
+                if(waitingCard) waitingCard.classList.add('hidden');
+                
+                iniciarRelojCuentaAtras(data.targetTime);
+                refrescarHistorialAntiSpoiler(); 
+                
+            } else if (data && data.ganador) {
+                if(waitingCard) waitingCard.classList.add('hidden');
+                const revealAt = Number(data.revealAt) || 0;
+                const restante = revealAt - Date.now();
+
+                if (restante > 0) {
+                    if(winnerCard) winnerCard.style.display = 'none';
+                    finalizarTragaperras(data.ganador, revealAt);
+                    setTimeout(() => {
+                        const wCard = document.getElementById('winnerCard');
+                        if (wCard && wCard.style.display !== 'block') {
+                            detenerTragaperras();
+                            mostrarGanador(data);
+                        }
+                    }, restante + 100);
+                } else {
+                    detenerTragaperras();
+                    mostrarGanador(data);
+                }
+
+                actualGanadorUser = data.ganador.user;
+                const wName = document.getElementById('winnerName');
+                if(wName) wName.innerText = data.ganador.user;
+                
+                let fraseFinal = data.frase;
+                if (!fraseFinal) {
+                    const seed = data.timestamp ? Math.floor(data.timestamp) : 0;
+                    fraseFinal = FRASES_VIDEOJUEGOS[seed % FRASES_VIDEOJUEGOS.length];
+                }
+                const wQuote = document.getElementById('winnerQuote');
+                if(wQuote) wQuote.innerText = fraseFinal;
+                
+                let numeroBoleto = data.ganador.ticket;
+                const matchNum = String(data.ganador.ticket || '').match(/^(\d+)/);
+                if (matchNum) {
+                    numeroBoleto = "Boleto premiado Nº " + matchNum[1];
+                } else {
+                    numeroBoleto = "Boleto premiado: " + data.ganador.ticket;
+                }
+                const wTicket = document.getElementById('winnerTicket');
+                if(wTicket) wTicket.innerText = numeroBoleto;
+                
+                const arcadeList = document.getElementById('arcadeList');
+                if(arcadeList) {
+                    arcadeList.innerHTML = '';
+                    if (data.arcadeGroup && data.arcadeGroup.length > 0) {
+                        data.arcadeGroup.forEach(function(item) {
+                            const li = document.createElement('li');
+                            li.className = 'custom-item';
+                            const esGanador = item.user.toLowerCase() === data.ganador.user.toLowerCase();
+                            li.innerHTML = '<div class="custom-item-text"><strong>' + item.user + '</strong> <span style="color: var(--muted); font-size:0.8rem;">(' + item.ticket + ')</span></div>' +
+                                (esGanador ? '<span class="item-badge" style="background: var(--gold); color: black;">¡Ganador Principal!</span>' : '<span class="item-badge" style="background: #334155;">Elección Arcade</span>');
+                            arcadeList.appendChild(li);
+                        });
+                    }
+                }
+                
+                refrescarHistorialAntiSpoiler();
+
+            } else {
+                if(slot) slot.classList.remove('active');
+                if(winnerCard) winnerCard.style.display = 'none';
+                if(waitingCard) waitingCard.classList.remove('hidden');
+                
+                refrescarHistorialAntiSpoiler();
+            }
+        } catch (e) {
+            console.error("Error al procesar data de sorteo_actual:", e);
+        }
     });
 
     window.addEventListener('DOMContentLoaded', function() {
@@ -2135,8 +2312,13 @@
     function mostrarRecreativa(activa) {
         const slot = document.getElementById('slotMachineCard');
         if(!slot) return;
-        if (activa) slot.classList.add('active');
-        else slot.classList.remove('active');
+        if (activa) {
+            slot.style.display = 'block';
+            slot.classList.add('active');
+        } else {
+            slot.style.display = 'none';
+            slot.classList.remove('active');
+        }
     }
 
     function detenerRodillos() {
@@ -2257,107 +2439,12 @@
         return [numero3.charAt(0), numero3.charAt(1), numero3.charAt(2)];
     }
 
-    // ============================================================
-    //  OBSERVADOR DE SORTEO ACTUAL
-    // ============================================================
-    db.ref('sorteo_actual').on('value', function(snapshot) {
-        try {
-            const data = snapshot.val();
-            
-            programData = data || { status: 'inactivo' };
-            
-            if (timerInterval) clearInterval(timerInterval);
-            detenerTragaperras();
-
-            const slot = document.getElementById('slotMachineCard');
-            const winnerCard = document.getElementById('winnerCard');
-            const waitingCard = document.getElementById('waitingCard');
-
-            if (data && data.status === 'programado' && data.targetTime) {
-                if(winnerCard) winnerCard.style.display = 'none';
-                if(waitingCard) waitingCard.classList.add('hidden');
-                
-                iniciarRelojCuentaAtras(data.targetTime);
-                refrescarHistorialAntiSpoiler(); 
-                
-            } else if (data && data.ganador) {
-                if(waitingCard) waitingCard.classList.add('hidden');
-                const revealAt = Number(data.revealAt) || 0;
-                const restante = revealAt - Date.now();
-
-                if (restante > 0) {
-                    if(winnerCard) winnerCard.style.display = 'none';
-                    finalizarTragaperras(data.ganador, revealAt);
-                    setTimeout(() => {
-                        const wCard = document.getElementById('winnerCard');
-                        if (wCard && wCard.style.display !== 'block') {
-                            detenerTragaperras();
-                            mostrarGanador(data);
-                        }
-                    }, restante + 100);
-                } else {
-                    detenerTragaperras();
-                    mostrarGanador(data);
-                }
-
-                actualGanadorUser = data.ganador.user;
-                const wName = document.getElementById('winnerName');
-                if(wName) wName.innerText = data.ganador.user;
-                
-                let fraseFinal = data.frase;
-                if (!fraseFinal) {
-                    const seed = data.timestamp ? Math.floor(data.timestamp) : 0;
-                    fraseFinal = FRASES_VIDEOJUEGOS[seed % FRASES_VIDEOJUEGOS.length];
-                }
-                const wQuote = document.getElementById('winnerQuote');
-                if(wQuote) wQuote.innerText = fraseFinal;
-                
-                let numeroBoleto = data.ganador.ticket;
-                const matchNum = String(data.ganador.ticket || '').match(/^(\d+)/);
-                if (matchNum) {
-                    numeroBoleto = "Boleto premiado Nº " + matchNum[1];
-                } else {
-                    numeroBoleto = "Boleto premiado: " + data.ganador.ticket;
-                }
-                const wTicket = document.getElementById('winnerTicket');
-                if(wTicket) wTicket.innerText = numeroBoleto;
-                
-                const arcadeList = document.getElementById('arcadeList');
-                if(arcadeList) {
-                    arcadeList.innerHTML = '';
-                    if (data.arcadeGroup && data.arcadeGroup.length > 0) {
-                        data.arcadeGroup.forEach(function(item) {
-                            const li = document.createElement('li');
-                            li.className = 'custom-item';
-                            const esGanador = item.user.toLowerCase() === data.ganador.user.toLowerCase();
-                            li.innerHTML = '<div class="custom-item-text"><strong>' + item.user + '</strong> <span style="color: var(--muted); font-size:0.8rem;">(' + item.ticket + ')</span></div>' +
-                                (esGanador ? '<span class="item-badge" style="background: var(--gold); color: black;">¡Ganador Principal!</span>' : '<span class="item-badge" style="background: #334155;">Elección Arcade</span>');
-                            arcadeList.appendChild(li);
-                        });
-                    }
-                }
-                
-                refrescarHistorialAntiSpoiler();
-
-            } else {
-                if(slot) slot.classList.remove('active');
-                if(winnerCard) winnerCard.style.display = 'none';
-                if(waitingCard) waitingCard.classList.remove('hidden');
-                
-                refrescarHistorialAntiSpoiler();
-            }
-        } catch (e) {
-            console.error("Error al procesar data de sorteo_actual:", e);
-        }
-    });
-
     function mostrarGanador(data) {
         const winnerCard = document.getElementById('winnerCard');
         if(winnerCard) winnerCard.style.display = 'block';
         const slot = document.getElementById('slotMachineCard');
-        if(slot) slot.classList.remove('active');
+        if(slot) slot.style.display = 'none';
         
-        // LANZAR FUEGOS ARTIFICIALES CUANDO SE MUESTRA EL GANADOR
         lanzarFuegosArtificiales();
         
         verificarRepetidoVisual();
@@ -2462,7 +2549,7 @@
     }
 
     // ============================================================
-    //  RENDERIZADO DE LISTAS
+    //  HISTORIAL - OBSERVADOR DE FIREBASE
     // ============================================================
     db.ref('historial_ganadores').on('value', function(snapshot) {
         const data = snapshot.val();
@@ -2478,148 +2565,6 @@
         
         refrescarHistorialAntiSpoiler();
     });
-
-    function renderWinnersList(list) {
-        const listEl = document.getElementById('winnersCountList');
-        const btn = document.getElementById('btnToggleWinners');
-        if(!listEl) return;
-        
-        listEl.innerHTML = '';
-        if (list.length === 0) {
-            listEl.innerHTML = '<li style="text-align: center; color: var(--muted);">Sin historial de ganadores guardado.</li>';
-            if(btn) btn.classList.add('hidden');
-            return;
-        }
-
-        const listWithRank = list.map((item, idx) => ({ ...item, rank: idx + 1 }));
-        let itemsToDisplay = [];
-        const isSearching = winnersSearchQuery.length > 0;
-
-        if (isSearching) {
-            itemsToDisplay = listWithRank.filter(item => item.user.toLowerCase().includes(winnersSearchQuery));
-            if (btn) btn.classList.add('hidden');
-            if (itemsToDisplay.length === 0) {
-                listEl.innerHTML = '<li style="text-align: center; color: var(--muted); padding: 6px;">No se encontró a ningún ganador con ese nombre.</li>';
-                return;
-            }
-        } else {
-            itemsToDisplay = isWinnersExpanded ? listWithRank : listWithRank.slice(0, 3);
-            if (btn) {
-                if (list.length > 3) {
-                    btn.classList.remove('hidden');
-                    btn.innerText = isWinnersExpanded ? '⬆️ Mostrar solo los 3 principales' : '⬇️ Ver todos los usuarios premiados (' + list.length + ')';
-                } else {
-                    btn.classList.add('hidden');
-                }
-            }
-        }
-
-        itemsToDisplay.forEach(function(item) {
-            const li = document.createElement('li');
-            li.className = 'custom-item';
-            const textoVez = item.total === 1 ? 'vez premiado' : 'veces premiado';
-            
-            let medallaIcono = '';
-            if (item.rank === 1) medallaIcono = '🥇 ';
-            else if (item.rank === 2) medallaIcono = '🥈 ';
-            else if (item.rank === 3) medallaIcono = '🥉 ';
-            else medallaIcono = `<span style="color: var(--muted); font-size: 0.8rem; margin-right: 4px;">#${item.rank}</span>`;
-            
-            li.innerHTML = '<div class="custom-item-text"><strong>' + medallaIcono + item.user + '</strong></div><span class="item-badge">' + item.total + ' ' + textoVez + '</span>';
-            listEl.appendChild(li);
-        });
-    }
-
-    function renderHoFList(list) {
-        const listEl = document.getElementById('hallOfFameList');
-        const btn = document.getElementById('btnToggleHoF');
-        if(!listEl) return;
-        
-        listEl.innerHTML = '';
-        if (list.length === 0) {
-            listEl.innerHTML = '<li style="text-align: center; color: var(--muted);">Aún no hay datos de juegos pasados.</li>';
-            if(btn) btn.classList.add('hidden');
-            return;
-        }
-        
-        const listWithRank = list.map((item, idx) => ({ ...item, rank: idx + 1 }));
-        
-        let itemsToDisplay = [];
-        const isSearching = hofSearchQuery.length > 0;
-
-        if (isSearching) {
-            itemsToDisplay = listWithRank.filter(item => item.user.toLowerCase().includes(hofSearchQuery));
-            if (btn) btn.classList.add('hidden'); 
-            if (itemsToDisplay.length === 0) {
-                listEl.innerHTML = '<li style="text-align: center; color: var(--muted); padding: 6px;">No se encontró a ningún participante con ese nombre.</li>';
-                return;
-            }
-        } else {
-            itemsToDisplay = isHoFExpanded ? listWithRank : listWithRank.slice(0, 3); 
-            if (btn) {
-                if (list.length > 3) {
-                    btn.classList.remove('hidden');
-                    btn.innerText = isHoFExpanded ? '⬆️ Mostrar solo el Top 3' : '⬇️ Ver todo el Hall of Fame (' + list.length + ')';
-                } else {
-                    btn.classList.add('hidden');
-                }
-            }
-        }
-
-        itemsToDisplay.forEach(function(item) {
-            const li = document.createElement('li');
-            li.className = 'custom-item';
-            
-            const textoJuegos = item.total === 1 ? 'juego' : 'juegos';
-            
-            let iconoOId = '';
-            if (item.rank === 1) iconoOId = '🥇 ';
-            else if (item.rank === 2) iconoOId = '🥈 ';
-            else if (item.rank === 3) iconoOId = '🥉 ';
-            else iconoOId = `<span style="color: var(--muted); font-size: 0.8rem; margin-right: 4px;">#${item.rank}</span>`;
-            
-            li.innerHTML = '<div class="custom-item-text"><strong>' + iconoOId + item.user + '</strong></div><span class="item-badge" style="background: var(--success);">' + item.total + ' ' + textoJuegos + '</span>';
-            listEl.appendChild(li);
-        });
-    }
-
-    function renderHistoryList(list) {
-        const listEl = document.getElementById('historyList');
-        const btn = document.getElementById('btnToggleHistory');
-        if(!listEl) return;
-        
-        listEl.innerHTML = '';
-        if (list.length === 0) {
-            listEl.innerHTML = '<li style="text-align: center; color: var(--muted);">Sin sorteos registrados.</li>';
-            if(btn) btn.classList.add('hidden');
-            return;
-        }
-        const visibleItems = isHistoryExpanded ? list : list.slice(0, 3);
-        visibleItems.forEach(function(item) {
-            const li = document.createElement('li');
-            li.className = 'custom-item';
-            let deleteBtnHtml = '';
-            if (isAdminLoggedIn) {
-                deleteBtnHtml = `<button class="delete-item-btn" onclick="borrarGanadorEspecifico('${item.key}', '${item.user}', '${item.fecha}')">🗑️ Borrar</button>`;
-            }
-            
-            li.innerHTML = '<div class="custom-item-text"><strong>' + item.user + '</strong></div>' +
-                           '<div style="display:flex; align-items:center; gap:6px;"><div style="font-size: 0.75rem; color: var(--muted);">' + item.fecha + '</div>' + deleteBtnHtml + '</div>';
-            listEl.appendChild(li);
-        });
-        if (list.length > 3) {
-            if(btn) {
-                btn.classList.remove('hidden');
-                btn.innerText = isHistoryExpanded ? '⬆️ Mostrar solo los últimos 3 sorteos' : '⬇️ Ver todo el historial (' + list.length + ')';
-            }
-        } else {
-            if(btn) btn.classList.add('hidden');
-        }
-    }
-
-    function toggleWinnersView() { isWinnersExpanded = !isWinnersExpanded; refrescarHistorialAntiSpoiler(); }
-    function toggleHistoryView() { isHistoryExpanded = !isHistoryExpanded; refrescarHistorialAntiSpoiler(); }
-    function toggleHoFView() { isHoFExpanded = !isHoFExpanded; refrescarHistorialAntiSpoiler(); }
 
     // ============================================================
     //  ADMIN - BORRADOS BLINDADOS
@@ -2844,7 +2789,7 @@
     }
 
     // ============================================================
-    //  initRetroTimePicker MODIFICADO: siempre empieza a las 21:00
+    //  initRetroTimePicker - siempre empieza a las 21:00
     // ============================================================
     function initRetroTimePicker() {
         const valueInput = document.getElementById("drawTimeInput");
@@ -2858,7 +2803,7 @@
         const picker = document.getElementById("retroTimePicker");
         if (!valueInput || !display || !displayValue || !panel || !hourWheel || !minuteWheel || !confirmBtn || !picker) return;
 
-        let hour = 21;  // <--- SIEMPRE EMPIEZA A LAS 21
+        let hour = 21;
         let minute = 0;
         let hasSelected = false;
         const pad = n => String(n).padStart(2, "0");
@@ -2890,7 +2835,6 @@
             renderWheel(minuteWheel, 59, minute, n => minute = n);
         }
 
-        // Al abrir, siempre usa 21:00 si no hay valor guardado
         function setFromCurrentTime() {
             const currentVal = valueInput.value;
             const match = /^(\d{2}):(\d{2})$/.exec(currentVal);
@@ -2972,7 +2916,6 @@
             }
         });
 
-        // Mostrar 21:00 por defecto
         displayValue.textContent = "21:00";
         valueInput.value = "";
     }
