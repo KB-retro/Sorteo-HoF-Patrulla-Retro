@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -728,20 +727,6 @@
         .retro-date-confirm:hover{background:#8b5cf6}
         .retro-date-cancel{width:100%;margin-top:7px;padding:9px 12px;border:0;border-radius:10px;background:#475569;color:#fff;font-weight:800;cursor:pointer}
         .retro-date-cancel:hover{background:#334155}
-
-        /* ===== OCULTAR RESULTADOS POR DEFECTO (SOLO ADMIN) ===== */
-        .admin-panel:not(.hidden) ~ #winnersCountCard,
-        .admin-panel:not(.hidden) ~ #hallOfFameCard,
-        .admin-panel:not(.hidden) ~ #historyCard {
-            display: none !important;
-        }
-
-        /* Cuando el admin quiera verlos, se añade esta clase al container */
-        .mostrar-resultados #winnersCountCard,
-        .mostrar-resultados #hallOfFameCard,
-        .mostrar-resultados #historyCard {
-            display: block !important;
-        }
     </style>
 </head>
 <body>
@@ -847,11 +832,6 @@
     <!-- ===== PANEL DE ADMINISTRACIÓN (CON AJUSTES AVANZADOS OCULTOS) ===== -->
     <div id="adminPanel" class="card admin-panel hidden">
         <h2>🛠️ Panel de Control</h2>
-
-        <!-- BOTÓN PARA MOSTRAR/OCULTAR RESULTADOS -->
-        <button class="btn-toggle-results" onclick="toggleResultados()" style="margin-bottom: 15px; background-color: #334155; color: var(--text); width: 100%; padding: 10px; border-radius: 6px; border: none; cursor: pointer; font-weight: bold;">
-            👁️ Mostrar Resultados
-        </button>
 
         <!-- SECCIÓN PRINCIPAL: SORTEO -->
         <div class="admin-section">
@@ -1314,24 +1294,6 @@
         console.error("Error silencioso en anti-spoiler:", e);
     }
 }
-
-    // ============================================================
-    //  ALTERNAR VISIBILIDAD DE RESULTADOS (SOLO ADMIN)
-    // ============================================================
-    function toggleResultados() {
-        const container = document.querySelector('.container');
-        const btn = document.querySelector('.btn-toggle-results');
-        
-        if (!container) return;
-        
-        if (container.classList.contains('mostrar-resultados')) {
-            container.classList.remove('mostrar-resultados');
-            if (btn) btn.innerHTML = '👁️ Mostrar Resultados';
-        } else {
-            container.classList.add('mostrar-resultados');
-            if (btn) btn.innerHTML = '👁️ Ocultar Resultados';
-        }
-    }
 
     // ============================================================
     //  FUNCIONES DE BÚSQUEDA EN LISTAS
@@ -3164,4 +3126,3 @@
 </script>
 </body>
 </html>
-```
