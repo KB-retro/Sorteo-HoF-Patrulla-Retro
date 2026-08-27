@@ -2864,8 +2864,12 @@
 
         let hour = 21;  // <--- SIEMPRE EMPIEZA A LAS 21
         let minute = 0;
-        let hasSelected = false;
+        let hasSelected = true;  // Ya está seleccionado por defecto
         const pad = n => String(n).padStart(2, "0");
+
+        // Inicializamos el input y el display con 21:00
+        valueInput.value = "21:00";
+        displayValue.textContent = "21:00";
 
         function renderWheel(element, max, selectedVal, onSelect) {
             element.innerHTML = "";
@@ -2894,7 +2898,6 @@
             renderWheel(minuteWheel, 59, minute, n => minute = n);
         }
 
-        // Al abrir, siempre usa 21:00 si no hay valor guardado
         function setFromCurrentTime() {
             const currentVal = valueInput.value;
             const match = /^(\d{2}):(\d{2})$/.exec(currentVal);
@@ -2908,9 +2911,19 @@
             hasSelected = true;
         }
 
+        // Al abrir, siempre usa 21:00 si no hay valor guardado
         display.addEventListener("click", event => {
             event.stopPropagation();
-            setFromCurrentTime();
+            // Si no hay valor, aseguramos 21:00
+            if (!valueInput.value || valueInput.value === "") {
+                valueInput.value = "21:00";
+                displayValue.textContent = "21:00";
+                hour = 21;
+                minute = 0;
+                hasSelected = true;
+            } else {
+                setFromCurrentTime();
+            }
             render();
             panel.classList.remove("hidden");
             display.setAttribute("aria-expanded", "true");
@@ -2922,7 +2935,6 @@
             const value = pad(hour) + ":" + pad(minute);
             displayValue.textContent = value;
             valueInput.value = value;
-            valueInput.dataset.userSelected = "true";
             hasSelected = true;
             panel.classList.add("hidden");
             display.setAttribute("aria-expanded", "false");
@@ -2969,16 +2981,17 @@
                     minute = Number(match[2]);
                     hasSelected = true;
                 } else {
-                    hasSelected = false;
+                    // Si no hay valor, forzamos 21:00
+                    valueInput.value = "21:00";
+                    displayValue.textContent = "21:00";
+                    hour = 21;
+                    minute = 0;
+                    hasSelected = true;
                 }
                 panel.classList.add("hidden");
                 display.setAttribute("aria-expanded", "false");
             }
         });
-
-        // Mostrar 21:00 por defecto
-        displayValue.textContent = "21:00";
-        valueInput.value = "";
     }
 
     function initRetroMonthPicker() {
