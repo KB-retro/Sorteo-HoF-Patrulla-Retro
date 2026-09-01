@@ -2090,12 +2090,16 @@
         };
     }
 
-    // Enlace de búsqueda en MobyGames para cada juego.
-    // Usamos la búsqueda de MobyGames en lugar de una URL fija porque un juego
-    // puede tener varias versiones/plataformas y las fichas pueden cambiar.
-    function enlaceMobyGames(titulo, plataformas = "") {
-        const consulta = [titulo, plataformas].filter(Boolean).join(" ");
-        return "https://www.mobygames.com/search/?q=" + encodeURIComponent(consulta) + "&type=game";
+    // Enlace de búsqueda en Games Database.
+    // MUY IMPORTANTE: para buscar usamos SOLO el título.
+    // No añadimos "Arcade" ni la lista de plataformas, porque Telegram
+    // puede traer textos como "Neon Inferno Nintendo Switch, PC STEAM..."
+    // y eso empeora muchísimo los resultados.
+    function enlaceGamesDatabase(titulo) {
+        const consulta = String(titulo || "")
+            .replace(/\s+/g, " ")
+            .trim();
+        return "https://www.gamesdatabase.org/list.aspx?in=1&searchtext=" + encodeURIComponent(consulta);
     }
 
     function mostrarJuegosMesYArcade(data, mes) {
@@ -2119,8 +2123,8 @@
             const div = document.createElement("div");
             div.className = "custom-item";
             div.style.display = "block";
-            const url = enlaceMobyGames(j.titulo, j.plataformas);
-            div.innerHTML = `<div class="custom-item-text"><strong>🎮 <a href="${url}" target="_blank" rel="noopener noreferrer" title="Ver ${escJuegos(j.titulo)} en MobyGames" style="color:inherit;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:2px;">${escJuegos(j.titulo)}</a></strong></div>` +
+            const url = enlaceGamesDatabase(j.titulo);
+            div.innerHTML = `<div class="custom-item-text"><strong>🎮 <a href="${url}" target="_blank" rel="noopener noreferrer" title="Buscar ${escJuegos(j.titulo)} en Games Database" style="color:inherit;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:2px;">${escJuegos(j.titulo)}</a></strong></div>` +
                 (j.plataformas ? `<div style="margin-top:4px;color:var(--muted);font-size:.78rem;">${escJuegos(j.plataformas)}</div>` : "");
             lm.appendChild(div);
         });
@@ -2128,8 +2132,8 @@
         ja.forEach(j => {
             const li = document.createElement("li");
             li.className = "custom-item";
-            const url = enlaceMobyGames(j, "Arcade");
-            li.innerHTML = `<div class="custom-item-text"><strong>🕹️ <a href="${url}" target="_blank" rel="noopener noreferrer" title="Ver ${escJuegos(j)} en MobyGames" style="color:inherit;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:2px;">${escJuegos(j)}</a></strong></div>`;
+            const url = enlaceGamesDatabase(j);
+            li.innerHTML = `<div class="custom-item-text"><strong>🕹️ <a href="${url}" target="_blank" rel="noopener noreferrer" title="Buscar ${escJuegos(j)} en Games Database" style="color:inherit;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:2px;">${escJuegos(j)}</a></strong></div>`;
             la.appendChild(li);
         });
     }
