@@ -935,22 +935,6 @@
 
     const MI_CLOUDFLARE_WORKER = "https://dawn-band-8bc8.microbiops.workers.dev";
     const GOOGLE_SHEETS_CSV_URL = "https://docs.google.com/spreadsheets/d/1JApebwPe9J_fbS_hnQBHHElSlELlWiAjxdvDJQ8yw2E/export?format=csv";
-
-    async function actualizarPreviewTelegram(targetTime) {
-        try {
-            const response = await fetch(`${MI_CLOUDFLARE_WORKER}/actualizar-preview`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ targetTime: Number(targetTime) })
-            });
-
-            if (!response.ok) {
-                const texto = await response.text();
-                throw new Error(`Worker de vista previa: ${response.status} ${texto}`);
-            }
-
             console.log('✅ Vista previa de Telegram actualizada con la fecha y hora del sorteo.');
         } catch (error) {
             console.error('⚠️ El sorteo quedó programado, pero no se pudo actualizar la vista previa de Telegram:', error);
@@ -966,6 +950,7 @@
     
     let cacheJuegosSheets = null;
     let ultimaCargaSheets = 0;
+    let mesSorteoActual = "";
 
     let timerInterval = null;
     let programData = null;
@@ -1423,6 +1408,7 @@
     // ============================================================
     //  JUEGOS DEL PRÓXIMO SORTEO DESDE TELEGRAM
     // ============================================================
+
     function telegramMessageText(messageEl) {
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = messageEl.innerHTML.replace(/<br\s*[\/]?>/gi, "\n");
@@ -1430,10 +1416,6 @@
             .replace(/\u00a0/g, ' ')
             .replace(/\r/g, '')
             .trim();
-    }
-
-    function normalizarLineaTelegram(linea) {
-        return linea.replace(/^[\s•\-*–—]+/, '').replace(/\s+/g, ' ').trim();
     }
 
     function escaparHTML(texto) {
@@ -1445,126 +1427,205 @@
             .replace(/'/g, '&#039;');
     }
 
-    function extraerJuegosArcadeDeMensajes(messages) {
-        const regexJuego = /^\s*-\s*(.*?)\s*\(Seleccionado\s+por\s+@[^)]+\)\s*$/i;
-        for (let i = messages.length - 1; i >= 0; i--) {
-            const texto = telegramMessageText(messages[i]);
-            const lineas = texto.split('\n').map(normalizarLineaTelegram).filter(Boolean);
-            const juegos = [];
+    // Normaliza espacios sin alterar el contenido real de los datos.
+    function limpiarTextoTelegram(texto) {
+        return String(texto || '')
+            .replace(/\u00a0/g, ' ')
+            .replace(/\r/g, '')
+            .replace(/[ \t]+/g, ' ')
+            .trim();
+    }
+
+    // Extrae los juegos mensuales DEL MISMO MENSAJE que contiene
+    // "Los Arcades de este mes son:".
+    //
+    // Formato real:
+    // La primera opción de juego del mes de Septiembre es :
+    //
+    // NEON INFERNO
+    //
+    // Juego disponible en Nintendo Switch, PC STEAM (ARCADECK), ...
+    //
+    // La segunda opción...
+    //
+    // METROID : ZERO MISSION
+    //
+    // Juego disponible en el sistema GameBoy Advance
+    //
+    // Puede haber tercera, cuarta, etc.
+    function extraerJuegosMensualesDelMensaje(texto, mes) {
+        const resultado = [];
+        const textoLimpio = limpiarTextoTelegram(texto);
+
+        // El mensaje debe corresponder al mes seleccionado.
+        const reCabeceraMes = new RegExp(
+            'opci[oó]n\\s+de\\s+juego\\s+del\\s+mes\\s+de\\s+' +
+            String(mes || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&') +
+            '\\s+es',
+            'i'
+        );
+
+        if (!reCabeceraMes.test(textoLimpio)) return resultado;
+
+        // Solo analizamos la zona de juegos mensuales, antes de la sección Arcade.
+        const partes = textoLimpio.split(/los\s+arcades\s+de\s+este\s+mes\s+son\s*:/i);
+        const zonaMensuales = partes[0];
+
+        // Cada opción comienza con "La primera/segunda/tercera... opción..."
+        // y termina justo antes de la siguiente opción.
+        const reOpcion = /la\s+(?:primera|segunda|tercera|cuarta|quinta|sexta|s[eé]ptima|octava|novena|d[eé]cima)\s+opci[oó]n\s+de\s+juego\s+del\s+mes\s+de\s+([A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+)\s+es\s*:([\s\S]*?)(?=la\s+(?:primera|segunda|tercera|cuarta|quinta|sexta|s[eé]ptima|octava|novena|d[eé]cima)\s+opci[oó]n\s+de\s+juego\s+del\s+mes\s+de\s+|$)/gi;
+
+        let match;
+        while ((match = reOpcion.exec(zonaMensuales)) !== null) {
+            const bloque = match[2].trim();
+
+            // El título está normalmente en una línea independiente después
+            // de la cabecera y antes de "Juego disponible".
+            const disponibleIndex = bloque.search(/juego\s+disponible\s+(?:en|en\s+el\s+sistema)\b/i);
+            const zonaTitulo = disponibleIndex >= 0 ? bloque.slice(0, disponibleIndex) : bloque;
+
+            const lineas = zonaTitulo
+                .split('\n')
+                .map(l => limpiarTextoTelegram(l))
+                .filter(Boolean);
+
+            let titulo = '';
+
+            // Preferimos una línea que no sea una frase introductoria.
             for (const linea of lineas) {
-                const match = linea.match(regexJuego);
-                if (match) {
-                    const juego = match[1].trim();
-                    if (juego && !juegos.some(j => j.toLowerCase() === juego.toLowerCase())) juegos.push(juego);
-                }
-            }
-            if (juegos.length) return juegos;
-        }
-        return [];
-    }
+                const limpia = linea
+                    .replace(/^[`"'“”]+|[`"'“”]+$/g, '')
+                    .trim();
 
-    function extraerPlataformasDeTexto(texto) {
-        const conocidas = [
-            'PC', 'Windows', 'Linux', 'Mac', 'Steam', 'Steam Deck',
-            'PS4', 'PS5', 'PlayStation 4', 'PlayStation 5',
-            'Xbox One', 'Xbox Series X|S', 'Xbox Series S', 'Xbox Series X',
-            'Xbox', 'Nintendo Switch 2', 'Switch 2', 'Nintendo Switch', 'Switch',
-            'PS Vita', 'PSP', '3DS', 'DS', 'Wii U', 'Wii', 'GameCube',
-            'Android', 'iOS', 'Arcade'
-        ];
-        const encontradas = [];
-        for (const plataforma of conocidas) {
-            const re = new RegExp('(^|[^\\w])' + plataforma.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '([^\\w]|$)', 'i');
-            if (re.test(texto) && !encontradas.some(x => x.toLowerCase() === plataforma.toLowerCase())) encontradas.push(plataforma);
-        }
-        return encontradas;
-    }
+                if (!limpia) continue;
+                if (/^la\s+(?:primera|segunda|tercera|cuarta|quinta|sexta|s[eé]ptima|octava|novena|d[eé]cima)\s+opci[oó]n/i.test(limpia)) continue;
 
-    function extraerJuegoDelMesDeMensaje(texto) {
-        const lineas = texto.split('\n').map(normalizarLineaTelegram).filter(Boolean);
-        if (!lineas.length) return null;
-
-        const plataformas = extraerPlataformasDeTexto(texto);
-        if (!plataformas.length) return null;
-
-        const marcador = /(juego\s+del\s+mes|juegos?\s+del\s+mes|selecci[oó]n\s+del\s+mes|este\s+mes)/i;
-        let indiceTitulo = -1;
-
-        for (let i = 0; i < lineas.length; i++) {
-            if (marcador.test(lineas[i])) {
-                indiceTitulo = i + 1 < lineas.length ? i + 1 : i;
+                titulo = limpia;
                 break;
             }
-        }
 
-        let titulo = '';
-        if (indiceTitulo >= 0) {
-            titulo = lineas[indiceTitulo]
-                .replace(/^(🎮|🕹️|🕹|⭐|📌)\s*/u, '')
-                .replace(/^(juego\s*:?\s*)/i, '')
-                .trim();
-        }
+            if (!titulo) continue;
 
-        if (!titulo || extraerPlataformasDeTexto(titulo).length) {
-            const candidatos = lineas.filter(l => {
-                const low = l.toLowerCase();
-                if (marcador.test(l)) return false;
-                if (/^(disponible|plataformas?|sistemas?|jugable|sale|lanzamiento|fecha|mes)\b/i.test(l)) return false;
-                return l.length >= 2 && l.length <= 100;
+            // Extraemos ÚNICAMENTE la frase real "Juego disponible..."
+            // y conservamos exactamente las plataformas que aparecen allí.
+            let plataformasTexto = '';
+            const disponibleMatch = bloque.match(
+                /juego\s+disponible\s+(?:en|en\s+el\s+sistema)\s+([\s\S]*?)(?=\n\s*duraci[oó]n\s+del\s+juego\b|$)/i
+            );
+
+            if (disponibleMatch) {
+                plataformasTexto = limpiarTextoTelegram(disponibleMatch[1])
+                    .replace(/\s+/g, ' ')
+                    .replace(/[.\s]+$/g, '')
+                    .trim();
+            }
+
+            resultado.push({
+                titulo: titulo,
+                plataformas: plataformasTexto
             });
-            titulo = candidatos.length ? candidatos[0] : '';
         }
 
-        if (!titulo) return null;
-
-        // Quitamos etiquetas decorativas y posibles prefijos de formato.
-        titulo = titulo.replace(/^[-•*]+\s*/, '').trim();
-        return { titulo, plataformas };
+        // Elimina duplicados manteniendo el orden original.
+        return resultado.filter((item, index, arr) =>
+            arr.findIndex(x => x.titulo.toLowerCase() === item.titulo.toLowerCase()) === index
+        );
     }
 
-    function extraerJuegosDelMesDeMensajes(messages) {
-        const resultados = [];
+    // Busca la ÚLTIMA publicación que contenga la sección Arcade y,
+    // al mismo tiempo, la referencia al mes seleccionado.
+    function extraerJuegosArcadeDelMensaje(texto, mes) {
+        const textoLimpio = limpiarTextoTelegram(texto);
 
-        // Buscamos desde el final hacia atrás. Cada mensaje es independiente.
-        // Nos quedamos con el bloque más reciente de mensajes que parezcan
-        // claramente "juego del mes" y que tengan plataformas.
-        for (let i = messages.length - 1; i >= 0; i--) {
-            const texto = telegramMessageText(messages[i]);
-            const juego = extraerJuegoDelMesDeMensaje(texto);
+        const reCabecera = new RegExp(
+            'los\\s+arcades\\s+de\\s+este\\s+mes\\s+son\\s*:',
+            'i'
+        );
+
+        if (!reCabecera.test(textoLimpio)) return [];
+
+        // Si la publicación identifica explícitamente el mes, exigimos que
+        // coincida con el mes seleccionado. Si no lo identifica en esa frase,
+        // la sección sigue siendo válida porque el mensaje ya es la fuente
+        // conjunta de mensuales + Arcade.
+        const antesArcade = textoLimpio.split(reCabecera)[0];
+        const despuesArcade = textoLimpio.split(reCabecera)[1] || '';
+
+        const tieneMes = new RegExp(
+            'juego\\s+del\\s+mes\\s+de\\s+' +
+            String(mes || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
+            'i'
+        ).test(antesArcade);
+
+        if (mes && !tieneMes) return [];
+
+        const juegos = [];
+        const regexJuego = /^\s*-\s*(.*?)\s*\(\s*Seleccionado\s+por\s+@[^)]+\)\s*$/i;
+
+        for (const lineaRaw of despuesArcade.split('\n')) {
+            const linea = limpiarTextoTelegram(lineaRaw);
+            const match = linea.match(regexJuego);
+            if (!match) continue;
+
+            const juego = match[1].trim();
             if (!juego) continue;
 
-            const esMarcadoComoJuegoDelMes = /(juego\s+del\s+mes|juegos?\s+del\s+mes|selecci[oó]n\s+del\s+mes)/i.test(texto);
-            if (!esMarcadoComoJuegoDelMes) continue;
-
-            if (!resultados.some(x => x.titulo.toLowerCase() === juego.titulo.toLowerCase())) resultados.unshift(juego);
-
-            // Un mensaje que no sea de juego del mes marca el final del bloque.
-            if (resultados.length > 0 && resultados.length >= 4) break;
+            if (!juegos.some(j => j.toLowerCase() === juego.toLowerCase())) {
+                juegos.push(juego);
+            }
         }
 
-        // Si hay mensajes de juego del mes consecutivos, puede haber 1, 2, 3 o 4+.
-        return resultados.reverse();
+        return juegos;
     }
 
-    async function obtenerDatosJuegosProximoSorteo() {
+    // Como los juegos mensuales y los Arcade se publican juntos,
+    // buscamos UNA ÚNICA publicación que contenga ambos bloques.
+    // Esto evita mezclar un mes con otro.
+    function encontrarBloqueJuegosDelMes(messages, mes) {
+        for (let i = messages.length - 1; i >= 0; i--) {
+            const texto = telegramMessageText(messages[i]);
+
+            if (!/los\s+arcades\s+de\s+este\s+mes\s+son\s*:/i.test(texto)) continue;
+
+            const juegosMes = extraerJuegosMensualesDelMensaje(texto, mes);
+            const juegosArcade = extraerJuegosArcadeDelMensaje(texto, mes);
+
+            if (juegosMes.length > 0 || juegosArcade.length > 0) {
+                return {
+                    juegosMes,
+                    juegosArcade
+                };
+            }
+        }
+
+        return {
+            juegosMes: [],
+            juegosArcade: []
+        };
+    }
+
+    async function obtenerDatosJuegosProximoSorteo(mes) {
         const timestamp = Date.now();
         const targetUrl = `https://t.me/s/retrojuegodelmes?before=${timestamp}`;
         const workerUrl = `${MI_CLOUDFLARE_WORKER}?url=${encodeURIComponent(targetUrl)}&nocache=${timestamp}`;
+
         const response = await fetch(workerUrl, { cache: 'no-store' });
         if (!response.ok) throw new Error(`Error Cloudflare: ${response.status}`);
 
         const htmlContent = await response.text();
-        if (!htmlContent || !htmlContent.includes('tgme_widget_message_text')) throw new Error('Telegram no devolvió mensajes.');
+        if (!htmlContent || !htmlContent.includes('tgme_widget_message_text')) {
+            throw new Error('Telegram no devolvió mensajes.');
+        }
 
         const parser = new DOMParser();
         const doc = parser.parseFromString(htmlContent, 'text/html');
         const messages = Array.from(doc.querySelectorAll('.tgme_widget_message_text'));
-        if (!messages.length) throw new Error('No se encontraron mensajes de Telegram.');
 
-        return {
-            juegosMes: extraerJuegosDelMesDeMensajes(messages),
-            juegosArcade: extraerJuegosArcadeDeMensajes(messages)
-        };
+        if (!messages.length) {
+            throw new Error('No se encontraron mensajes de Telegram.');
+        }
+
+        return encontrarBloqueJuegosDelMes(messages, mes);
     }
 
     function mostrarDatosJuegosProximoSorteo(data, mes) {
@@ -1572,6 +1633,7 @@
         const monthStatus = document.getElementById('monthGamesStatus');
         const arcadeList = document.getElementById('nextGamesList');
         const arcadeStatus = document.getElementById('nextGamesStatus');
+
         if (!monthList || !arcadeList) return;
 
         monthList.innerHTML = '';
@@ -1581,31 +1643,43 @@
         const juegosArcade = Array.isArray(data?.juegosArcade) ? data.juegosArcade : [];
 
         if (monthStatus) {
-            if (!juegosMes.length) {
-                monthStatus.textContent = `Aún no se han encontrado los juegos del mes de ${mes || 'este mes'}.`;
-                monthStatus.style.display = 'block';
-            } else {
-                monthStatus.textContent = '';
-                monthStatus.style.display = 'none';
-            }
+            monthStatus.style.display = juegosMes.length ? 'none' : 'block';
+            monthStatus.textContent = juegosMes.length
+                ? ''
+                : `Aún no se han encontrado los juegos del mes de ${mes || 'este mes'} en la publicación correspondiente.`;
         }
 
         juegosMes.forEach(juego => {
             const item = document.createElement('div');
             item.className = 'custom-item';
             item.style.display = 'block';
-            item.innerHTML = `<div class="custom-item-text"><strong>🎮 ${escaparHTML(juego.titulo)}</strong></div>` +
-                `<div style="font-size:.78rem;color:var(--muted);margin-top:4px;">Disponible en: ${juego.plataformas.map(escaparHTML).join(' · ')}</div>`;
+
+            let htmlPlataformas = '';
+            if (juego.plataformas) {
+                htmlPlataformas =
+                    `<div style="font-size:.78rem;color:var(--muted);margin-top:4px;">` +
+                    `${escaparHTML(juego.plataformas)}` +
+                    `</div>`;
+            }
+
+            item.innerHTML =
+                `<div class="custom-item-text"><strong>🎮 ${escaparHTML(juego.titulo)}</strong></div>` +
+                htmlPlataformas;
+
             monthList.appendChild(item);
         });
 
         if (arcadeStatus) {
-            arcadeStatus.textContent = juegosArcade.length ? '' : `Aún no se ha encontrado la última lista de juegos Arcade.`;
+            arcadeStatus.textContent = juegosArcade.length
+                ? ''
+                : `Aún no se ha encontrado la lista Arcade de ${mes || 'este mes'}.`;
         }
+
         juegosArcade.forEach(juego => {
             const li = document.createElement('li');
             li.className = 'custom-item';
-            li.innerHTML = `<div class="custom-item-text"><strong>🕹️ ${escaparHTML(juego)}</strong></div>`;
+            li.innerHTML =
+                `<div class="custom-item-text"><strong>🕹️ ${escaparHTML(juego)}</strong></div>`;
             arcadeList.appendChild(li);
         });
     }
@@ -1613,23 +1687,33 @@
     async function cargarJuegosProximoSorteo(mes) {
         const status = document.getElementById('nextGamesStatus');
         const monthStatus = document.getElementById('monthGamesStatus');
-        if (status) status.textContent = '⏳ Buscando la última lista Arcade en Telegram...';
+
+        if (status) status.textContent = '⏳ Buscando los juegos Arcade de este mes en Telegram...';
         if (monthStatus) monthStatus.textContent = '⏳ Buscando los juegos del mes en Telegram...';
 
         try {
-            const datos = await obtenerDatosJuegosProximoSorteo();
+            const datos = await obtenerDatosJuegosProximoSorteo(mes);
+
             await db.ref('juegos_proximo_sorteo').set({
                 mes: mes,
                 juegosMes: datos.juegosMes,
                 juegosArcade: datos.juegosArcade,
                 timestamp: Date.now()
             });
+
             mostrarDatosJuegosProximoSorteo(datos, mes);
             return datos;
         } catch (error) {
             console.error('Error obteniendo juegos del próximo sorteo:', error);
-            if (status) status.textContent = '⚠️ No se pudieron obtener los juegos Arcade desde Telegram.';
-            if (monthStatus) monthStatus.textContent = '⚠️ No se pudieron obtener los juegos del mes desde Telegram.';
+
+            if (status) {
+                status.textContent = '⚠️ No se pudo cargar la lista Arcade desde Telegram.';
+            }
+
+            if (monthStatus) {
+                monthStatus.textContent = '⚠️ No se pudieron cargar los juegos del mes desde Telegram.';
+            }
+
             throw error;
         }
     }
@@ -1637,16 +1721,19 @@
     db.ref('juegos_proximo_sorteo').on('value', function(snapshot) {
         const data = snapshot.val();
         if (!data) return;
+
         if (mesSorteoActual && data.mes && data.mes !== mesSorteoActual) return;
+
         mostrarDatosJuegosProximoSorteo({
             juegosMes: data.juegosMes || [],
-            juegosArcade: data.juegosArcade || data.juegos || []
+            juegosArcade: data.juegosArcade || []
         }, data.mes || mesSorteoActual);
     });
 
     // ===== MES DEL SORTEO =====
     db.ref('mes_sorteo').on('value', function(snapshot) {
         const mes = snapshot.val();
+        mesSorteoActual = mes || '';
         const titleEl = document.getElementById('mainTitle');
         if (mes) {
             titleEl.innerText = "🏆 Sorteo HoF Patrulla Retro de " + mes;
@@ -2243,8 +2330,7 @@
             targetTime: targetTime,
             rawLines: rawLines,
             rawBlacklist: rawBlacklist
-        }).then(async () => {
-            await actualizarPreviewTelegram(targetTime);
+        }).then(() => {
             alert("¡Sorteo programado con éxito!");
         }).catch(error => {
             console.error("Error programando el sorteo:", error);
