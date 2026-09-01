@@ -1933,15 +1933,15 @@
         return String(s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");
     }
 
-    function extraerMensual(texto, mes) {
-        const cab = new RegExp(
-            "la\\s+(?:primera|segunda|tercera|cuarta|quinta|sexta|séptima|septima|octava|novena|décima|decima)\\s+opción\\s+de\\s+juego\\s+del\\s+mes\\s+de\\s+" +
-            String(mes).replace(/[.*+?^${}()|[\]\\]/g,"\\$&") + "\\s+es\\s*:",
-            "i"
-        );
+    // ===== MODIFICACIÓN: extraerMensual ya no depende del mes =====
+    function extraerMensual(texto) {
+        // Busca el patrón: "la [número] opción de juego del mes de [cualquier texto] :"
+        const cab = /la\s+(?:primera|segunda|tercera|cuarta|quinta|sexta|séptima|septima|octava|novena|décima|decima)\s+opción\s+de\s+juego\s+del\s+mes\s+de\s+[A-Za-zÁÉÍÓÚáéíóúñÑ]+\s*:/i;
         if (!cab.test(texto)) return null;
 
+        // Extraer el bloque después de la cabecera
         const bloque = texto.split(cab)[1] || "";
+        // Buscar hasta "juego disponible" (opcional)
         const p = bloque.search(/juego\s+disponible\b/i);
         const antes = p >= 0 ? bloque.slice(0,p) : bloque;
 
@@ -1949,6 +1949,7 @@
         for (const l0 of antes.split("\n")) {
             const l = l0.trim().replace(/^[`"'“”]+|[`"'“”]+$/g,"").trim();
             if (!l) continue;
+            // Saltar líneas que empiecen con "la primera opción", etc.
             if (/^(?:la\s+)?(?:primera|segunda|tercera|cuarta|quinta|sexta|séptima|septima|octava|novena|décima|decima)\s+opción/i.test(l)) continue;
             titulo = l;
             break;
@@ -1978,7 +1979,7 @@
         return out;
     }
 
-    async function obtenerJuegosMesYArcade(mes) {
+    async function obtenerJuegosMesYArcade() {
         const t = Date.now();
         const target = `https://t.me/s/retrojuegodelmes?v=${t}`;
         const worker = `${MI_CLOUDFLARE_WORKER}?url=${encodeURIComponent(target)}&nocache=${t}`;
@@ -1995,7 +1996,7 @@
 
         mensajes.forEach((el,i) => {
             const texto = textoTelegram(el);
-            const juego = extraerMensual(texto,mes);
+            const juego = extraerMensual(texto); // ya no pasamos mes
             if (juego) {
                 mensuales.push(juego);
                 ultimaOpcion = i;
@@ -2003,7 +2004,6 @@
         });
 
         let arcades = [];
-        // Los Arcades se publican después de las opciones del mes.
         if (ultimaOpcion >= 0) {
             for (let i=ultimaOpcion+1;i<mensajes.length;i++) {
                 const texto = textoTelegram(mensajes[i]);
@@ -2063,7 +2063,7 @@
         if (ea) ea.textContent = "⏳ Buscando los juegos Arcade en Telegram...";
 
         try {
-            const datos = await obtenerJuegosMesYArcade(mes);
+            const datos = await obtenerJuegosMesYArcade();
             await db.ref("juegos_proximo_sorteo").set({
                 mes: mes,
                 juegosMes: datos.juegosMes,
