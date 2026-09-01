@@ -34,7 +34,6 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
     <style>
-        /* ===== CSS COMPLETO ===== */
         :root {
             --card: rgba(30, 41, 59, 0.92);
             --accent: #6366f1;
@@ -935,11 +934,6 @@
 
     const MI_CLOUDFLARE_WORKER = "https://dawn-band-8bc8.microbiops.workers.dev";
     const GOOGLE_SHEETS_CSV_URL = "https://docs.google.com/spreadsheets/d/1JApebwPe9J_fbS_hnQBHHElSlELlWiAjxdvDJQ8yw2E/export?format=csv";
-            console.log('✅ Vista previa de Telegram actualizada con la fecha y hora del sorteo.');
-        } catch (error) {
-            console.error('⚠️ El sorteo quedó programado, pero no se pudo actualizar la vista previa de Telegram:', error);
-        }
-    }
 
     let actualGanadorUser = "";
     let isWinnersExpanded = false;
@@ -1406,181 +1400,80 @@
     }
 
     // ============================================================
-    //  JUEGOS DEL PRÓXIMO SORTEO DESDE TELEGRAM
+    //  NUEVAS FUNCIONES DE EXTRACCIÓN DE JUEGOS DEL MES Y ARCADES
+    //  Basadas exactamente en el formato real del mensaje de Telegram
     // ============================================================
 
-    function telegramMessageText(messageEl) {
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = messageEl.innerHTML.replace(/<br\s*[\/]?>/gi, "\n");
-        return (tempDiv.textContent || tempDiv.innerText || '')
-            .replace(/\u00a0/g, ' ')
-            .replace(/\r/g, '')
-            .trim();
-    }
-
-    function escaparHTML(texto) {
-        return String(texto)
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#039;');
-    }
-
-    // Normaliza espacios sin alterar el contenido real de los datos.
-    function limpiarTextoTelegram(texto) {
-        return String(texto || '')
-            .replace(/\u00a0/g, ' ')
-            .replace(/\r/g, '')
-            .replace(/[ \t]+/g, ' ')
-            .trim();
-    }
-
-    // Extrae los juegos mensuales DEL MISMO MENSAJE que contiene
-    // "Los Arcades de este mes son:".
-    //
-    // Formato real:
-    // La primera opción de juego del mes de Septiembre es :
-    //
-    // NEON INFERNO
-    //
-    // Juego disponible en Nintendo Switch, PC STEAM (ARCADECK), ...
-    //
-    // La segunda opción...
-    //
-    // METROID : ZERO MISSION
-    //
-    // Juego disponible en el sistema GameBoy Advance
-    //
-    // Puede haber tercera, cuarta, etc.
     function extraerJuegosMensualesDelMensaje(texto, mes) {
-        const resultado = [];
-        const textoLimpio = limpiarTextoTelegram(texto);
-
-        // El mensaje debe corresponder al mes seleccionado.
-        const reCabeceraMes = new RegExp(
-            'opci[oó]n\\s+de\\s+juego\\s+del\\s+mes\\s+de\\s+' +
-            String(mes || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&') +
-            '\\s+es',
-            'i'
-        );
-
-        if (!reCabeceraMes.test(textoLimpio)) return resultado;
-
-        // Solo analizamos la zona de juegos mensuales, antes de la sección Arcade.
-        const partes = textoLimpio.split(/los\s+arcades\s+de\s+este\s+mes\s+son\s*:/i);
+        // Normalizar texto
+        const textoNormalizado = texto.replace(/\u00a0/g, ' ').replace(/\r/g, '').replace(/[ \t]+/g, ' ').trim();
+        // Dividir en secciones: antes y después de "Los Arcades de este mes son:"
+        const partes = textoNormalizado.split(/los\s+arcades\s+de\s+este\s+mes\s+son\s*:/i);
         const zonaMensuales = partes[0];
 
-        // Cada opción comienza con "La primera/segunda/tercera... opción..."
-        // y termina justo antes de la siguiente opción.
-        const reOpcion = /la\s+(?:primera|segunda|tercera|cuarta|quinta|sexta|s[eé]ptima|octava|novena|d[eé]cima)\s+opci[oó]n\s+de\s+juego\s+del\s+mes\s+de\s+([A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+)\s+es\s*:([\s\S]*?)(?=la\s+(?:primera|segunda|tercera|cuarta|quinta|sexta|s[eé]ptima|octava|novena|d[eé]cima)\s+opci[oó]n\s+de\s+juego\s+del\s+mes\s+de\s+|$)/gi;
-
+        // Buscar todas las opciones: "La primera opción de juego del mes de Septiembre es :"
+        // Usar una expresión regular para capturar cada opción.
+        const regexOpcion = /la\s+(primera|segunda|tercera|cuarta|quinta|sexta|s[eé]ptima|octava|novena|d[eé]cima)\s+opci[oó]n\s+de\s+juego\s+del\s+mes\s+de\s+([A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+)\s+es\s*:([\s\S]*?)(?=la\s+(primera|segunda|tercera|cuarta|quinta|sexta|s[eé]ptima|octava|novena|d[eé]cima)\s+opci[oó]n\s+de\s+juego\s+del\s+mes\s+de\s+|$)/gi;
         let match;
-        while ((match = reOpcion.exec(zonaMensuales)) !== null) {
-            const bloque = match[2].trim();
-
-            // El título está normalmente en una línea independiente después
-            // de la cabecera y antes de "Juego disponible".
-            const disponibleIndex = bloque.search(/juego\s+disponible\s+(?:en|en\s+el\s+sistema)\b/i);
-            const zonaTitulo = disponibleIndex >= 0 ? bloque.slice(0, disponibleIndex) : bloque;
-
-            const lineas = zonaTitulo
-                .split('\n')
-                .map(l => limpiarTextoTelegram(l))
-                .filter(Boolean);
-
+        let juegos = [];
+        while ((match = regexOpcion.exec(zonaMensuales)) !== null) {
+            const mesOpcion = match[2].trim();
+            // Verificar que el mes coincide (ignorar mayúsculas/minúsculas)
+            if (mes && mesOpcion.toLowerCase() !== mes.toLowerCase()) continue;
+            let bloque = match[3].trim();
+            // Extraer título y plataformas
+            // El título suele estar en la primera línea no vacía después de ":"
+            const lineas = bloque.split('\n').map(l => l.trim()).filter(l => l.length > 0);
             let titulo = '';
-
-            // Preferimos una línea que no sea una frase introductoria.
-            for (const linea of lineas) {
-                const limpia = linea
-                    .replace(/^[`"'“”]+|[`"'“”]+$/g, '')
-                    .trim();
-
-                if (!limpia) continue;
-                if (/^la\s+(?:primera|segunda|tercera|cuarta|quinta|sexta|s[eé]ptima|octava|novena|d[eé]cima)\s+opci[oó]n/i.test(limpia)) continue;
-
-                titulo = limpia;
-                break;
+            let plataformas = '';
+            // Buscar la línea que contenga "Juego disponible"
+            let idxDisponible = lineas.findIndex(l => /juego\s+disponible/i.test(l));
+            if (idxDisponible !== -1) {
+                // El título es la línea anterior a la disponible, si existe, o la primera línea si no
+                if (idxDisponible > 0) {
+                    titulo = lineas[idxDisponible - 1];
+                } else {
+                    titulo = lineas[0];
+                }
+                // Extraer plataformas de la línea disponible
+                const matchDisponible = lineas[idxDisponible].match(/juego\s+disponible\s+(?:en|en\s+el\s+sistema)\s+([\s\S]*?)(?=\s*duraci[oó]n\s+del\s+juego\b|$)/i);
+                if (matchDisponible) {
+                    plataformas = matchDisponible[1].trim();
+                }
+            } else {
+                // Si no hay "Juego disponible", el título es la primera línea
+                titulo = lineas[0] || '';
             }
-
-            if (!titulo) continue;
-
-            // Extraemos ÚNICAMENTE la frase real "Juego disponible..."
-            // y conservamos exactamente las plataformas que aparecen allí.
-            let plataformasTexto = '';
-            const disponibleMatch = bloque.match(
-                /juego\s+disponible\s+(?:en|en\s+el\s+sistema)\s+([\s\S]*?)(?=\n\s*duraci[oó]n\s+del\s+juego\b|$)/i
-            );
-
-            if (disponibleMatch) {
-                plataformasTexto = limpiarTextoTelegram(disponibleMatch[1])
-                    .replace(/\s+/g, ' ')
-                    .replace(/[.\s]+$/g, '')
-                    .trim();
-            }
-
-            resultado.push({
-                titulo: titulo,
-                plataformas: plataformasTexto
-            });
-        }
-
-        // Elimina duplicados manteniendo el orden original.
-        return resultado.filter((item, index, arr) =>
-            arr.findIndex(x => x.titulo.toLowerCase() === item.titulo.toLowerCase()) === index
-        );
-    }
-
-    // Busca la ÚLTIMA publicación que contenga la sección Arcade y,
-    // al mismo tiempo, la referencia al mes seleccionado.
-    function extraerJuegosArcadeDelMensaje(texto, mes) {
-        const textoLimpio = limpiarTextoTelegram(texto);
-
-        const reCabecera = new RegExp(
-            'los\\s+arcades\\s+de\\s+este\\s+mes\\s+son\\s*:',
-            'i'
-        );
-
-        if (!reCabecera.test(textoLimpio)) return [];
-
-        // Si la publicación identifica explícitamente el mes, exigimos que
-        // coincida con el mes seleccionado. Si no lo identifica en esa frase,
-        // la sección sigue siendo válida porque el mensaje ya es la fuente
-        // conjunta de mensuales + Arcade.
-        const antesArcade = textoLimpio.split(reCabecera)[0];
-        const despuesArcade = textoLimpio.split(reCabecera)[1] || '';
-
-        const tieneMes = new RegExp(
-            'juego\\s+del\\s+mes\\s+de\\s+' +
-            String(mes || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
-            'i'
-        ).test(antesArcade);
-
-        if (mes && !tieneMes) return [];
-
-        const juegos = [];
-        const regexJuego = /^\s*-\s*(.*?)\s*\(\s*Seleccionado\s+por\s+@[^)]+\)\s*$/i;
-
-        for (const lineaRaw of despuesArcade.split('\n')) {
-            const linea = limpiarTextoTelegram(lineaRaw);
-            const match = linea.match(regexJuego);
-            if (!match) continue;
-
-            const juego = match[1].trim();
-            if (!juego) continue;
-
-            if (!juegos.some(j => j.toLowerCase() === juego.toLowerCase())) {
-                juegos.push(juego);
+            // Limpiar título: eliminar posibles comillas o espacios
+            titulo = titulo.replace(/^[`"'“”]+|[`"'“”]+$/g, '').trim();
+            if (titulo) {
+                juegos.push({ titulo, plataformas });
             }
         }
-
         return juegos;
     }
 
-    // Como los juegos mensuales y los Arcade se publican juntos,
-    // buscamos UNA ÚNICA publicación que contenga ambos bloques.
-    // Esto evita mezclar un mes con otro.
+    function extraerJuegosArcadeDelMensaje(texto, mes) {
+        const textoNormalizado = texto.replace(/\u00a0/g, ' ').replace(/\r/g, '').replace(/[ \t]+/g, ' ').trim();
+        const partes = textoNormalizado.split(/los\s+arcades\s+de\s+este\s+mes\s+son\s*:/i);
+        if (partes.length < 2) return [];
+        const despuesArcade = partes[1];
+        const lineas = despuesArcade.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+        const juegos = [];
+        // Buscar líneas que comiencen con "-" opcionalmente con espacios y contengan "(Seleccionado por @...)"
+        const regexJuego = /^-\s*(.*?)\s*\(\s*Seleccionado\s+por\s+@[^)]+\)\s*$/i;
+        for (const linea of lineas) {
+            const match = linea.match(regexJuego);
+            if (match) {
+                const juego = match[1].trim();
+                if (juego && !juegos.some(j => j.toLowerCase() === juego.toLowerCase())) {
+                    juegos.push(juego);
+                }
+            }
+        }
+        return juegos;
+    }
+
     function encontrarBloqueJuegosDelMes(messages, mes) {
         for (let i = messages.length - 1; i >= 0; i--) {
             const texto = telegramMessageText(messages[i]);
@@ -1602,6 +1495,24 @@
             juegosMes: [],
             juegosArcade: []
         };
+    }
+
+    function telegramMessageText(messageEl) {
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = messageEl.innerHTML.replace(/<br\s*[\/]?>/gi, "\n");
+        return (tempDiv.textContent || tempDiv.innerText || '')
+            .replace(/\u00a0/g, ' ')
+            .replace(/\r/g, '')
+            .trim();
+    }
+
+    function escaparHTML(texto) {
+        return String(texto)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
     }
 
     async function obtenerDatosJuegosProximoSorteo(mes) {
@@ -1750,8 +1661,7 @@
 
         try {
             await db.ref('mes_sorteo').set(mes);
-            // Al cambiar el mes, solo actualizamos la información del próximo sorteo.
-            // No tocamos participantes, sorteo_actual ni Hall of Fame.
+            // Al cambiar el mes, cargamos los juegos del mes y Arcade
             await cargarJuegosProximoSorteo(mes);
             alert("¡Mes actualizado con éxito y juegos del mes/Arcade cargados!");
         } catch (error) {
@@ -2108,9 +2018,6 @@
             resultadoData.revealAt = Date.now() + SLOT_REVEAL_MS;
         }
 
-        // Guardamos primero el resultado del sorteo. Una vez confirmado en Firebase,
-        // hacemos automáticamente una copia completa en GitHub mediante el mismo Worker
-        // de Cloudflare que ya utilizas para Telegram.
         db.ref('historial_ganadores').push(nuevoGanador)
             .then(function() {
                 return db.ref('sorteo_actual').set(resultadoData);
@@ -2123,7 +2030,6 @@
             });
     }
 
-    // ===== BACKUP AUTOMÁTICO EN GITHUB =====
     async function enviarBackupGitHubAutomatico() {
         try {
             const results = await Promise.all([
@@ -2291,9 +2197,6 @@
         const rawLines = document.getElementById('listInput').value.trim();
         const rawBlacklist = document.getElementById('blacklistInput').value.trim();
 
-        console.log("Fecha seleccionada:", dateVal);
-        console.log("Hora seleccionada:", timeVal);
-
         if (!rawLines) return alert("Pega o importa la lista de participantes.");
 
         // Si NO hay hora seleccionada (cadena vacía o "--:--") → SORTEO INMEDIATO
@@ -2413,7 +2316,6 @@
         };
 
         cancelBtn.onclick = () => {
-            // CORREGIDO: Vuelve a limpiar completamente a --/--/----
             input.value = "";
             text.textContent = "--/--/----";
             selected = null;
@@ -2422,7 +2324,6 @@
 
         document.addEventListener("click", e => {
             if (!picker.contains(e.target) && !panel.classList.contains("hidden")) {
-                // CORREGIDO: Al hacer clic fuera, si hay una fecha seleccionada, se guarda automáticamente como la hora
                 if (selected) {
                     const val = iso(selected);
                     input.value = val;
@@ -2522,7 +2423,6 @@
         });
 
         cancelBtn.addEventListener("click", () => {
-            // CORREGIDO: Limpia completamente el campo de hora volviendo a --:--
             valueInput.value = "";
             displayValue.textContent = "--:--";
             hasSelected = false;
@@ -2565,6 +2465,5 @@
         valueInput.value = "";
     }
 </script>
-
 </body>
 </html>
