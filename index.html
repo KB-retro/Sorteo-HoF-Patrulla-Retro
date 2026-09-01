@@ -771,6 +771,14 @@
     <div id="waitingCard" class="card hidden" style="text-align: center;">
         <h2>⏳ El sorteo aún no se ha realizado</h2>
         <p style="color: var(--muted); font-size: 0.85rem;">El administrador realizará o programará la tirada en breve. Esta página se actualizará automáticamente.</p>
+        <div id="juegosProximoSorteo" class="arcade-box hidden" style="margin-top:15px;text-align:left;">
+            <div class="arcade-title">🎮 Los juegos del mes</div>
+            <div id="juegosMesLista" class="custom-list"></div>
+            <div id="juegosMesEstado" style="text-align:center;color:var(--muted);font-size:.8rem;margin-top:8px;"></div>
+            <div class="arcade-title" style="margin-top:15px;">🕹️ Los juegos Arcade de este mes son:</div>
+            <ul id="juegosArcadeLista" class="custom-list"></ul>
+            <div id="juegosArcadeEstado" style="text-align:center;color:var(--muted);font-size:.8rem;margin-top:8px;"></div>
+        </div>
     </div>
 
     <div class="card" style="position: relative; z-index: 50;">
@@ -1908,11 +1916,183 @@
         }
     }
 
+
+    // ============================================================
+    //  JUEGOS DEL MES Y ARCADES DEL PRÓXIMO SORTEO
+    // ============================================================
+
+    let mesSorteoActivo = "";
+
+    function textoTelegram(el) {
+        const d = document.createElement("div");
+        d.innerHTML = (el.innerHTML || "").replace(/<br\s*[\/]?>/gi, "\n");
+        return (d.textContent || d.innerText || "").replace(/\u00a0/g, " ").replace(/\r/g, "").trim();
+    }
+
+    function escJuegos(s) {
+        return String(s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");
+    }
+
+    function extraerMensual(texto, mes) {
+        const cab = new RegExp(
+            "la\\s+(?:primera|segunda|tercera|cuarta|quinta|sexta|séptima|septima|octava|novena|décima|decima)\\s+opción\\s+de\\s+juego\\s+del\\s+mes\\s+de\\s+" +
+            String(mes).replace(/[.*+?^${}()|[\]\\]/g,"\\$&") + "\\s+es\\s*:",
+            "i"
+        );
+        if (!cab.test(texto)) return null;
+
+        const bloque = texto.split(cab)[1] || "";
+        const p = bloque.search(/juego\s+disponible\b/i);
+        const antes = p >= 0 ? bloque.slice(0,p) : bloque;
+
+        let titulo = "";
+        for (const l0 of antes.split("\n")) {
+            const l = l0.trim().replace(/^[`"'“”]+|[`"'“”]+$/g,"").trim();
+            if (!l) continue;
+            if (/^(?:la\s+)?(?:primera|segunda|tercera|cuarta|quinta|sexta|séptima|septima|octava|novena|décima|decima)\s+opción/i.test(l)) continue;
+            titulo = l;
+            break;
+        }
+        if (!titulo) return null;
+
+        let plataformas = "";
+        const m = bloque.match(/juego\s+disponible\s+(?:en|en\s+el\s+sistema)\s+([\s\S]*?)(?=\n\s*duración\s+del\s+juego\b|\n\s*duracion\s+del\s+juego\b|$)/i);
+        if (m) plataformas = m[1].replace(/[ \t]+/g," ").replace(/[.\s]+$/,"").trim();
+
+        return {titulo, plataformas};
+    }
+
+    function extraerArcade(texto) {
+        const cab = /los\s+arcades\s+de\s+este\s+mes\s+son\s*:/i;
+        if (!cab.test(texto)) return [];
+        const zona = texto.split(cab)[1] || "";
+        const out = [];
+        for (const l0 of zona.split("\n")) {
+            const l = l0.trim().replace(/^\\-/,"-");
+            const m = l.match(/^-\s*(.*?)\s*\(\s*Seleccionado\s+por\s+@[^)]+\)\s*$/i);
+            if (m) {
+                const juego = m[1].trim();
+                if (juego && !out.some(x => x.toLowerCase() === juego.toLowerCase())) out.push(juego);
+            }
+        }
+        return out;
+    }
+
+    async function obtenerJuegosMesYArcade(mes) {
+        const t = Date.now();
+        const target = `https://t.me/s/retrojuegodelmes?v=${t}`;
+        const worker = `${MI_CLOUDFLARE_WORKER}?url=${encodeURIComponent(target)}&nocache=${t}`;
+        const r = await fetch(worker, {cache:"no-store"});
+        if (!r.ok) throw new Error("Error Cloudflare: " + r.status);
+
+        const contenido = await r.text();
+        const doc = new DOMParser().parseFromString(contenido,"text/html");
+        const mensajes = Array.from(doc.querySelectorAll(".tgme_widget_message_text"));
+        if (!mensajes.length) throw new Error("No se encontraron mensajes de Telegram.");
+
+        const mensuales = [];
+        let ultimaOpcion = -1;
+
+        mensajes.forEach((el,i) => {
+            const texto = textoTelegram(el);
+            const juego = extraerMensual(texto,mes);
+            if (juego) {
+                mensuales.push(juego);
+                ultimaOpcion = i;
+            }
+        });
+
+        let arcades = [];
+        // Los Arcades se publican después de las opciones del mes.
+        if (ultimaOpcion >= 0) {
+            for (let i=ultimaOpcion+1;i<mensajes.length;i++) {
+                const texto = textoTelegram(mensajes[i]);
+                if (/los\s+arcades\s+de\s+este\s+mes\s+son\s*:/i.test(texto)) {
+                    arcades = extraerArcade(texto);
+                    if (arcades.length) break;
+                }
+            }
+        }
+
+        return {
+            juegosMes: mensuales.filter((x,i,a) => a.findIndex(y => y.titulo.toLowerCase() === x.titulo.toLowerCase()) === i),
+            juegosArcade: arcades
+        };
+    }
+
+    function mostrarJuegosMesYArcade(data, mes) {
+        const box = document.getElementById("juegosProximoSorteo");
+        const lm = document.getElementById("juegosMesLista");
+        const la = document.getElementById("juegosArcadeLista");
+        const em = document.getElementById("juegosMesEstado");
+        const ea = document.getElementById("juegosArcadeEstado");
+        if (!box || !lm || !la) return;
+
+        lm.innerHTML = "";
+        la.innerHTML = "";
+        const jm = Array.isArray(data.juegosMes) ? data.juegosMes : [];
+        const ja = Array.isArray(data.juegosArcade) ? data.juegosArcade : [];
+
+        box.classList.toggle("hidden", !jm.length && !ja.length);
+        if (em) em.textContent = jm.length ? "" : `No se han encontrado los juegos del mes de ${mes || "este mes"}.`;
+        if (ea) ea.textContent = ja.length ? "" : `No se ha encontrado la lista Arcade de ${mes || "este mes"}.`;
+
+        jm.forEach(j => {
+            const div = document.createElement("div");
+            div.className = "custom-item";
+            div.style.display = "block";
+            div.innerHTML = `<div class="custom-item-text"><strong>🎮 ${escJuegos(j.titulo)}</strong></div>` +
+                (j.plataformas ? `<div style="margin-top:4px;color:var(--muted);font-size:.78rem;">${escJuegos(j.plataformas)}</div>` : "");
+            lm.appendChild(div);
+        });
+
+        ja.forEach(j => {
+            const li = document.createElement("li");
+            li.className = "custom-item";
+            li.innerHTML = `<div class="custom-item-text"><strong>🕹️ ${escJuegos(j)}</strong></div>`;
+            la.appendChild(li);
+        });
+    }
+
+    async function cargarJuegosProximoSorteo(mes) {
+        const em = document.getElementById("juegosMesEstado");
+        const ea = document.getElementById("juegosArcadeEstado");
+        const box = document.getElementById("juegosProximoSorteo");
+        if (box) box.classList.remove("hidden");
+        if (em) em.textContent = "⏳ Buscando los juegos del mes en Telegram...";
+        if (ea) ea.textContent = "⏳ Buscando los juegos Arcade en Telegram...";
+
+        try {
+            const datos = await obtenerJuegosMesYArcade(mes);
+            await db.ref("juegos_proximo_sorteo").set({
+                mes: mes,
+                juegosMes: datos.juegosMes,
+                juegosArcade: datos.juegosArcade,
+                timestamp: Date.now()
+            });
+            mostrarJuegosMesYArcade(datos,mes);
+        } catch (e) {
+            console.error("Error cargando juegos:",e);
+            if (em) em.textContent = "⚠️ No se pudieron cargar los juegos del mes.";
+            if (ea) ea.textContent = "⚠️ No se pudieron cargar los juegos Arcade.";
+        }
+    }
+
+    db.ref("juegos_proximo_sorteo").on("value", function(snap) {
+        const d = snap.val();
+        if (!d || (mesSorteoActivo && d.mes && d.mes !== mesSorteoActivo)) return;
+        mostrarJuegosMesYArcade({
+            juegosMes: d.juegosMes || [],
+            juegosArcade: d.juegosArcade || []
+        }, d.mes || mesSorteoActivo);
+    });
+
     // ============================================================
     //  MES DEL SORTEO
     // ============================================================
     db.ref('mes_sorteo').on('value', function(snapshot) {
         const mes = snapshot.val();
+        mesSorteoActivo = mes || "";
         const titleEl = document.getElementById('mainTitle');
         const monthSelect = document.getElementById('monthSelect');
         if (mes) {
@@ -1923,20 +2103,23 @@
         }
     });
 
-    function guardarMesSorteo() {
+    async function guardarMesSorteo() {
         const mes = document.getElementById('monthSelect').value;
         if (!mes) return alert("Por favor, selecciona un mes del desplegable.");
 
         if (confirm("¿Confirmas que deseas cambiar el título del sorteo al mes de " + mes + "?")) {
-            Promise.all([
-                db.ref('mes_sorteo').set(mes),
-                db.ref('sorteo_actual').set({ status: 'inactivo' })
-            ]).then(() => {
+            try {
+                await Promise.all([
+                    db.ref('mes_sorteo').set(mes),
+                    db.ref('sorteo_actual').set({ status: 'inactivo' })
+                ]);
+                mesSorteoActivo = mes;
+                await cargarJuegosProximoSorteo(mes);
                 alert("¡Mes actualizado con éxito!");
-            }).catch((error) => {
+            } catch (error) {
                 console.error("Error al cambiar el mes:", error);
                 alert("⚠️ No se pudo actualizar el mes correctamente.");
-            });
+            }
         }
     }
 
