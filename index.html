@@ -488,7 +488,27 @@
             white-space: nowrap;
         }
 
-        .admin-section {
+                .gifts-dropdown {
+            margin-top: 12px;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            background: rgba(15, 23, 42, 0.6);
+            overflow: hidden;
+        }
+        .gifts-dropdown summary {
+            cursor: pointer;
+            padding: 10px 12px;
+            font-weight: bold;
+            color: var(--gold);
+            list-style: none;
+            user-select: none;
+        }
+        .gifts-dropdown summary::-webkit-details-marker { display: none; }
+        .gifts-dropdown summary::after { content: '▾'; float: right; opacity: .7; }
+        .gifts-dropdown[open] summary::after { content: '▴'; }
+        .gifts-dropdown-content { padding: 0 10px 10px; }
+
+.admin-section {
             background: rgba(15, 23, 42, 0.6);
             border: 1px solid #334155;
             padding: 12px;
@@ -815,6 +835,15 @@
         <ul id="winnersCountList" class="custom-list">
         </ul>
         <button id="btnToggleWinners" class="btn-toggle-view hidden" onclick="toggleWinnersView()">⬇️ Ver todos los usuarios premiados</button>
+
+        <details class="gifts-dropdown">
+            <summary>🎁 Regalos</summary>
+            <div class="gifts-dropdown-content">
+                <ul id="giftsList" class="custom-list">
+                    <li class="custom-item" style="justify-content: center; color: var(--muted);">No hay regalos registrados.</li>
+                </ul>
+            </div>
+        </details>
     </div>
 
     <div id="hallOfFameCard" class="card">
@@ -965,6 +994,17 @@
                 <button style="background-color: #0284c7;" onclick="agregarGanadorManual()">➕ AÑADIR AL HISTORIAL</button>
             </div>
 
+            <!-- Gestión de Regalos -->
+            <div class="admin-section" style="border: 1px solid var(--gold); background: rgba(245, 158, 11, 0.05);">
+                <label style="color: var(--gold);"><b>🎁 Gestión de Regalos:</b></label>
+                <p style="font-size: 0.8rem; color: var(--muted); margin: 4px 0 8px 0;">
+                    Añade aquí a los usuarios que hayan recibido una camiseta por cesión. Si vuelven a ganar un sorteo, seguirán contando como ganadores, pero aparecerá el aviso de Campeón.
+                </p>
+                <input type="text" id="giftUserInput" placeholder="@usuario" autocomplete="off">
+                <button style="background-color: var(--gold); color: #111827; margin-top: 8px;" onclick="agregarRegalo()">🎁 AÑADIR REGALO</button>
+                <ul id="adminGiftsList" class="custom-list" style="margin-top: 10px;"></ul>
+            </div>
+
             <!-- Gestión del Hall of Fame -->
             <div class="admin-section" style="border: 1px solid var(--gold); background: rgba(245, 158, 11, 0.05);">
                 <label style="color: var(--gold);"><b>👾 Gestión del Hall of Fame (Histórico):</b></label>
@@ -1070,6 +1110,7 @@
     
     let rawHistoryItems = [];
     let rawHoFItems = [];
+    let regalosData = {};
     
     let isAdminLoggedIn = false;
     let isUserEditingList = false;
@@ -1326,6 +1367,12 @@
             textarea.value = val;
             calcularYMostrarProbabilidades();
         }
+    });
+
+    db.ref('regalos').on('value', function(snapshot) {
+        regalosData = snapshot.val() || {};
+        renderRegalosList();
+        refrescarHistorialAntiSpoiler();
     });
 
     db.ref('hall_of_fame_juegos').on('value', function(snapshot) {
@@ -1677,7 +1724,8 @@
             db.ref('historial_ganadores').once('value'),
             db.ref('sorteo_actual').once('value'),
             db.ref('mes_sorteo').once('value'),
-            db.ref('hall_of_fame_juegos').once('value')
+            db.ref('hall_of_fame_juegos').once('value'),
+            db.ref('regalos').once('value')
         ]).then(function(results) {
             const backupPayload = {
                 fechaCopia: new Date().toLocaleString('es-ES'),
@@ -1685,7 +1733,8 @@
                 historial_ganadores: results[0].val() || null,
                 sorteo_actual: results[1].val() || null,
                 mes_sorteo: results[2].val() || null,
-                hall_of_fame_juegos: results[3].val() || null
+                hall_of_fame_juegos: results[3].val() || null,
+                regalos: results[4].val() || null
             };
             db.ref('backups/' + clave).set(backupPayload).then(function() {
                 if (notificar) alert("✅ Copia de seguridad guardada con éxito bajo la clave: " + clave);
@@ -1710,7 +1759,8 @@
                 db.ref('historial_ganadores').once('value'),
                 db.ref('sorteo_actual').once('value'),
                 db.ref('mes_sorteo').once('value'),
-                db.ref('hall_of_fame_juegos').once('value')
+                db.ref('hall_of_fame_juegos').once('value'),
+                db.ref('regalos').once('value')
             ]);
 
             const backupData = {
@@ -1718,6 +1768,7 @@
                 sorteo_actual: resultados[1].val() || null,
                 mes_sorteo: resultados[2].val() || null,
                 hall_of_fame_juegos: resultados[3].val() || null,
+                regalos: resultados[4].val() || null,
                 tipoBackup: "Backup manual desde la web"
             };
 
@@ -1776,7 +1827,8 @@
                 db.ref('historial_ganadores').set(data.historial_ganadores || null);
                 db.ref('sorteo_actual').set(data.sorteo_actual || null);
                 db.ref('mes_sorteo').set(data.mes_sorteo || null);
-                db.ref('hall_of_fame_juegos').set(data.hall_of_fame_juegos || null).then(function() {
+                db.ref('hall_of_fame_juegos').set(data.hall_of_fame_juegos || null);
+                db.ref('regalos').set(data.regalos || null).then(function() {
                     alert("🎉 ¡Datos restaurados correctamente desde la copia " + clave + "!");
                 });
             });
@@ -1803,13 +1855,15 @@
             db.ref('historial_ganadores').once('value'),
             db.ref('sorteo_actual').once('value'),
             db.ref('mes_sorteo').once('value'),
-            db.ref('hall_of_fame_juegos').once('value')
+            db.ref('hall_of_fame_juegos').once('value'),
+            db.ref('regalos').once('value')
         ]).then(function(results) {
             const backupData = {
                 historial_ganadores: results[0].val() || null,
                 sorteo_actual: results[1].val() || null,
                 mes_sorteo: results[2].val() || null,
                 hall_of_fame_juegos: results[3].val() || null,
+                regalos: results[4].val() || null,
                 exportadoEl: new Date().toLocaleString('es-ES')
             };
             const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
@@ -1834,6 +1888,7 @@
                     if ('sorteo_actual' in data) db.ref('sorteo_actual').set(data.sorteo_actual);
                     if ('mes_sorteo' in data) db.ref('mes_sorteo').set(data.mes_sorteo);
                     if ('hall_of_fame_juegos' in data) db.ref('hall_of_fame_juegos').set(data.hall_of_fame_juegos);
+                    if ('regalos' in data) db.ref('regalos').set(data.regalos);
                     alert("✅ ¡Copia de seguridad local restaurada con éxito!");
                 }
             } catch (err) {
@@ -2395,8 +2450,12 @@
                 }
                 const noticeEl = document.getElementById('repeatNotice');
                 if(!noticeEl) return;
+                const yaTieneRegalo = Object.values(regalosData || {}).some(item => {
+                    const registrado = item && typeof item === 'object' && item.user ? item.user : item;
+                    return String(registrado || '').toLowerCase() === actualGanadorUser.toLowerCase();
+                });
                 
-                if (totalVictorias > 1) {
+                if (totalVictorias > 1 || yaTieneRegalo) {
                     if (noticeEl.classList.contains('hidden')) noticeEl.classList.remove('hidden');
                 } else {
                     if (!noticeEl.classList.contains('hidden')) noticeEl.classList.add('hidden');
@@ -2808,6 +2867,98 @@
         });
     }
 
+    function renderRegalosList() {
+        const listEl = document.getElementById('giftsList');
+        const adminListEl = document.getElementById('adminGiftsList');
+        if (!listEl && !adminListEl) return;
+
+        const usuarios = Object.keys(regalosData || {})
+            .map(key => {
+                const item = regalosData[key];
+                if (item && typeof item === 'object' && item.user) return item.user;
+                return key;
+            })
+            .filter(Boolean)
+            .sort((a,b) => a.localeCompare(b, 'es', { sensitivity: 'base' }));
+
+        if (listEl) {
+            listEl.innerHTML = '';
+            if (!usuarios.length) {
+                listEl.innerHTML = '<li class="custom-item" style="justify-content: center; color: var(--muted);">No hay regalos registrados.</li>';
+            } else {
+                usuarios.forEach(user => {
+                    const li = document.createElement('li');
+                    li.className = 'custom-item';
+                    li.innerHTML = '<div class="custom-item-text"><strong>🎁 ' + escapeHtmlSimple(user) + '</strong></div>';
+                    listEl.appendChild(li);
+                });
+            }
+        }
+
+        if (adminListEl) {
+            adminListEl.innerHTML = '';
+            if (!usuarios.length) {
+                adminListEl.innerHTML = '<li class="custom-item" style="justify-content: center; color: var(--muted);">No hay regalos registrados.</li>';
+            } else {
+                usuarios.forEach(user => {
+                    const key = Object.keys(regalosData).find(k => {
+                        const item = regalosData[k];
+                        return (item && typeof item === 'object' && item.user ? item.user : k).toLowerCase() === user.toLowerCase();
+                    });
+                    const li = document.createElement('li');
+                    li.className = 'custom-item';
+                    li.innerHTML = '<div class="custom-item-text"><strong>🎁 ' + escapeHtmlSimple(user) + '</strong></div>' +
+                        '<button class="delete-item-btn" onclick="eliminarRegalo(' + JSON.stringify(key || user).replace(/</g,'\u003c') + ')">🗑️ Eliminar</button>';
+                    adminListEl.appendChild(li);
+                });
+            }
+        }
+    }
+
+    function escapeHtmlSimple(value) {
+        return String(value || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+    }
+
+    function normalizarUsuarioRegalo(value) {
+        let user = String(value || '').trim();
+        if (!user) return '';
+        if (!user.startsWith('@')) user = '@' + user;
+        return user;
+    }
+
+    function agregarRegalo() {
+        if (!isAdminLoggedIn) return;
+        const input = document.getElementById('giftUserInput');
+        const user = normalizarUsuarioRegalo(input ? input.value : '');
+        if (!user) return alert('Introduce un usuario.');
+
+        const existe = Object.values(regalosData || {}).some(item => {
+            const registrado = item && typeof item === 'object' && item.user ? item.user : item;
+            return String(registrado || '').toLowerCase() === user.toLowerCase();
+        });
+        if (existe) return alert('Ese usuario ya está en la lista de Regalos.');
+
+        const key = user.toLowerCase().replace(/[^a-z0-9_.-]/g, '_');
+        db.ref('regalos/' + key).set({ user: user, timestamp: Date.now() }).then(() => {
+            if (input) input.value = '';
+            alert('🎁 Regalo registrado correctamente.');
+        }).catch(err => {
+            console.error('Error añadiendo regalo:', err);
+            alert('❌ No se pudo registrar el regalo.');
+        });
+    }
+
+    function eliminarRegalo(key) {
+        if (!isAdminLoggedIn) return;
+        const item = regalosData[key];
+        const user = item && typeof item === 'object' && item.user ? item.user : key;
+        if (!confirm('¿Eliminar a ' + user + ' de la lista de Regalos?')) return;
+        db.ref('regalos/' + key).remove().catch(err => {
+            console.error('Error eliminando regalo:', err);
+            alert('❌ No se pudo eliminar el regalo.');
+        });
+    }
+
     function renderHoFList(list) {
         const listEl = document.getElementById('hallOfFameList');
         const btn = document.getElementById('btnToggleHoF');
@@ -2960,6 +3111,7 @@
             db.ref('sorteo_actual').remove();
             db.ref('historial_ganadores').remove();
             db.ref('hall_of_fame_juegos').remove(); 
+            db.ref('regalos').remove();
             db.ref('sorteo_participantes_raw').remove();
             
             alert("🧹 Todo ha sido borrado y reiniciado de fábrica.");
