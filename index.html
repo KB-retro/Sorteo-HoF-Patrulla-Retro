@@ -2908,7 +2908,13 @@
                     const li = document.createElement('li');
                     li.className = 'custom-item';
                     li.innerHTML = '<div class="custom-item-text"><strong>🎁 ' + escapeHtmlSimple(user) + '</strong></div>' +
-                        '<button class="delete-item-btn" onclick="eliminarRegalo(' + JSON.stringify(key || user).replace(/</g,'\u003c') + ')">🗑️ Eliminar</button>';
+                        '<button type="button" class="delete-item-btn">🗑️ Eliminar</button>';
+
+                    const deleteBtn = li.querySelector('.delete-item-btn');
+                    deleteBtn.addEventListener('click', function() {
+                        eliminarRegalo(key || user);
+                    });
+
                     adminListEl.appendChild(li);
                 });
             }
