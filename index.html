@@ -1517,7 +1517,18 @@
                 return { user: user, boletos: listaB, count: listaB.length, prob: probabilidad };
             });
             
-            listaParticipantes.sort((a, b) => b.count - a.count);
+            listaParticipantes.sort((a, b) => {
+                // Primero, más boletos = más arriba.
+                if (b.count !== a.count) {
+                    return b.count - a.count;
+                }
+
+                // Si tienen los mismos boletos, primero quien consiguió
+                // su último boleto antes (número de boleto más bajo).
+                const ultimoBoletoA = Math.max(...a.boletos.map(Number));
+                const ultimoBoletoB = Math.max(...b.boletos.map(Number));
+                return ultimoBoletoA - ultimoBoletoB;
+            });
             listaParticipantes.forEach(p => {
                 const li = document.createElement('li');
                 li.className = 'custom-item';
