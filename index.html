@@ -994,6 +994,20 @@
                 <button style="background-color: #0284c7;" onclick="agregarGanadorManual()">➕ AÑADIR AL HISTORIAL</button>
             </div>
 
+            <!-- Corrección de mes de ganadores ya realizados -->
+            <div class="admin-section" style="border: 1px solid var(--warning); background: rgba(245, 158, 11, 0.05);">
+                <label style="color: var(--warning);"><b>✏️ Corregir mes de un ganador:</b></label>
+                <p style="font-size: 0.8rem; color: var(--muted); margin: 4px 0 8px 0;">
+                    Permite corregir el mes del premio sin cambiar la fecha real en la que se realizó el sorteo.
+                </p>
+                <select id="historyWinnerSelect" style="margin-top: 4px;">
+                    <option value="">-- Selecciona un ganador --</option>
+                </select>
+                <label style="margin-top: 8px; display: block; font-size: 0.85rem;"><b>📅 Mes correspondiente al premio:</b></label>
+                <input type="month" id="historyWinnerMonth" style="margin-top: 4px;">
+                <button style="background-color: var(--warning); color: #111827; margin-top: 8px;" onclick="guardarMesGanadorHistorico()">💾 GUARDAR MES DEL GANADOR</button>
+            </div>
+
             <!-- Gestión de Regalos -->
             <div class="admin-section" style="border: 1px solid var(--gold); background: rgba(245, 158, 11, 0.05);">
                 <label style="color: var(--gold);"><b>🎁 Gestión de Regalos:</b></label>
@@ -1111,6 +1125,7 @@
     let rawHistoryItems = [];
     let rawHoFItems = [];
     let regalosData = {};
+    let historyEditKey = "";
     
     let isAdminLoggedIn = false;
     let isUserEditingList = false;
@@ -2711,7 +2726,7 @@
         verificarRepetidoVisual();
     }
 
-    function calcularYEjecutarTirada(rawLinesStr, rawBlacklistStr, animarResultado = true) {
+    function calcularYEjecutarTirada(rawLinesStr, rawBlacklistStr, animarResultado = true, mesPremioOverride = "") {
         const rawLines = rawLinesStr.split('\n');
         const rawBlacklist = rawBlacklistStr.split('\n');
 
@@ -2781,7 +2796,8 @@
 
         const arcadeGroup = anteriores.concat([ganadorEncontrado], posteriores);
         const ahora = new Date();
-        const fechaFormateada = `${nombresMeses[ahora.getMonth()]} ${ahora.getFullYear()}`;
+        const mesPremio = mesPremioOverride || obtenerMesPremioCompleto(mesSorteoActivo, ahora);
+        const fechaFormateada = mesPremio;
 
         const fraseGanador = fraseVideojuegoAleatoria();
 
@@ -2789,6 +2805,7 @@
             user: ganadorEncontrado.user,
             ticket: ganadorEncontrado.ticket,
             fecha: fechaFormateada,
+            mesPremio: mesPremio,
             timestamp: Date.now() + Math.random()
         });
 
@@ -2798,6 +2815,7 @@
             log: log,
             timestamp: Date.now(),
             frase: fraseGanador,
+            mesPremio: mesPremio,
             rawLines: rawLinesStr,        
             rawBlacklist: rawBlacklistStr 
         };
@@ -2833,6 +2851,7 @@
         if(!listEl) return;
         
         listEl.innerHTML = '';
+        cargarSelectorEdicionHistorial(list);
         if (list.length === 0) {
             listEl.innerHTML = '<li style="text-align: center; color: var(--muted);">Sin historial de ganadores guardado.</li>';
             if(btn) btn.classList.add('hidden');
@@ -3029,6 +3048,56 @@
         });
     }
 
+    function cargarSelectorEdicionHistorial(list) {
+        const select = document.getElementById('historyWinnerSelect');
+        if (!select) return;
+        const valorActual = select.value;
+        select.innerHTML = '<option value="">-- Selecciona un ganador --</option>';
+        (list || []).forEach(function(item) {
+            if (!item || !item.key) return;
+            const option = document.createElement('option');
+            option.value = item.key;
+            option.textContent = (item.user || 'Usuario') + ' — ' + (item.fecha || 'Sin mes');
+            option.dataset.month = item.mesPremio || item.fecha || '';
+            select.appendChild(option);
+        });
+        if (valorActual && Array.from(select.options).some(o => o.value === valorActual)) {
+            select.value = valorActual;
+        }
+    }
+
+    function guardarMesGanadorHistorico() {
+        if (!isAdminLoggedIn) return;
+        const select = document.getElementById('historyWinnerSelect');
+        const monthInput = document.getElementById('historyWinnerMonth');
+        if (!select || !monthInput || !select.value) return alert('Selecciona primero un ganador.');
+        if (!monthInput.value) return alert('Selecciona el mes correspondiente al premio.');
+
+        const parts = monthInput.value.split('-');
+        const year = parseInt(parts[0], 10);
+        const monthIdx = parseInt(parts[1], 10) - 1;
+        if (!year || monthIdx < 0 || monthIdx > 11) return alert('El mes seleccionado no es válido.');
+
+        const fechaPremio = `${nombresMeses[monthIdx]} ${year}`;
+        const key = select.value;
+        const option = select.options[select.selectedIndex];
+        const usuario = option ? option.textContent.split(' — ')[0] : 'el ganador';
+
+        if (!confirm(`¿Cambiar el premio de ${usuario} a ${fechaPremio}?\n\nLa fecha real del sorteo no se modificará.`)) return;
+
+        db.ref('historial_ganadores/' + key).update({
+            fecha: fechaPremio,
+            mesPremio: fechaPremio
+        }).then(function() {
+            return enviarBackupGitHubAutomatico();
+        }).then(function() {
+            alert('✅ Mes del ganador actualizado correctamente.');
+        }).catch(function(error) {
+            console.error('Error actualizando el mes del ganador:', error);
+            alert('❌ No se pudo actualizar el mes del ganador.');
+        });
+    }
+
     function renderHistoryList(list) {
         const listEl = document.getElementById('historyList');
         const btn = document.getElementById('btnToggleHistory');
@@ -3135,6 +3204,16 @@
         }
     }
 
+    function obtenerMesPremioCompleto(mesNombre, fechaReferencia) {
+        const fecha = fechaReferencia instanceof Date ? fechaReferencia : new Date(fechaReferencia || Date.now());
+        if (!mesNombre) return `${nombresMeses[fecha.getMonth()]} ${fecha.getFullYear()}`;
+        const indiceMes = nombresMeses.findIndex(m => m.toLowerCase() === String(mesNombre).toLowerCase());
+        if (indiceMes < 0) return String(mesNombre);
+        let year = fecha.getFullYear();
+        if (indiceMes > fecha.getMonth()) year--;
+        return `${nombresMeses[indiceMes]} ${year}`;
+    }
+
     // ============================================================
     //  FUNCIÓN PRINCIPAL DE PROGRAMACIÓN
     // ============================================================
@@ -3159,7 +3238,7 @@
                 mostrarRecreativa(true);
                 const slotStatus = document.getElementById('slotStatus');
                 if(slotStatus) slotStatus.innerText = '🎰 SORTEO INMEDIATO...';
-                calcularYEjecutarTirada(rawLines, rawBlacklist, false);
+                calcularYEjecutarTirada(rawLines, rawBlacklist, false, obtenerMesPremioCompleto(mesSorteoActivo, new Date()));
                 sumarJuegosAlHoF(true); 
                 alert("¡Sorteo finalizado y Hall of Fame actualizado!");
             }
@@ -3184,7 +3263,8 @@
             status: 'programado',
             targetTime: targetDate.getTime(),
             rawLines: rawLines,
-            rawBlacklist: rawBlacklist
+            rawBlacklist: rawBlacklist,
+            mesPremio: obtenerMesPremioCompleto(mesSorteoActivo, targetDate)
         }).then(() => {
             sumarJuegosAlHoF(true); 
             alert("¡Sorteo programado con éxito!");
