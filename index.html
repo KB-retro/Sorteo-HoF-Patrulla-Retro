@@ -3094,8 +3094,7 @@
         if (!confirm(`¿Cambiar el premio de ${usuario} a ${fechaPremio}?\n\nLa fecha real del sorteo no se modificará.`)) return;
 
         db.ref('historial_ganadores/' + key).update({
-            fecha: fechaPremio,
-            mesPremio: fechaPremio
+            fecha: fechaPremio
         }).then(function() {
             return enviarBackupGitHubAutomatico();
         }).then(function() {
