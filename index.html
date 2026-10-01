@@ -1330,6 +1330,14 @@
             renderHistoryList(historyToRender);
             lastRenderedHistoryState = newStateHistory;
         }
+
+        // El panel de administración puede abrirse después de que el historial
+        // ya haya sido renderizado. En ese caso no cambia newStateHistory y
+        // renderHistoryList() no vuelve a ejecutarse, dejando vacío el selector.
+        // Lo actualizamos siempre que el administrador esté conectado.
+        if (isAdminLoggedIn) {
+            cargarSelectorEdicionHistorial(historyToRender);
+        }
         
         if (lastRenderedHoFState !== newStateHoF) {
             renderHoFList(hofToRender);
