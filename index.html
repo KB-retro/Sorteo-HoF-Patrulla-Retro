@@ -3108,6 +3108,8 @@
         });
     }
 
+    let historyWinnerSelectedKey = '';
+
     function cargarSelectorEdicionHistorial(list) {
         const select = document.getElementById('historyWinnerSelect');
         if (!select) return;
@@ -3127,13 +3129,22 @@
 
         select.onchange = function() {
             const option = select.options[select.selectedIndex];
+            historyWinnerSelectedKey = option ? option.value : '';
             const mesActual = option ? (option.dataset.month || '') : '';
             setHistoryWinnerMonthPickerValue(mesActual);
         };
 
         const opcionInicial = select.options[select.selectedIndex];
         if (opcionInicial && opcionInicial.value) {
-            setHistoryWinnerMonthPickerValue(opcionInicial.dataset.month || '');
+            // Solo cargar desde Firebase cuando cambia realmente el ganador.
+            // Si la lista se refresca mientras el administrador está editando,
+            // no debemos pisar la fecha que acaba de seleccionar manualmente.
+            if (historyWinnerSelectedKey !== opcionInicial.value) {
+                historyWinnerSelectedKey = opcionInicial.value;
+                setHistoryWinnerMonthPickerValue(opcionInicial.dataset.month || '');
+            }
+        } else {
+            historyWinnerSelectedKey = '';
         }
     }
 
@@ -3226,7 +3237,8 @@
         display.addEventListener("click", e => {
             e.stopPropagation();
             if (!hasSelected) setFromCurrentDate();
-            else setFromValue(valueInput.value);
+            // No volver a leer valueInput aquí: podría contener todavía
+            // la fecha antigua del historial y pisar la selección manual.
             render();
             panel.classList.remove("hidden");
             display.setAttribute("aria-expanded", "true");
