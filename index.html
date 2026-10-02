@@ -3096,11 +3096,12 @@
         db.ref('historial_ganadores/' + key).update({
             fecha: fechaPremio
         }).then(function() {
-            return enviarBackupGitHubAutomatico();
-        }).then(function() {
+            // Firebase ha guardado correctamente el cambio.
+            // Esta función solo modifica el historial; no depende de ninguna
+            // otra función de backup para considerar correcta la actualización.
             alert('✅ Mes del ganador actualizado correctamente.');
         }).catch(function(error) {
-            console.error('Error actualizando el mes del ganador:', error);
+            console.error('Error actualizando el mes del ganador en Firebase:', error);
             alert('❌ No se pudo actualizar el mes del ganador.');
         });
     }
