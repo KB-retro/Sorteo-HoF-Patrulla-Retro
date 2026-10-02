@@ -524,7 +524,8 @@
 
         .hidden { display: none !important; }
 
-        .advanced-settings-wrapper {
+        .advanced-settings-wrapper,
+        .backup-settings-wrapper {
             overflow: hidden;
             max-height: 0;
             opacity: 0;
@@ -533,13 +534,15 @@
                         margin 0.4s ease-out;
             margin: 0;
         }
-        .advanced-settings-wrapper.open {
+        .advanced-settings-wrapper.open,
+        .backup-settings-wrapper.open {
             max-height: 4000px;
             opacity: 1;
             margin-top: 15px;
         }
 
-        .btn-advanced-toggle {
+        .btn-advanced-toggle,
+        .btn-backup-toggle {
             background-color: #334155 !important;
             color: var(--text) !important;
             font-size: 0.85rem !important;
@@ -552,13 +555,13 @@
             justify-content: center;
             gap: 8px;
         }
-        .btn-advanced-toggle:hover { background-color: #475569 !important; }
-        .btn-advanced-toggle:active { transform: scale(0.98); }
-        .btn-advanced-toggle .toggle-icon {
+        .btn-advanced-toggle:hover, .btn-backup-toggle:hover { background-color: #475569 !important; }
+        .btn-advanced-toggle:active, .btn-backup-toggle:active { transform: scale(0.98); }
+        .btn-advanced-toggle .toggle-icon, .btn-backup-toggle .toggle-icon {
             display: inline-block;
             transition: transform 0.3s ease;
         }
-        .btn-advanced-toggle.open .toggle-icon {
+        .btn-advanced-toggle.open .toggle-icon, .btn-backup-toggle.open .toggle-icon {
             transform: rotate(180deg);
         }
 
@@ -948,6 +951,43 @@
             <button class="admin-btn" onclick="programarOEjecutarSorteo()">🎲 GUARDAR Y PROGRAMAR SORTEO</button>
         </div>
 
+        <!-- ===== BOTÓN PARA MOSTRAR/OCULTAR COPIAS DE SEGURIDAD ===== -->
+        <button class="btn-backup-toggle" id="btnBackupToggle" onclick="toggleBackupSettings()">
+            <span>💾 Copias de Seguridad</span>
+            <span class="toggle-icon">▼</span>
+        </button>
+
+        <!-- ===== COPIAS DE SEGURIDAD (ocultas por defecto) ===== -->
+        <div class="backup-settings-wrapper" id="backupSettingsWrapper">
+            <!-- Copias de Seguridad -->
+            <div class="admin-section" style="border: 1px solid var(--accent); background: rgba(99, 102, 241, 0.08);">
+                <label><b>💾 Copias de Seguridad y Restauración:</b></label>
+                <p style="font-size: 0.8rem; color: var(--muted); margin: 4px 0 10px 0;">
+                    Puedes guardar un punto de restauración en Firebase antes de hacer sorteos, o descargarte una copia física a tu PC.
+                </p>
+
+                <button style="background-color: #0284c7; margin-bottom: 10px;" onclick="crearBackupManual()">📀 COPIA EN FIREBASE (ESTÁNDAR)</button>
+                <button style="background-color: #22c55e; margin-bottom: 10px;" onclick="crearBackupGitHubManual()">🖴 COPIA EN GITHUB (SSD)</button>
+
+                <label style="font-size: 0.85rem; margin-top: 8px; display: block;"><b>📅 Seleccionar Copia para Restaurar o Borrar:</b></label>
+                <select id="backupSelect" style="margin-top: 4px; margin-bottom: 8px;">
+                    <option value="">-- Cargando copias disponibles... --</option>
+                </select>
+
+                <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+                    <button style="flex: 1; background-color: var(--warning); color: black;" onclick="restaurarBackupSeleccionado()">🔄 RESTAURAR COPIA</button>
+                    <button style="flex: 1; background-color: var(--danger); color: white;" onclick="borrarBackupSeleccionado()">🗑️ BORRAR COPIA</button>
+                </div>
+
+                <div style="border-top: 1px dashed #334155; padding-top: 10px; display: flex; gap: 8px; flex-wrap: wrap;">
+                    <button style="flex: 1; background: #334155; font-size: 0.8rem; padding: 8px;" onclick="descargarBackupJSON()">📥 Descargar JSON PC</button>
+                    <button style="flex: 1; background: #334155; font-size: 0.8rem; padding: 8px;" onclick="document.getElementById('jsonFileInput').click()">📤 Cargar JSON PC</button>
+                    <input type="file" id="jsonFileInput" accept=".json" class="hidden" onchange="restaurarDesdeJSON(event)">
+                </div>
+            </div>
+
+        </div>
+
         <!-- ===== BOTÓN PARA MOSTRAR/OCULTAR AJUSTES AVANZADOS ===== -->
         <button class="btn-advanced-toggle" id="btnAdvancedToggle" onclick="toggleAdvancedSettings()">
             <span>⚙️ Ajustes Avanzados</span>
@@ -1003,8 +1043,31 @@
                 <select id="historyWinnerSelect" style="margin-top: 4px;">
                     <option value="">-- Selecciona un ganador --</option>
                 </select>
-                <label style="margin-top: 8px; display: block; font-size: 0.85rem;"><b>📅 Mes correspondiente al premio:</b></label>
-                <input type="month" id="historyWinnerMonth" style="margin-top: 4px;">
+                <label style="margin-top: 8px; display: block; font-size: 0.85rem;"><b>📅 Mes y Año del Premio:</b></label>
+                <input type="hidden" id="historyWinnerMonth" value="">
+                <div class="retro-time-picker" id="historyWinnerMonthPicker" style="margin-top: 4px; margin-bottom: 8px;">
+                    <button type="button" class="retro-time-display" id="historyWinnerMonthDisplay" aria-haspopup="dialog" aria-expanded="false">
+                        <span id="historyWinnerMonthDisplayValue">-- / ----</span>
+                        <span class="retro-time-chevron">▾</span>
+                    </button>
+                    <div class="retro-time-panel hidden" id="historyWinnerMonthPanel">
+                        <div class="retro-time-title">SELECCIONA MES Y AÑO</div>
+                        <div class="retro-time-wheels">
+                            <div class="retro-time-wheel-wrap">
+                                <div class="retro-time-wheel-label">MES</div>
+                                <div class="retro-time-wheel" id="historyWinnerMonthWheel" tabindex="0" aria-label="Mes"></div>
+                            </div>
+                            <div class="retro-time-colon">-</div>
+                            <div class="retro-time-wheel-wrap">
+                                <div class="retro-time-wheel-label">AÑO</div>
+                                <div class="retro-time-wheel" id="historyWinnerYearWheel" tabindex="0" aria-label="Año"></div>
+                            </div>
+                        </div>
+                        <div class="retro-time-help">Rueda del ratón o ▲ ▼</div>
+                        <button type="button" class="retro-time-confirm" id="historyWinnerMonthConfirm">CONFIRMAR FECHA</button>
+                        <button type="button" class="retro-time-cancel" id="historyWinnerMonthCancel">CANCELAR</button>
+                    </div>
+                </div>
                 <button style="background-color: var(--warning); color: #111827; margin-top: 8px;" onclick="guardarMesGanadorHistorico()">💾 GUARDAR MES DEL GANADOR</button>
             </div>
 
@@ -1030,33 +1093,6 @@
                 <p style="font-size: 0.75rem; color: var(--danger); margin: 2px 0 6px 0;">Formato obligatorio: @usuario = cantidad</p>
                 <textarea id="hofManualInput" placeholder="@M_1_c_h_3_l = 15&#10;@cerebrosolido = 8" style="height: 80px;" onfocus="isHoFEditing = true;" onblur="isHoFEditing = false;"></textarea>
                 <button style="background-color: var(--accent); margin-top: 5px;" onclick="guardarHoFManual()">💾 SOBRESCRIBIR HALL OF FAME</button>
-            </div>
-
-            <!-- Copias de Seguridad -->
-            <div class="admin-section" style="border: 1px solid var(--accent); background: rgba(99, 102, 241, 0.08);">
-                <label><b>💾 Copias de Seguridad y Restauración:</b></label>
-                <p style="font-size: 0.8rem; color: var(--muted); margin: 4px 0 10px 0;">
-                    Puedes guardar un punto de restauración en Firebase antes de hacer sorteos, o descargarte una copia física a tu PC.
-                </p>
-
-                <button style="background-color: #0284c7; margin-bottom: 10px;" onclick="crearBackupManual()">📀 COPIA EN FIREBASE (ESTÁNDAR)</button>
-                <button style="background-color: #22c55e; margin-bottom: 10px;" onclick="crearBackupGitHubManual()">🖴 COPIA EN GITHUB (SSD)</button>
-
-                <label style="font-size: 0.85rem; margin-top: 8px; display: block;"><b>📅 Seleccionar Copia para Restaurar o Borrar:</b></label>
-                <select id="backupSelect" style="margin-top: 4px; margin-bottom: 8px;">
-                    <option value="">-- Cargando copias disponibles... --</option>
-                </select>
-
-                <div style="display: flex; gap: 8px; margin-bottom: 10px;">
-                    <button style="flex: 1; background-color: var(--warning); color: black;" onclick="restaurarBackupSeleccionado()">🔄 RESTAURAR COPIA</button>
-                    <button style="flex: 1; background-color: var(--danger); color: white;" onclick="borrarBackupSeleccionado()">🗑️ BORRAR COPIA</button>
-                </div>
-
-                <div style="border-top: 1px dashed #334155; padding-top: 10px; display: flex; gap: 8px; flex-wrap: wrap;">
-                    <button style="flex: 1; background: #334155; font-size: 0.8rem; padding: 8px;" onclick="descargarBackupJSON()">📥 Descargar JSON PC</button>
-                    <button style="flex: 1; background: #334155; font-size: 0.8rem; padding: 8px;" onclick="document.getElementById('jsonFileInput').click()">📤 Cargar JSON PC</button>
-                    <input type="file" id="jsonFileInput" accept=".json" class="hidden" onchange="restaurarDesdeJSON(event)">
-                </div>
             </div>
 
             <!-- Botones de Borrado -->
@@ -1188,6 +1224,21 @@
             wrapper.classList.add('open');
             btn.classList.add('open');
             btn.innerHTML = '<span>⚙️ Ajustes Avanzados</span><span class="toggle-icon">▲</span>';
+        }
+    }
+
+    function toggleBackupSettings() {
+        const wrapper = document.getElementById('backupSettingsWrapper');
+        const btn = document.getElementById('btnBackupToggle');
+        if (!wrapper || !btn) return;
+        if (wrapper.classList.contains('open')) {
+            wrapper.classList.remove('open');
+            btn.classList.remove('open');
+            btn.innerHTML = '<span>💾 Copias de Seguridad</span><span class="toggle-icon">▼</span>';
+        } else {
+            wrapper.classList.add('open');
+            btn.classList.add('open');
+            btn.innerHTML = '<span>💾 Copias de Seguridad</span><span class="toggle-icon">▲</span>';
         }
     }
 
@@ -1440,6 +1491,7 @@
         initRetroDatePicker();
         initRetroTimePicker();
         initRetroMonthPicker();
+        initHistoryWinnerMonthPicker();
         
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) {
@@ -3072,6 +3124,145 @@
         if (valorActual && Array.from(select.options).some(o => o.value === valorActual)) {
             select.value = valorActual;
         }
+
+        select.onchange = function() {
+            const option = select.options[select.selectedIndex];
+            const mesActual = option ? (option.dataset.month || '') : '';
+            setHistoryWinnerMonthPickerValue(mesActual);
+        };
+
+        const opcionInicial = select.options[select.selectedIndex];
+        if (opcionInicial && opcionInicial.value) {
+            setHistoryWinnerMonthPickerValue(opcionInicial.dataset.month || '');
+        }
+    }
+
+    let historyWinnerMonthPickerApi = null;
+
+    function initHistoryWinnerMonthPicker() {
+        const valueInput = document.getElementById("historyWinnerMonth");
+        const display = document.getElementById("historyWinnerMonthDisplay");
+        const displayValue = document.getElementById("historyWinnerMonthDisplayValue");
+        const panel = document.getElementById("historyWinnerMonthPanel");
+        const monthWheel = document.getElementById("historyWinnerMonthWheel");
+        const yearWheel = document.getElementById("historyWinnerYearWheel");
+        const confirmBtn = document.getElementById("historyWinnerMonthConfirm");
+        const cancelBtn = document.getElementById("historyWinnerMonthCancel");
+        const picker = document.getElementById("historyWinnerMonthPicker");
+        if (!valueInput || !display || !displayValue || !panel || !monthWheel || !yearWheel || !confirmBtn || !cancelBtn || !picker) return;
+
+        let month = 0, year = 0, hasSelected = false;
+        const pad = n => String(n).padStart(2, "0");
+        const minYear = 2020, maxYear = 2040;
+        const mesesAbbr = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
+
+        function renderWheel(element, min, max, selectedVal, onSelect, isMonth) {
+            element.innerHTML = "";
+            for (let n = min; n <= max; n++) {
+                const item = document.createElement("div");
+                item.className = "retro-time-option" + (n === selectedVal ? " selected" : "");
+                item.dataset.value = String(n);
+                item.textContent = isMonth ? mesesAbbr[n - 1] : n;
+                item.addEventListener("click", e => { e.stopPropagation(); onSelect(n); render(); });
+                element.appendChild(item);
+            }
+            requestAnimationFrame(() => {
+                const selectedItem = element.querySelector(".selected");
+                if (selectedItem) selectedItem.scrollIntoView({ block: "center" });
+            });
+        }
+
+        function render() {
+            renderWheel(monthWheel, 1, 12, month, n => month = n, true);
+            renderWheel(yearWheel, minYear, maxYear, year, n => year = n, false);
+        }
+
+        function setFromCurrentDate() {
+            const now = new Date();
+            month = now.getMonth() + 1;
+            year = now.getFullYear();
+            hasSelected = true;
+        }
+
+        function setFromValue(value) {
+            const match = /^(\d{4})-(\d{2})$/.exec(value || "");
+            if (match) {
+                year = Number(match[1]);
+                month = Number(match[2]);
+                hasSelected = month >= 1 && month <= 12 && year >= minYear && year <= maxYear;
+            } else {
+                hasSelected = false;
+            }
+            displayValue.textContent = hasSelected ? `${mesesAbbr[month - 1]} / ${year}` : "-- / ----";
+        }
+
+        display.addEventListener("click", e => {
+            e.stopPropagation();
+            if (!hasSelected) setFromCurrentDate();
+            else setFromValue(valueInput.value);
+            render();
+            panel.classList.remove("hidden");
+            display.setAttribute("aria-expanded", "true");
+        });
+
+        confirmBtn.addEventListener("click", e => {
+            e.stopPropagation();
+            if (!hasSelected) setFromCurrentDate();
+            valueInput.value = `${year}-${pad(month)}`;
+            displayValue.textContent = `${mesesAbbr[month - 1]} / ${year}`;
+            panel.classList.add("hidden");
+            display.setAttribute("aria-expanded", "false");
+        });
+
+        cancelBtn.addEventListener("click", e => {
+            e.stopPropagation();
+            panel.classList.add("hidden");
+            display.setAttribute("aria-expanded", "false");
+            setFromValue(valueInput.value);
+        });
+
+        monthWheel.addEventListener("wheel", e => {
+            e.preventDefault();
+            if (!hasSelected) setFromCurrentDate();
+            month += e.deltaY > 0 ? 1 : -1;
+            if (month > 12) month = 1;
+            if (month < 1) month = 12;
+            render();
+        }, { passive: false });
+
+        yearWheel.addEventListener("wheel", e => {
+            e.preventDefault();
+            if (!hasSelected) setFromCurrentDate();
+            year += e.deltaY > 0 ? 1 : -1;
+            if (year > maxYear) year = minYear;
+            if (year < minYear) year = maxYear;
+            render();
+        }, { passive: false });
+
+        monthWheel.addEventListener("keydown", e => {
+            if (e.key === "ArrowDown") { e.preventDefault(); if (!hasSelected) setFromCurrentDate(); month = month >= 12 ? 1 : month + 1; render(); }
+            if (e.key === "ArrowUp") { e.preventDefault(); if (!hasSelected) setFromCurrentDate(); month = month <= 1 ? 12 : month - 1; render(); }
+        });
+
+        yearWheel.addEventListener("keydown", e => {
+            if (e.key === "ArrowDown") { e.preventDefault(); if (!hasSelected) setFromCurrentDate(); year = year >= maxYear ? minYear : year + 1; render(); }
+            if (e.key === "ArrowUp") { e.preventDefault(); if (!hasSelected) setFromCurrentDate(); year = year <= minYear ? maxYear : year - 1; render(); }
+        });
+
+        document.addEventListener("click", e => {
+            if (!picker.contains(e.target) && !panel.classList.contains("hidden")) {
+                panel.classList.add("hidden");
+                display.setAttribute("aria-expanded", "false");
+            }
+        });
+
+        historyWinnerMonthPickerApi = {
+            setValue(value) { setFromValue(value); }
+        };
+    }
+
+    function setHistoryWinnerMonthPickerValue(value) {
+        if (historyWinnerMonthPickerApi) historyWinnerMonthPickerApi.setValue(value);
     }
 
     function guardarMesGanadorHistorico() {
