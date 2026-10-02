@@ -3163,7 +3163,13 @@
                 item.className = "retro-time-option" + (n === selectedVal ? " selected" : "");
                 item.dataset.value = String(n);
                 item.textContent = isMonth ? mesesAbbr[n - 1] : n;
-                item.addEventListener("click", e => { e.stopPropagation(); onSelect(n); render(); });
+                item.addEventListener("click", e => {
+                    e.stopPropagation();
+                    onSelect(n);
+                    hasSelected = true;
+                    displayValue.textContent = `${mesesAbbr[month - 1]} / ${year}`;
+                    render();
+                });
                 element.appendChild(item);
             }
             requestAnimationFrame(() => {
@@ -3185,11 +3191,32 @@
         }
 
         function setFromValue(value) {
-            const match = /^(\d{4})-(\d{2})$/.exec(value || "");
+            const raw = String(value || "").trim();
+            let parsedYear = 0;
+            let parsedMonth = 0;
+
+            // Formato interno: YYYY-MM
+            let match = /^(\d{4})-(\d{1,2})$/.exec(raw);
             if (match) {
-                year = Number(match[1]);
-                month = Number(match[2]);
-                hasSelected = month >= 1 && month <= 12 && year >= minYear && year <= maxYear;
+                parsedYear = Number(match[1]);
+                parsedMonth = Number(match[2]);
+            } else {
+                // Compatibilidad con fechas ya guardadas como "Octubre 2026"
+                match = /^(.+?)\s+(\d{4})$/.exec(raw);
+                if (match) {
+                    const nombreMes = match[1].trim().toLowerCase();
+                    parsedMonth = nombresMeses.indexOf(nombreMes) + 1;
+                    if (parsedMonth <= 0) {
+                        parsedMonth = mesesAbbr.findIndex(m => m.toLowerCase() === nombreMes.substring(0, 3)) + 1;
+                    }
+                    parsedYear = Number(match[2]);
+                }
+            }
+
+            if (parsedMonth >= 1 && parsedMonth <= 12 && parsedYear >= minYear && parsedYear <= maxYear) {
+                month = parsedMonth;
+                year = parsedYear;
+                hasSelected = true;
             } else {
                 hasSelected = false;
             }
@@ -3209,6 +3236,7 @@
             e.stopPropagation();
             if (!hasSelected) setFromCurrentDate();
             valueInput.value = `${year}-${pad(month)}`;
+            hasSelected = true;
             displayValue.textContent = `${mesesAbbr[month - 1]} / ${year}`;
             panel.classList.add("hidden");
             display.setAttribute("aria-expanded", "false");
