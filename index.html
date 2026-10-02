@@ -1513,16 +1513,51 @@
 
         const specialDrawCheckbox = document.getElementById('specialDrawCheckbox');
         const specialPrizeWrapper = document.getElementById('specialPrizeWrapper');
+        const specialPrizeInput = document.getElementById('specialPrizeInput');
+
+        function guardarConfiguracionSorteoEspecial() {
+            if (!specialDrawCheckbox) return;
+            const activo = !!specialDrawCheckbox.checked;
+            const premio = activo && specialPrizeInput ? specialPrizeInput.value.trim() : '';
+
+            db.ref('config_sorteo_especial').set({
+                activo: activo,
+                premio: premio
+            }).catch(function(error) {
+                console.error('Error guardando la configuración del Sorteo Especial:', error);
+            });
+
+            actualizarCartelSorteoEspecial(programData);
+        }
+
         if (specialDrawCheckbox && specialPrizeWrapper) {
             specialDrawCheckbox.addEventListener('change', function() {
                 specialPrizeWrapper.classList.toggle('hidden', !this.checked);
-                if (!this.checked) {
-                    const prizeInput = document.getElementById('specialPrizeInput');
-                    if (prizeInput) prizeInput.value = '';
+                if (!this.checked && specialPrizeInput) {
+                    specialPrizeInput.value = '';
                 }
+                guardarConfiguracionSorteoEspecial();
+            });
+        }
+
+        if (specialPrizeInput) {
+            let specialPrizeSaveTimer = null;
+            specialPrizeInput.addEventListener('input', function() {
+                actualizarCartelSorteoEspecial(programData);
+                clearTimeout(specialPrizeSaveTimer);
+                specialPrizeSaveTimer = setTimeout(guardarConfiguracionSorteoEspecial, 350);
             });
         }
         
+        // Cargar la configuración persistente del Sorteo Especial al entrar en la página.
+        db.ref('config_sorteo_especial').on('value', function(snapshot) {
+            const config = snapshot.val() || {};
+            if (specialDrawCheckbox) specialDrawCheckbox.checked = !!config.activo;
+            if (specialPrizeWrapper) specialPrizeWrapper.classList.toggle('hidden', !config.activo);
+            if (specialPrizeInput) specialPrizeInput.value = config.activo ? String(config.premio || '') : '';
+            actualizarCartelSorteoEspecial(programData);
+        });
+
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) {
             const micBtn = document.getElementById('micBtn');
@@ -2720,8 +2755,19 @@
         const prize = document.getElementById('specialDrawMonthPrize');
         if (!banner || !prize) return;
 
-        const esEspecial = !!(data && (data.especial || data.sorteoEspecial));
-        const premio = String((data && data.premioEspecial) || '').trim();
+        const configCheckbox = document.getElementById('specialDrawCheckbox');
+        const configPrizeInput = document.getElementById('specialPrizeInput');
+
+        const configActivo = !!(configCheckbox && configCheckbox.checked);
+        const configPremio = configActivo && configPrizeInput
+            ? configPrizeInput.value.trim()
+            : '';
+
+        const dataEspecial = !!(data && (data.especial || data.sorteoEspecial));
+        const dataPremio = String((data && data.premioEspecial) || '').trim();
+
+        const esEspecial = configActivo || dataEspecial;
+        const premio = configPremio || dataPremio;
 
         if (esEspecial && premio) {
             prize.textContent = premio;
