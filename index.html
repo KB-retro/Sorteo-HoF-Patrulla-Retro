@@ -780,6 +780,7 @@
         <div id="winnerName" class="winner-name">Cargando...</div>
         <div id="winnerTicket" class="winner-ticket"></div>
         <div id="winnerQuote" class="winner-quote"></div>
+        <div id="specialPrizeDisplay" class="hidden" style="margin:10px auto 0; max-width:620px; padding:10px 14px; border:1px solid var(--gold); border-radius:10px; background:rgba(245,158,11,0.10); color:var(--gold); font-weight:bold; text-align:center;"></div>
 
         <div id="repeatNotice" class="repeat-winner-banner hidden">
             🚨 <b>¡Campeón!</b> ¡Teniendo ya la camiseta en el armario, es hora de repartir el botín!<br>Elige a un compañero de la lista de este mes para cederle el premio. 🚨
@@ -945,6 +946,20 @@
                         <button type="button" class="retro-time-confirm" id="retroTimeConfirm">CONFIRMAR HORA</button>
                         <button type="button" class="retro-time-cancel" id="retroTimeCancel">CANCELAR</button>
                     </div>
+                </div>
+            </div>
+
+            <div class="admin-section" style="margin-top: 12px; border: 1px solid var(--gold); background: rgba(245, 158, 11, 0.05);">
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer; margin:0;">
+                    <input type="checkbox" id="specialDrawCheckbox" style="width:18px; height:18px; accent-color:var(--gold);">
+                    <b>🎁 Sorteo Especial</b>
+                </label>
+                <p style="font-size:0.8rem; color:var(--muted); margin:5px 0 8px 26px;">
+                    Este sorteo usa la misma lista y el mismo sistema de elección, pero no cuenta como haber ganado la camiseta.
+                </p>
+                <div id="specialPrizeWrapper" class="hidden" style="margin-left:26px;">
+                    <label style="font-size:0.85rem; display:block; margin-bottom:4px;"><b>🎁 Premio del Sorteo Especial:</b></label>
+                    <input type="text" id="specialPrizeInput" placeholder="Ej.: Juego DOOM, modificación de Switch, instalación de modchip..." autocomplete="off">
                 </div>
             </div>
 
@@ -1361,7 +1376,7 @@
 
         let mapaConteo = {};
         historyToRender.forEach(function(item) {
-            if(item && item.user) {
+            if(item && !item.especial && item.user) {
                 const userKey = item.user;
                 mapaConteo[userKey] = (mapaConteo[userKey] || 0) + 1;
             }
@@ -1492,6 +1507,18 @@
         initRetroTimePicker();
         initRetroMonthPicker();
         initHistoryWinnerMonthPicker();
+
+        const specialDrawCheckbox = document.getElementById('specialDrawCheckbox');
+        const specialPrizeWrapper = document.getElementById('specialPrizeWrapper');
+        if (specialDrawCheckbox && specialPrizeWrapper) {
+            specialDrawCheckbox.addEventListener('change', function() {
+                specialPrizeWrapper.classList.toggle('hidden', !this.checked);
+                if (!this.checked) {
+                    const prizeInput = document.getElementById('specialPrizeInput');
+                    if (prizeInput) prizeInput.value = '';
+                }
+            });
+        }
         
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) {
@@ -2521,15 +2548,20 @@
         }
     }
 
-    function verificarRepetidoVisual() {
+    function verificarRepetidoVisual(esSorteoEspecial = false) {
         try {
+            const noticeEl = document.getElementById('repeatNotice');
+            if (esSorteoEspecial) {
+                if (noticeEl) noticeEl.classList.add('hidden');
+                return;
+            }
             if (!actualGanadorUser) return;
             db.ref('historial_ganadores').once('value', function(snapshot) {
                 const data = snapshot.val();
                 let totalVictorias = 0;
                 if (data) {
                     Object.values(data).forEach(function(item) {
-                        if (item && item.user && item.user.toLowerCase() === actualGanadorUser.toLowerCase()) {
+                        if (item && !item.especial && item.user && item.user.toLowerCase() === actualGanadorUser.toLowerCase()) {
                             totalVictorias++;
                         }
                     });
@@ -2734,6 +2766,19 @@
                 }
                 const wQuote = document.getElementById('winnerQuote');
                 if(wQuote) wQuote.innerText = fraseFinal;
+
+                const specialPrizeDisplay = document.getElementById('specialPrizeDisplay');
+                if (specialPrizeDisplay) {
+                    if (data.especial) {
+                        specialPrizeDisplay.textContent = '🎁 Premio especial: ' + (data.premioEspecial || 'Premio especial');
+                        specialPrizeDisplay.classList.remove('hidden');
+                    } else {
+                        specialPrizeDisplay.textContent = '';
+                        specialPrizeDisplay.classList.add('hidden');
+                    }
+                }
+                const repeatNotice = document.getElementById('repeatNotice');
+                if (repeatNotice && data.especial) repeatNotice.classList.add('hidden');
                 
                 let numeroBoleto = data.ganador.ticket;
                 const matchNum = String(data.ganador.ticket || '').match(/^(\d+)/);
@@ -2779,14 +2824,28 @@
         if(winnerCard) winnerCard.style.display = 'block';
         const slot = document.getElementById('slotMachineCard');
         if(slot) slot.classList.remove('active');
-        
+
+        const specialPrizeDisplay = document.getElementById('specialPrizeDisplay');
+        if (specialPrizeDisplay) {
+            if (data && data.especial) {
+                specialPrizeDisplay.textContent = '🎁 Premio especial: ' + (data.premioEspecial || 'Premio especial');
+                specialPrizeDisplay.classList.remove('hidden');
+            } else {
+                specialPrizeDisplay.textContent = '';
+                specialPrizeDisplay.classList.add('hidden');
+            }
+        }
+
+        const repeatNotice = document.getElementById('repeatNotice');
+        if (repeatNotice) repeatNotice.classList.toggle('hidden', !!(data && data.especial));
+
         // LANZAR FUEGOS ARTIFICIALES CUANDO SE MUESTRA EL GANADOR
         lanzarFuegosArtificiales();
-        
-        verificarRepetidoVisual();
+
+        verificarRepetidoVisual(!!(data && data.especial));
     }
 
-    function calcularYEjecutarTirada(rawLinesStr, rawBlacklistStr, animarResultado = true, mesPremioOverride = "") {
+    function calcularYEjecutarTirada(rawLinesStr, rawBlacklistStr, animarResultado = true, mesPremioOverride = "", sorteoEspecial = false, premioEspecial = "") {
         const rawLines = rawLinesStr.split('\n');
         const rawBlacklist = rawBlacklistStr.split('\n');
 
@@ -2866,7 +2925,9 @@
             ticket: ganadorEncontrado.ticket,
             fecha: fechaFormateada,
             mesPremio: mesPremio,
-            timestamp: Date.now() + Math.random()
+            timestamp: Date.now() + Math.random(),
+            especial: !!sorteoEspecial,
+            premioEspecial: sorteoEspecial ? String(premioEspecial || '').trim() : ''
         });
 
         const resultadoData = {
@@ -2876,6 +2937,8 @@
             timestamp: Date.now(),
             frase: fraseGanador,
             mesPremio: mesPremio,
+            especial: !!sorteoEspecial,
+            premioEspecial: sorteoEspecial ? String(premioEspecial || '').trim() : '',
             rawLines: rawLinesStr,        
             rawBlacklist: rawBlacklistStr 
         };
@@ -3357,7 +3420,11 @@
                 deleteBtnHtml = `<button class="delete-item-btn" onclick="borrarGanadorEspecifico('${item.key}', '${item.user}', '${item.fecha}')">🗑️ Borrar</button>`;
             }
             
-            li.innerHTML = '<div class="custom-item-text"><strong>' + item.user + '</strong></div>' +
+            const etiquetaEspecial = item.especial ? '🎁 <span style="color:var(--gold);">Sorteo Especial</span>' : '';
+            const premioEspecial = item.especial && item.premioEspecial ? '<div style="font-size:0.75rem; color:var(--gold); margin-top:2px;">' + escapeHtmlSimple(item.premioEspecial) + '</div>' : '';
+            li.innerHTML = '<div class="custom-item-text"><strong>' + item.user + '</strong>' +
+                           (etiquetaEspecial ? '<div style="font-size:0.75rem; margin-top:2px;">' + etiquetaEspecial + '</div>' : '') +
+                           premioEspecial + '</div>' +
                            '<div style="display:flex; align-items:center; gap:6px;"><div style="font-size: 0.75rem; color: var(--muted);">' + item.fecha + '</div>' + deleteBtnHtml + '</div>';
             listEl.appendChild(li);
         });
@@ -3461,6 +3528,8 @@
         const timeInput = document.getElementById('drawTimeInput');
         const listInput = document.getElementById('listInput');
         const blInput = document.getElementById('blacklistInput');
+        const specialCheckbox = document.getElementById('specialDrawCheckbox');
+        const specialPrizeInput = document.getElementById('specialPrizeInput');
         
         if(!dateInput || !timeInput || !listInput || !blInput) return;
 
@@ -3468,8 +3537,11 @@
         const timeVal = timeInput.value;
         const rawLines = listInput.value.trim();
         const rawBlacklist = blInput.value.trim();
+        const sorteoEspecial = !!(specialCheckbox && specialCheckbox.checked);
+        const premioEspecial = specialPrizeInput ? specialPrizeInput.value.trim() : '';
 
         if (!rawLines) return alert("Pega o importa la lista de participantes.");
+        if (sorteoEspecial && !premioEspecial) return alert("Indica qué premio se sortea en el Sorteo Especial.");
 
         if (!timeVal || timeVal === "--:--" || timeVal.trim() === "") {
             if (confirm("El sorteo se realizará de inmediato, ¿Continuar?")) {
@@ -3477,7 +3549,7 @@
                 mostrarRecreativa(true);
                 const slotStatus = document.getElementById('slotStatus');
                 if(slotStatus) slotStatus.innerText = '🎰 SORTEO INMEDIATO...';
-                calcularYEjecutarTirada(rawLines, rawBlacklist, false, obtenerMesPremioCompleto(mesSorteoActivo, new Date()));
+                calcularYEjecutarTirada(rawLines, rawBlacklist, false, obtenerMesPremioCompleto(mesSorteoActivo, new Date()), sorteoEspecial, premioEspecial);
                 sumarJuegosAlHoF(true); 
                 alert("¡Sorteo finalizado y Hall of Fame actualizado!");
             }
@@ -3503,7 +3575,9 @@
             targetTime: targetDate.getTime(),
             rawLines: rawLines,
             rawBlacklist: rawBlacklist,
-            mesPremio: obtenerMesPremioCompleto(mesSorteoActivo, targetDate)
+            mesPremio: obtenerMesPremioCompleto(mesSorteoActivo, targetDate),
+            sorteoEspecial: sorteoEspecial,
+            premioEspecial: sorteoEspecial ? premioEspecial : ''
         }).then(() => {
             sumarJuegosAlHoF(true); 
             alert("¡Sorteo programado con éxito!");
