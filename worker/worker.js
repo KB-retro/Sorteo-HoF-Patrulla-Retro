@@ -314,13 +314,14 @@ export default {
       if (request.method !== "POST") {
         return new Response("Método no permitido", { status: 405, headers: corsHeaders });
       }
-      if (!(await esPeticionDeAdmin(request, env))) {
-        return new Response(
-          JSON.stringify({ ok: false, error: "No autorizado. Inicia sesión como administrador." }),
-          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
       try {
+        if (!(await esPeticionDeAdmin(request, env))) {
+          return new Response(
+            JSON.stringify({ ok: false, error: "No autorizado. Inicia sesión como administrador." }),
+            { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
         // Los datos NO se toman de la petición: el Worker los lee él mismo
         // de Firebase, así nadie puede subir un backup con datos inventados.
         const resultado = await crearBackupAutomatico(env, "Backup manual desde la web");
@@ -331,8 +332,9 @@ export default {
 
       } catch (error) {
         console.error("Error creando backup:", error);
+        // Siempre con cabeceras CORS: así la web muestra el motivo en lugar de "Failed to fetch".
         return new Response(
-          JSON.stringify({ ok: false, error: "Error interno creando backup" }),
+          JSON.stringify({ ok: false, error: "Error interno creando backup: " + (error && error.message ? error.message : "desconocido") }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
@@ -515,8 +517,11 @@ async function crearBackupAutomatico(env, tipoBackup) {
       fetch(firebaseUrl(env, "hall_of_fame_juegos"))
   ]);
 
-  if (resultados.some(response => !response.ok)) {
-    throw new Error("No se pudieron leer todos los datos para crear el backup.");
+  const fallida = resultados.find(response => !response.ok);
+  if (fallida) {
+    // 401 casi siempre significa que el secreto FIREBASE_SECRET está mal copiado.
+    throw new Error(`Firebase respondió ${fallida.status} al leer los datos` +
+      (fallida.status === 401 ? " (revisa el secreto FIREBASE_SECRET)." : "."));
   }
 
   const historial = await resultados[0].json();
@@ -537,7 +542,7 @@ async function crearBackupAutomatico(env, tipoBackup) {
   const resultado = await subirBackupGitHub(backupData, env);
 
   if (!resultado.ok) {
-    throw new Error("No se pudo guardar el backup en GitHub.");
+    throw new Error("GitHub rechazó el backup (revisa el secreto GITHUB_TOKEN).");
   }
 
   console.log("💾 BACKUP GUARDADO:", resultado.archivo);
