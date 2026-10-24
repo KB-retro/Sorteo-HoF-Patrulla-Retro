@@ -26,7 +26,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="logo.png?v=2">
 
     <!-- CANVAS-CONFETTI CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.js" integrity="sha384-/Ko/tqVwPYurnBe+Mj8WWw+39WmyOZn/kU+neqXn4hRxGI575k07mB/hIekAT51+" crossorigin="anonymous"></script>
 
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -1527,9 +1527,18 @@
         refrescarHistorialAntiSpoiler();
     });
 
+    // Avisa de un error al guardar sin repetir el mensaje en cada pulsación.
+    let ultimoAvisoErrorGuardado = 0;
+    function avisarErrorGuardado(que, error) {
+        console.error('Error guardando ' + que + ':', error);
+        if (Date.now() - ultimoAvisoErrorGuardado < 30000) return;
+        ultimoAvisoErrorGuardado = Date.now();
+        alert('❌ No se pudo guardar ' + que + '.\n\n' + (error && error.message ? error.message : error) + '\n\nSi has recargado la página, vuelve a iniciar sesión.');
+    }
+
     function guardarParticipantesFirebase() {
         const val = document.getElementById('listInput').value;
-        db.ref('sorteo_participantes_raw').set(val);
+        db.ref('sorteo_participantes_raw').set(val).catch(error => avisarErrorGuardado('la lista de participantes', error));
     }
 
     const listInputEl = document.getElementById('listInput');
@@ -1537,7 +1546,7 @@
     listInputEl.addEventListener('blur', function() { isUserEditingList = false; guardarParticipantesFirebase(); });
     listInputEl.addEventListener('input', function() {
         calcularYMostrarProbabilidades();
-        db.ref('sorteo_participantes_raw').set(this.value);
+        guardarParticipantesFirebase();
     });
 
     window.addEventListener('DOMContentLoaded', function() {
@@ -1560,7 +1569,7 @@
                 activo: activo,
                 premio: premio
             }).catch(function(error) {
-                console.error('Error guardando la configuración del Sorteo Especial:', error);
+                avisarErrorGuardado('la configuración del Sorteo Especial', error);
             });
 
             actualizarCartelSorteoEspecial(programData);
@@ -1907,28 +1916,52 @@
     }
 
     function realizarCopiaEnFirebase(clave, etiqueta, notificar = false) {
-        Promise.all([
-            db.ref('historial_ganadores').once('value'),
-            db.ref('sorteo_actual').once('value'),
-            db.ref('mes_sorteo').once('value'),
-            db.ref('hall_of_fame_juegos').once('value'),
-            db.ref('regalos').once('value')
-        ]).then(function(results) {
+        leerDatosParaBackup().then(function(datos) {
             const backupPayload = {
                 fechaCopia: new Date().toLocaleString('es-ES'),
                 etiqueta: etiqueta,
-                historial_ganadores: results[0].val() || null,
-                sorteo_actual: results[1].val() || null,
-                mes_sorteo: results[2].val() || null,
-                hall_of_fame_juegos: results[3].val() || null,
-                regalos: results[4].val() || null
+                ...datos
             };
-            db.ref('backups/' + clave).set(backupPayload).then(function() {
+            return db.ref('backups/' + clave).set(backupPayload).then(function() {
                 if (notificar) alert("✅ Copia de seguridad guardada con éxito bajo la clave: " + clave);
-            }).catch(function(err) {
-                alert("❌ No se pudo guardar el backup.");
             });
+        }).catch(function(error) {
+            console.error('Error guardando el backup en Firebase:', error);
+            alert("❌ No se pudo guardar el backup.\n\n" + error.message);
         });
+    }
+
+    // Nodos que forman parte de una copia de seguridad.
+    const NODOS_BACKUP = ['historial_ganadores', 'sorteo_actual', 'mes_sorteo', 'hall_of_fame_juegos', 'regalos'];
+
+    function leerDatosParaBackup() {
+        return Promise.all(NODOS_BACKUP.map(nodo => db.ref(nodo).once('value'))).then(function(snaps) {
+            const datos = {};
+            NODOS_BACKUP.forEach((nodo, i) => { datos[nodo] = snaps[i].val() || null; });
+            return datos;
+        });
+    }
+
+    // Pide al Worker que guarde en GitHub una copia de lo que hay ahora en Firebase.
+    async function pedirBackupGitHub() {
+        if (!usuarioAdmin) throw new Error('No hay sesión de administrador.');
+        const response = await fetch(`${MI_CLOUDFLARE_WORKER}/backup`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                // El Worker comprueba con este token que quien pide el backup es admin
+                'Authorization': 'Bearer ' + await usuarioAdmin.getIdToken()
+            },
+            body: '{}'
+        });
+
+        let resultado = {};
+        try { resultado = await response.json(); } catch (e) { /* respuesta sin JSON */ }
+
+        if (!response.ok || !resultado.ok) {
+            throw new Error(resultado.error || `Cloudflare respondió ${response.status}`);
+        }
+        return resultado;
     }
 
     async function crearBackupGitHubManual() {
@@ -1942,45 +1975,103 @@
         }
 
         try {
-            const resultados = await Promise.all([
-                db.ref('historial_ganadores').once('value'),
-                db.ref('sorteo_actual').once('value'),
-                db.ref('mes_sorteo').once('value'),
-                db.ref('hall_of_fame_juegos').once('value'),
-                db.ref('regalos').once('value')
-            ]);
-
-            const backupData = {
-                historial_ganadores: resultados[0].val() || null,
-                sorteo_actual: resultados[1].val() || null,
-                mes_sorteo: resultados[2].val() || null,
-                hall_of_fame_juegos: resultados[3].val() || null,
-                regalos: resultados[4].val() || null,
-                tipoBackup: "Backup manual desde la web"
-            };
-
-            const response = await fetch(`${MI_CLOUDFLARE_WORKER}/backup`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    // El Worker comprueba con este token que quien pide el backup es admin
-                    'Authorization': 'Bearer ' + await usuarioAdmin.getIdToken()
-                },
-                body: JSON.stringify(backupData)
-            });
-
-            const resultado = await response.json();
-
-            if (!response.ok || !resultado.ok) {
-                throw new Error(resultado.error || `Cloudflare respondió ${response.status}`);
-            }
-
+            const resultado = await pedirBackupGitHub();
             alert("✅ Copia guardada correctamente en GitHub.\n\nArchivo: " + resultado.archivo);
-
         } catch (error) {
             console.error("Error creando backup manual en GitHub:", error);
             alert("❌ No se pudo crear la copia en GitHub.\n\n" + error.message);
         }
+    }
+
+    // Antes de una acción que sobrescribe o borra datos, guarda una copia en GitHub.
+    // Devuelve true si se puede continuar (copia hecha, o el admin decide seguir sin ella).
+    async function copiaPreviaGitHub(accion) {
+        try {
+            const resultado = await pedirBackupGitHub();
+            console.log('Copia previa guardada en GitHub:', resultado.archivo);
+            return true;
+        } catch (error) {
+            console.error('Error en la copia previa:', error);
+            return confirm(`⚠️ No se pudo hacer la copia de seguridad previa en GitHub:\n${error.message}\n\n¿Quieres ${accion} SIN copia previa?`);
+        }
+    }
+
+    // Comprueba que los datos de una copia tienen el formato esperado y prepara
+    // un resumen comparando lo que hay ahora con lo que se va a restaurar.
+    function analizarDatosBackup(data, actual) {
+        const errores = [];
+        const esObjeto = v => v !== null && typeof v === 'object' && !Array.isArray(v);
+
+        if (!esObjeto(data)) return { errores: ['El archivo no contiene un objeto de datos.'], incluidos: [] };
+
+        const incluidos = NODOS_BACKUP.filter(nodo => nodo in data);
+        if (!incluidos.length) errores.push('No contiene ninguno de los datos del sorteo (historial, Hall of Fame, regalos…).');
+
+        const h = data.historial_ganadores;
+        if ('historial_ganadores' in data && h !== null) {
+            if (!esObjeto(h)) errores.push('"historial_ganadores" no tiene el formato correcto.');
+            else if (Object.values(h).some(item => !esObjeto(item) || typeof item.user !== 'string' || !item.user.startsWith('@'))) {
+                errores.push('Hay ganadores en el historial sin un usuario válido (@usuario).');
+            }
+        }
+
+        const hof = data.hall_of_fame_juegos;
+        if ('hall_of_fame_juegos' in data && hof !== null) {
+            if (!esObjeto(hof)) errores.push('"hall_of_fame_juegos" no tiene el formato correcto.');
+            else if (Object.values(hof).some(item => !esObjeto(item) || typeof item.user !== 'string' || typeof item.total !== 'number')) {
+                errores.push('Hay entradas del Hall of Fame sin usuario o sin número de juegos.');
+            }
+        }
+
+        if ('regalos' in data && data.regalos !== null && !esObjeto(data.regalos)) errores.push('"regalos" no tiene el formato correcto.');
+        if ('mes_sorteo' in data && data.mes_sorteo !== null && typeof data.mes_sorteo !== 'string') errores.push('"mes_sorteo" no tiene el formato correcto.');
+        if ('sorteo_actual' in data && data.sorteo_actual !== null && !esObjeto(data.sorteo_actual)) errores.push('"sorteo_actual" no tiene el formato correcto.');
+
+        const contar = v => esObjeto(v) ? Object.keys(v).length : 0;
+        const juegos = v => esObjeto(v) ? Object.values(v).reduce((t, x) => t + (Number(x && x.total) || 0), 0) : 0;
+        const estado = v => !v ? 'vacío' : (v.ganador ? 'ganador ' + v.ganador.user : (v.status || 'sin estado'));
+        const linea = (nodo, texto, ahora, copia) => incluidos.includes(nodo)
+            ? `• ${texto}: ${ahora} → ${copia}`
+            : `• ${texto}: ${ahora} (no viene en la copia, se mantiene)`;
+
+        const resumen = [
+            linea('historial_ganadores', 'Ganadores en el historial', contar(actual.historial_ganadores), contar(data.historial_ganadores)),
+            linea('hall_of_fame_juegos', 'Hall of Fame', `${contar(actual.hall_of_fame_juegos)} usuarios / ${juegos(actual.hall_of_fame_juegos)} juegos`, `${contar(data.hall_of_fame_juegos)} usuarios / ${juegos(data.hall_of_fame_juegos)} juegos`),
+            linea('regalos', 'Regalos', contar(actual.regalos), contar(data.regalos)),
+            linea('mes_sorteo', 'Mes del sorteo', actual.mes_sorteo || '—', data.mes_sorteo || '—'),
+            linea('sorteo_actual', 'Sorteo actual', estado(actual.sorteo_actual), estado(data.sorteo_actual))
+        ].join('\n');
+
+        let aviso = '';
+        const sorteoCopia = incluidos.includes('sorteo_actual') ? data.sorteo_actual : null;
+        if (esObjeto(sorteoCopia) && (sorteoCopia.status === 'programado' || sorteoCopia.status === 'procesando')) {
+            const hora = Number(sorteoCopia.targetTime) || 0;
+            aviso = hora && hora <= Date.now()
+                ? '\n\n⚠️ La copia tiene un sorteo programado cuya hora YA HA PASADO: el servidor lo realizará en cuanto se restaure.'
+                : '\n\n⚠️ La copia tiene un sorteo programado: se volverá a programar al restaurarla.';
+        }
+
+        return { errores, incluidos, resumen: resumen + aviso };
+    }
+
+    // Restaura los datos de una copia: valida, muestra el resumen, hace una copia
+    // previa en GitHub y aplica todos los cambios a la vez.
+    async function restaurarDatos(data, origen) {
+        const actual = await leerDatosParaBackup();
+        const analisis = analizarDatosBackup(data, actual);
+
+        if (analisis.errores.length) {
+            alert('❌ No se puede restaurar ' + origen + ':\n\n- ' + analisis.errores.join('\n- '));
+            return;
+        }
+
+        if (!confirm(`⚠️ ¿RESTAURAR ${origen}?\n\nAhora → después de restaurar:\n${analisis.resumen}\n\nAntes se guardará una copia de los datos actuales en GitHub.`)) return;
+        if (!(await copiaPreviaGitHub('restaurar'))) return;
+
+        const cambios = {};
+        analisis.incluidos.forEach(nodo => { cambios[nodo] = data[nodo] === undefined ? null : data[nodo]; });
+        await db.ref().update(cambios);
+        alert('🎉 ¡Datos restaurados correctamente desde ' + origen + '!');
     }
 
     let listaBackupsCargada = false;
@@ -2004,27 +2095,25 @@
         });
     }
 
-    function restaurarBackupSeleccionado() {
+    async function restaurarBackupSeleccionado() {
         const clave = document.getElementById('backupSelect').value;
         if (!clave) {
             alert("Por favor, selecciona una copia de seguridad del desplegable.");
             return;
         }
-        if (confirm(`⚠️ ¿Estás seguro de RESTAURAR la copia "${clave}"?\n\nEsto sobrescribirá los datos con los guardados en ese momento.`)) {
-            db.ref('backups/' + clave).once('value', function(snapshot) {
-                const data = snapshot.val();
-                if (!data) {
-                    alert("Error al leer la copia de seguridad.");
-                    return;
-                }
-                db.ref('historial_ganadores').set(data.historial_ganadores || null);
-                db.ref('sorteo_actual').set(data.sorteo_actual || null);
-                db.ref('mes_sorteo').set(data.mes_sorteo || null);
-                db.ref('hall_of_fame_juegos').set(data.hall_of_fame_juegos || null);
-                db.ref('regalos').set(data.regalos || null).then(function() {
-                    alert("🎉 ¡Datos restaurados correctamente desde la copia " + clave + "!");
-                });
-            });
+        try {
+            const snapshot = await db.ref('backups/' + clave).once('value');
+            const data = snapshot.val();
+            if (!data) {
+                alert("Error al leer la copia de seguridad.");
+                return;
+            }
+            // Las copias de Firebase guardan los cinco nodos aunque estén vacíos.
+            NODOS_BACKUP.forEach(nodo => { if (!(nodo in data)) data[nodo] = null; });
+            await restaurarDatos(data, `la copia "${clave}"`);
+        } catch (error) {
+            console.error('Error restaurando la copia de Firebase:', error);
+            alert('❌ No se pudo restaurar la copia.\n\n' + error.message);
         }
     }
 
@@ -2039,53 +2128,48 @@
         if (confirm(`⚠️ ¿Estás seguro de que deseas ELIMINAR permanentemente la copia de seguridad?\n\n"${textoSeleccionado}"`)) {
             db.ref('backups/' + clave).remove().then(function() {
                 alert("🗑️ Copia de seguridad eliminada con éxito.");
+            }).catch(function(error) {
+                console.error('Error eliminando la copia:', error);
+                alert("❌ No se pudo eliminar la copia.\n\n" + error.message);
             });
         }
     }
 
     function descargarBackupJSON() {
-        Promise.all([
-            db.ref('historial_ganadores').once('value'),
-            db.ref('sorteo_actual').once('value'),
-            db.ref('mes_sorteo').once('value'),
-            db.ref('hall_of_fame_juegos').once('value'),
-            db.ref('regalos').once('value')
-        ]).then(function(results) {
-            const backupData = {
-                historial_ganadores: results[0].val() || null,
-                sorteo_actual: results[1].val() || null,
-                mes_sorteo: results[2].val() || null,
-                hall_of_fame_juegos: results[3].val() || null,
-                regalos: results[4].val() || null,
-                exportadoEl: new Date().toLocaleString('es-ES')
-            };
+        leerDatosParaBackup().then(function(datos) {
+            const backupData = { ...datos, exportadoEl: new Date().toLocaleString('es-ES') };
             const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
             a.download = `backup_sorteo_patrulla_${Date.now()}.json`;
             a.click();
-            URL.revokeObjectURL(url);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }).catch(function(error) {
+            console.error('Error descargando el backup:', error);
+            alert("❌ No se pudieron leer los datos para descargar la copia.\n\n" + error.message);
         });
     }
 
     function restaurarDesdeJSON(event) {
         const file = event.target.files[0];
+        // Permite volver a elegir el mismo archivo más tarde
+        event.target.value = '';
         if (!file) return;
         const reader = new FileReader();
-        reader.onload = function(e) {
+        reader.onload = async function(e) {
+            let data;
             try {
-                const data = JSON.parse(e.target.result);
-                if (confirm("⚠️ ¿Deseas restaurar la base de datos desde este archivo JSON local?")) {
-                    if ('historial_ganadores' in data) db.ref('historial_ganadores').set(data.historial_ganadores);
-                    if ('sorteo_actual' in data) db.ref('sorteo_actual').set(data.sorteo_actual);
-                    if ('mes_sorteo' in data) db.ref('mes_sorteo').set(data.mes_sorteo);
-                    if ('hall_of_fame_juegos' in data) db.ref('hall_of_fame_juegos').set(data.hall_of_fame_juegos);
-                    if ('regalos' in data) db.ref('regalos').set(data.regalos);
-                    alert("✅ ¡Copia de seguridad local restaurada con éxito!");
-                }
+                data = JSON.parse(e.target.result);
             } catch (err) {
                 alert("❌ El archivo no tiene un formato JSON válido.");
+                return;
+            }
+            try {
+                await restaurarDatos(data, `el archivo "${file.name}"`);
+            } catch (error) {
+                console.error('Error restaurando desde JSON:', error);
+                alert('❌ No se pudo restaurar el archivo.\n\n' + error.message);
             }
         };
         reader.readAsText(file);
@@ -2574,20 +2658,26 @@
             const ahora = new Date();
             fechaTexto = `${nombresMeses[ahora.getMonth()]} ${ahora.getFullYear()}`;
         }
-        const usuarios = inputVal.split(/[\n,\s]+/).map(u => u.trim()).filter(u => u.length > 0);
-        let añadidos = 0;
-        usuarios.forEach(function(usr) {
-            let userFinal = usr.startsWith('@') ? usr : '@' + usr;
-            db.ref('historial_ganadores').push({
-                user: userFinal,
-                ticket: "Entrada Manual",
-                fecha: fechaTexto,
-                timestamp: timestampToSave
-            });
-            añadidos++;
+        const usuarios = inputVal.split(/[\n,\s]+/).map(u => u.trim()).filter(u => u.length > 0)
+            .map(usr => usr.startsWith('@') ? usr : '@' + usr);
+        const invalidos = usuarios.filter(u => !/^@\w+$/.test(u));
+        if (invalidos.length) return alert("❌ Estos usuarios no son válidos (solo letras, números y _):\n\n" + invalidos.join('\n'));
+
+        Promise.all(usuarios.map(userFinal => db.ref('historial_ganadores').push({
+            user: userFinal,
+            ticket: "Entrada Manual",
+            fecha: fechaTexto,
+            timestamp: timestampToSave
+        }))).then(function() {
+            alert("¡" + usuarios.length + " usuario(s) añadido(s) al historial!");
+            limpiarFormularioGanadorManual();
+        }).catch(function(error) {
+            console.error('Error añadiendo ganadores manuales:', error);
+            alert("❌ No se pudieron añadir los ganadores al historial.\n\n" + error.message);
         });
-        alert("¡" + añadidos + " usuario(s) añadido(s) al historial!");
-        
+    }
+
+    function limpiarFormularioGanadorManual() {
         const manualUser = document.getElementById('manualUserAdmin');
         const manualMonth = document.getElementById('manualWinnerMonth');
         const displayValue = document.getElementById('retroMonthDisplayValue');
@@ -2600,7 +2690,10 @@
     function borrarGanadorEspecifico(key, usuario, fecha) {
         if (!isAdminLoggedIn) return;
         if (confirm(`⚠️ ¿Eliminar del historial a ${usuario} (${fecha})?`)) {
-            db.ref('historial_ganadores/' + key).remove();
+            db.ref('historial_ganadores/' + key).remove().catch(function(error) {
+                console.error('Error eliminando el ganador:', error);
+                alert("❌ No se pudo eliminar a " + usuario + " del historial.\n\n" + error.message);
+            });
         }
     }
 
@@ -3742,29 +3835,39 @@
         });
     }
 
-    function borrarTodo() {
-        if (confirm("⚠️ ¿Deseas BORRAR TODO? Esto eliminará:\n- El sorteo actual\n- El historial de ganadores\n- El Hall of Fame al completo\n- Los regalos\n- La lista de participantes\n\nEsta acción es irreversible.")) {
-            const el1 = document.getElementById('listInput');
-            const el2 = document.getElementById('blacklistInput');
-            const el3 = document.getElementById('drawDateInput');
-            const el4 = document.getElementById('drawTimeInput');
-            const dateText = document.getElementById('retroDateDisplayValue');
-            const timeText = document.getElementById('retroTimeDisplayValue');
-            if(el1) el1.value = '';
-            if(el2) el2.value = '';
-            if(el3) el3.value = '';
-            if(dateText) dateText.textContent = '--/--/----';
-            if(el4) el4.value = HORA_SORTEO_POR_DEFECTO;
-            if(timeText) timeText.textContent = HORA_SORTEO_POR_DEFECTO;
-            
-            db.ref('sorteo_actual').remove();
-            db.ref('historial_ganadores').remove();
-            db.ref('hall_of_fame_juegos').remove(); 
-            db.ref('regalos').remove();
-            db.ref('sorteo_participantes_raw').remove();
-            
-            alert("🧹 Todo ha sido borrado y reiniciado de fábrica.");
+    async function borrarTodo() {
+        const respuesta = prompt("⚠️ ¿Deseas BORRAR TODO? Esto eliminará:\n- El sorteo actual\n- El historial de ganadores\n- El Hall of Fame al completo\n- Los regalos\n- La lista de participantes\n\nAntes se guardará una copia en GitHub.\n\nPara confirmar, escribe BORRAR:");
+        if (respuesta === null) return;
+        if (respuesta.trim() !== 'BORRAR') return alert('No se ha borrado nada: había que escribir BORRAR en mayúsculas.');
+        if (!(await copiaPreviaGitHub('borrar todo'))) return;
+
+        try {
+            await db.ref().update({
+                sorteo_actual: null,
+                historial_ganadores: null,
+                hall_of_fame_juegos: null,
+                regalos: null,
+                sorteo_participantes_raw: null
+            });
+        } catch (error) {
+            console.error('Error borrando todo:', error);
+            return alert('❌ No se pudo borrar todo.\n\n' + error.message);
         }
+
+        const el1 = document.getElementById('listInput');
+        const el2 = document.getElementById('blacklistInput');
+        const el3 = document.getElementById('drawDateInput');
+        const el4 = document.getElementById('drawTimeInput');
+        const dateText = document.getElementById('retroDateDisplayValue');
+        const timeText = document.getElementById('retroTimeDisplayValue');
+        if(el1) el1.value = '';
+        if(el2) el2.value = '';
+        if(el3) el3.value = '';
+        if(dateText) dateText.textContent = '--/--/----';
+        if(el4) el4.value = HORA_SORTEO_POR_DEFECTO;
+        if(timeText) timeText.textContent = HORA_SORTEO_POR_DEFECTO;
+
+        alert("🧹 Todo ha sido borrado y reiniciado de fábrica.");
     }
 
     function obtenerMesPremioCompleto(mesNombre, fechaReferencia) {
