@@ -1,0 +1,857 @@
+{
+  "fechaBackup": "2026-10-02T22:26:09.998Z",
+  "historial_ganadores": {
+    "-Oyy4UYazbuUNgfen_R5": {
+      "fecha": "Julio 2026",
+      "ticket": "Entrada Manual",
+      "timestamp": 1782856800000,
+      "user": "@maxmad1984"
+    },
+    "-Oyy4kngQdiz0LlbCDtC": {
+      "fecha": "Junio 2026",
+      "ticket": "Entrada Manual",
+      "timestamp": 1780264800000,
+      "user": "@davrodri"
+    },
+    "-Oyy4uPoEKyLL5-RJhTY": {
+      "fecha": "Mayo 2026",
+      "ticket": "Entrada Manual",
+      "timestamp": 1777586400000,
+      "user": "@Fransd88"
+    },
+    "-Oyy52CVEdcc2PXkG4cQ": {
+      "fecha": "Abril 2026",
+      "ticket": "Entrada Manual",
+      "timestamp": 1774994400000,
+      "user": "@albgr1979"
+    },
+    "-Oyy5DyNPnjfNJ4T6LI5": {
+      "fecha": "Marzo 2026",
+      "ticket": "Entrada Manual",
+      "timestamp": 1772319600000,
+      "user": "@RHernandezM"
+    },
+    "-Oyy5PuN4n80ge4kWgVx": {
+      "fecha": "Febrero 2026",
+      "ticket": "Entrada Manual",
+      "timestamp": 1769900400000,
+      "user": "@Imazor77"
+    },
+    "-Oyy5YoFAuW1cqWACeUp": {
+      "fecha": "Enero 2026",
+      "ticket": "Entrada Manual",
+      "timestamp": 1767222000000,
+      "user": "@igortekno"
+    },
+    "-Oyy5jCNdtz5DrPWT5EI": {
+      "fecha": "Diciembre 2025",
+      "ticket": "Entrada Manual",
+      "timestamp": 1764543600000,
+      "user": "@MistermaestroevilJ"
+    },
+    "-Oyy5uVdLtek2ysQrgv_": {
+      "fecha": "Noviembre 2025",
+      "ticket": "Entrada Manual",
+      "timestamp": 1761951600000,
+      "user": "@elblete"
+    },
+    "-Oyy617GHktXu-L3EHLl": {
+      "fecha": "Octubre 2025",
+      "ticket": "Entrada Manual",
+      "timestamp": 1759269600000,
+      "user": "@PsYcO_PsYcO_PsYcO"
+    },
+    "-Oyy6AvuPHNtXw80NWSb": {
+      "fecha": "Septiembre 2025",
+      "ticket": "Entrada Manual",
+      "timestamp": 1756677600000,
+      "user": "@Zapador_1986"
+    },
+    "-Oyy6I7OE731YYE2QUt0": {
+      "fecha": "Agosto 2025",
+      "ticket": "Entrada Manual",
+      "timestamp": 1753999200000,
+      "user": "@tinako83"
+    },
+    "-Oyy6Okd-Pz-TdwyAnu3": {
+      "fecha": "Julio 2025",
+      "ticket": "Entrada Manual",
+      "timestamp": 1751320800000,
+      "user": "@cerebrosolido"
+    },
+    "-Oyy6VvHk4Sxd0Zcph8S": {
+      "fecha": "Junio 2025",
+      "ticket": "Entrada Manual",
+      "timestamp": 1748728800000,
+      "user": "@OtakuFerreDavid"
+    },
+    "-Oyy6gvvgPrk67DYw9QS": {
+      "fecha": "Mayo 2025",
+      "ticket": "Entrada Manual",
+      "timestamp": 1746050400000,
+      "user": "@Idryl"
+    },
+    "-Oyy8BfMK193TnudpyzV": {
+      "fecha": "Abril 2025",
+      "ticket": "Entrada Manual",
+      "timestamp": 1743458400000,
+      "user": "@JorgeManiaco"
+    },
+    "-P03a7H1KNYLRu2jCxwD": {
+      "fecha": "Agosto 2026",
+      "ticket": "156-@Shaggylish",
+      "timestamp": 1787857241167,
+      "user": "@Shaggylish"
+    },
+    "-P2spo1gWaPYD1EEus0Y": {
+      "fecha": "Septiembre 2026",
+      "mesPremio": "Septiembre 2026",
+      "ticket": "133-@Kyor0812",
+      "timestamp": 1790881251485,
+      "user": "@Kyor0812"
+    },
+    "-P2yiODaRwqY6HQsdsbN": {
+      "especial": true,
+      "fecha": "Octubre 2026",
+      "mesPremio": "Octubre 2026",
+      "premioEspecial": "Bolsa de Cacahuetes",
+      "ticket": "5-@patrullero",
+      "timestamp": 1790979969948,
+      "user": "@patrullero"
+    }
+  },
+  "sorteo_actual": {
+    "arcadeGroup": [
+      {
+        "ticket": "3-@cometiestos",
+        "user": "@cometiestos"
+      },
+      {
+        "ticket": "4-@micropene",
+        "user": "@micropene"
+      },
+      {
+        "ticket": "5-@patrullero",
+        "user": "@patrullero"
+      },
+      {
+        "ticket": "1-@MistermaestroevilJ",
+        "user": "@MistermaestroevilJ"
+      },
+      {
+        "ticket": "2-@pendejo",
+        "user": "@pendejo"
+      }
+    ],
+    "especial": true,
+    "ganador": {
+      "ticket": "5-@patrullero",
+      "user": "@patrullero"
+    },
+    "log": [
+      "✅ ¡TIRADA GANADORA!: 5-@patrullero"
+    ],
+    "mesPremio": "Octubre 2026",
+    "premioEspecial": "Bolsa de Cacahuetes",
+    "rawBlacklist": "",
+    "rawLines": "1-@MistermaestroevilJ\n2-@pendejo\n3-@cometiestos\n4-@micropene\n5-@patrullero",
+    "timestamp": 1790979969948
+  },
+  "mes_sorteo": "Octubre",
+  "regalos": null,
+  "hall_of_fame_juegos": {
+    "@a_alabaster": {
+      "total": 2,
+      "user": "@A_Alabaster"
+    },
+    "@acupuntorr": {
+      "total": 3,
+      "user": "@Acupuntorr"
+    },
+    "@agerturun": {
+      "total": 10,
+      "user": "@Agerturun"
+    },
+    "@alber666": {
+      "total": 12,
+      "user": "@alber666"
+    },
+    "@albgr1979": {
+      "total": 30,
+      "user": "@albgr1979"
+    },
+    "@alcaina69": {
+      "total": 1,
+      "user": "@alcaina69"
+    },
+    "@alexistoretto": {
+      "total": 128,
+      "user": "@AlexisToretto"
+    },
+    "@alitademosca2": {
+      "total": 1,
+      "user": "@Alitademosca2"
+    },
+    "@almenos6": {
+      "total": 2,
+      "user": "@Almenos6"
+    },
+    "@alucard467": {
+      "total": 2,
+      "user": "@alucard467"
+    },
+    "@alvarouniovi": {
+      "total": 13,
+      "user": "@alvarouniovi"
+    },
+    "@alvarovape": {
+      "total": 27,
+      "user": "@AlvaroVape"
+    },
+    "@andresaco": {
+      "total": 6,
+      "user": "@andresaco"
+    },
+    "@andresezn": {
+      "total": 2,
+      "user": "@AndresEzn"
+    },
+    "@antmerino": {
+      "total": 6,
+      "user": "@antmerino"
+    },
+    "@aromeroal": {
+      "total": 66,
+      "user": "@ARomeroAl"
+    },
+    "@ashdrugal": {
+      "total": 23,
+      "user": "@Ashdrugal"
+    },
+    "@azhanxe": {
+      "total": 3,
+      "user": "@Azhanxe"
+    },
+    "@begto": {
+      "total": 2,
+      "user": "@Begto"
+    },
+    "@carlos_fdezmay": {
+      "total": 31,
+      "user": "@Carlos_FdezMay"
+    },
+    "@carlos_personal": {
+      "total": 6,
+      "user": "@Carlos_Personal"
+    },
+    "@carlos_r0m": {
+      "total": 11,
+      "user": "@Carlos_r0m"
+    },
+    "@carlos_sarrio": {
+      "total": 11,
+      "user": "@Carlos_Sarrio"
+    },
+    "@carlospixel": {
+      "total": 2,
+      "user": "@CarlosPixel"
+    },
+    "@ccrespoo": {
+      "total": 12,
+      "user": "@CcreSpOo"
+    },
+    "@cerebrosolido": {
+      "total": 100,
+      "user": "@cerebrosolido"
+    },
+    "@cloudstrife229": {
+      "total": 49,
+      "user": "@CloudStrife229"
+    },
+    "@cometiestos": {
+      "total": 1,
+      "user": "@cometiestos"
+    },
+    "@contry1": {
+      "total": 106,
+      "user": "@Contry1"
+    },
+    "@copyloko": {
+      "total": 2,
+      "user": "@copyloko"
+    },
+    "@crusete": {
+      "total": 10,
+      "user": "@Crusete"
+    },
+    "@dalagu84": {
+      "total": 10,
+      "user": "@Dalagu84"
+    },
+    "@darktsubo": {
+      "total": 4,
+      "user": "@Darktsubo"
+    },
+    "@dasapadi": {
+      "total": 4,
+      "user": "@dasapadi"
+    },
+    "@davitinomcfly": {
+      "total": 45,
+      "user": "@DavitinoMcFly"
+    },
+    "@davrodri": {
+      "total": 103,
+      "user": "@davrodri"
+    },
+    "@demecc": {
+      "total": 2,
+      "user": "@demeCC"
+    },
+    "@dmaciasr": {
+      "total": 1,
+      "user": "@dmaciasr"
+    },
+    "@don_navidad": {
+      "total": 4,
+      "user": "@Don_Navidad"
+    },
+    "@doohan8": {
+      "total": 11,
+      "user": "@Doohan8"
+    },
+    "@el_grog": {
+      "total": 2,
+      "user": "@el_grog"
+    },
+    "@elber_graff": {
+      "total": 34,
+      "user": "@elber_graff"
+    },
+    "@elblete": {
+      "total": 2,
+      "user": "@elblete"
+    },
+    "@elbrujo40": {
+      "total": 20,
+      "user": "@elbrujo40"
+    },
+    "@eljosehu": {
+      "total": 19,
+      "user": "@ElJoSeHu"
+    },
+    "@enekofer": {
+      "total": 1,
+      "user": "@enekofer"
+    },
+    "@enri84n": {
+      "total": 15,
+      "user": "@enri84n"
+    },
+    "@er_zeae": {
+      "total": 29,
+      "user": "@Er_Zeae"
+    },
+    "@erplodi": {
+      "total": 16,
+      "user": "@ErPlodi"
+    },
+    "@esquimal77": {
+      "total": 23,
+      "user": "@Esquimal77"
+    },
+    "@falkenvlc": {
+      "total": 30,
+      "user": "@Falkenvlc"
+    },
+    "@fersaga": {
+      "total": 7,
+      "user": "@fersaga"
+    },
+    "@fran130687": {
+      "total": 3,
+      "user": "@Fran130687"
+    },
+    "@franjacor": {
+      "total": 17,
+      "user": "@FranJaCor"
+    },
+    "@franlillo1": {
+      "total": 28,
+      "user": "@Franlillo1"
+    },
+    "@fransd88": {
+      "total": 119,
+      "user": "@Fransd88"
+    },
+    "@g4t0r": {
+      "total": 2,
+      "user": "@g4t0r"
+    },
+    "@genito81": {
+      "total": 49,
+      "user": "@Genito81"
+    },
+    "@gorkaine": {
+      "total": 6,
+      "user": "@Gorkaine"
+    },
+    "@gorkaman": {
+      "total": 29,
+      "user": "@Gorkaman"
+    },
+    "@guillenordic": {
+      "total": 1,
+      "user": "@GuilleNordic"
+    },
+    "@hansdracow": {
+      "total": 12,
+      "user": "@HansDracow"
+    },
+    "@hartyo": {
+      "total": 4,
+      "user": "@Hartyo"
+    },
+    "@hispank": {
+      "total": 3,
+      "user": "@HispanK"
+    },
+    "@i_reif": {
+      "total": 1,
+      "user": "@I_Reif"
+    },
+    "@idryl": {
+      "total": 67,
+      "user": "@Idryl"
+    },
+    "@igortekno": {
+      "total": 30,
+      "user": "@igortekno"
+    },
+    "@imazor77": {
+      "total": 12,
+      "user": "@Imazor77"
+    },
+    "@imontoyarr": {
+      "total": 5,
+      "user": "@IMontoyarr"
+    },
+    "@itachiu720": {
+      "total": 3,
+      "user": "@Itachiu720"
+    },
+    "@jantmm": {
+      "total": 1,
+      "user": "@jantmm"
+    },
+    "@javiero": {
+      "total": 11,
+      "user": "@javiero"
+    },
+    "@javilzn": {
+      "total": 18,
+      "user": "@JaviLZN"
+    },
+    "@javipon": {
+      "total": 24,
+      "user": "@javipon"
+    },
+    "@jawler": {
+      "total": 2,
+      "user": "@jawler"
+    },
+    "@jelpamo": {
+      "total": 8,
+      "user": "@Jelpamo"
+    },
+    "@jenc1us": {
+      "total": 184,
+      "user": "@Jenc1us"
+    },
+    "@jesusabel": {
+      "total": 3,
+      "user": "@JesusAbel"
+    },
+    "@jfranlb": {
+      "total": 10,
+      "user": "@JFranLB"
+    },
+    "@jj4vy": {
+      "total": 127,
+      "user": "@Jj4vy"
+    },
+    "@jj4vy1": {
+      "total": 1,
+      "user": "@Jj4vy1"
+    },
+    "@jlsk8": {
+      "total": 4,
+      "user": "@Jlsk8"
+    },
+    "@jmanic": {
+      "total": 5,
+      "user": "@Jmanic"
+    },
+    "@jona_spdr": {
+      "total": 12,
+      "user": "@jona_spdr"
+    },
+    "@jordinarko": {
+      "total": 4,
+      "user": "@jordinarko"
+    },
+    "@jorgemaniaco": {
+      "total": 134,
+      "user": "@JorgeManiaco"
+    },
+    "@jose251282": {
+      "total": 19,
+      "user": "@Jose251282"
+    },
+    "@jotasinmasvueltas": {
+      "total": 3,
+      "user": "@jotasinmasvueltas"
+    },
+    "@jotaworld": {
+      "total": 78,
+      "user": "@jotaworld"
+    },
+    "@juanmote": {
+      "total": 105,
+      "user": "@Juanmote"
+    },
+    "@kamarby": {
+      "total": 8,
+      "user": "@Kamarby"
+    },
+    "@katgold": {
+      "total": 4,
+      "user": "@Katgold"
+    },
+    "@kingpaul_69": {
+      "total": 1,
+      "user": "@kingpaul_69"
+    },
+    "@kyor0812": {
+      "total": 4,
+      "user": "@Kyor0812"
+    },
+    "@lanzelot17": {
+      "total": 1,
+      "user": "@Lanzelot17"
+    },
+    "@logen9dedos": {
+      "total": 12,
+      "user": "@Logen9dedos"
+    },
+    "@loiloyes": {
+      "total": 17,
+      "user": "@loiloyes"
+    },
+    "@luis_del91": {
+      "total": 27,
+      "user": "@luis_del91"
+    },
+    "@lukabashi": {
+      "total": 2,
+      "user": "@LukaBashi"
+    },
+    "@m4r13t3": {
+      "total": 1,
+      "user": "@M4r13t3"
+    },
+    "@m_1_c_h_3_l": {
+      "total": 6,
+      "user": "@M_1_c_h_3_l"
+    },
+    "@mairym91": {
+      "total": 2,
+      "user": "@Mairym91"
+    },
+    "@mandojota": {
+      "total": 3,
+      "user": "@mandojota"
+    },
+    "@mandojotalorian": {
+      "total": 3,
+      "user": "@mandojotalorian"
+    },
+    "@manic_miner": {
+      "total": 80,
+      "user": "@Manic_Miner"
+    },
+    "@markastur": {
+      "total": 4,
+      "user": "@MarkAstur"
+    },
+    "@marko117": {
+      "total": 138,
+      "user": "@Marko117"
+    },
+    "@maxmad1984": {
+      "total": 45,
+      "user": "@maxmad1984"
+    },
+    "@mckeijas": {
+      "total": 37,
+      "user": "@Mckeijas"
+    },
+    "@metapodo": {
+      "total": 2,
+      "user": "@Metapodo"
+    },
+    "@micropene": {
+      "total": 1,
+      "user": "@micropene"
+    },
+    "@migarzia": {
+      "total": 84,
+      "user": "@Migarzia"
+    },
+    "@miguelop": {
+      "total": 4,
+      "user": "@miguelop"
+    },
+    "@mistermaestroevilj": {
+      "total": 247,
+      "user": "@MistermaestroevilJ"
+    },
+    "@mixcreeping": {
+      "total": 2,
+      "user": "@mixcreeping"
+    },
+    "@modena400": {
+      "total": 72,
+      "user": "@Modena400"
+    },
+    "@mp2tst": {
+      "total": 2,
+      "user": "@mp2tst"
+    },
+    "@mrnat": {
+      "total": 18,
+      "user": "@MrNat"
+    },
+    "@mrtoriaz": {
+      "total": 1,
+      "user": "@MrToriaz"
+    },
+    "@mugiwaranopika": {
+      "total": 34,
+      "user": "@MugiwaraNoPika"
+    },
+    "@mundojota": {
+      "total": 9,
+      "user": "@mundojota"
+    },
+    "@mustrufu": {
+      "total": 14,
+      "user": "@mustrufu"
+    },
+    "@nacho_gu_o": {
+      "total": 20,
+      "user": "@nacho_GU_O"
+    },
+    "@nekomaister": {
+      "total": 5,
+      "user": "@NekoMaister"
+    },
+    "@nightcrawler_xmen": {
+      "total": 5,
+      "user": "@Nightcrawler_Xmen"
+    },
+    "@nomteck": {
+      "total": 1,
+      "user": "@Nomteck"
+    },
+    "@oames": {
+      "total": 2,
+      "user": "@Oames"
+    },
+    "@oskaretee": {
+      "total": 7,
+      "user": "@Oskaretee"
+    },
+    "@otakuferredavid": {
+      "total": 41,
+      "user": "@OtakuFerreDavid"
+    },
+    "@pacon100": {
+      "total": 1,
+      "user": "@pacon100"
+    },
+    "@palistafc": {
+      "total": 4,
+      "user": "@PalistaFC"
+    },
+    "@passbladex": {
+      "total": 4,
+      "user": "@Passbladex"
+    },
+    "@patrullero": {
+      "total": 1,
+      "user": "@patrullero"
+    },
+    "@pau1981": {
+      "total": 1,
+      "user": "@Pau1981"
+    },
+    "@pedritoc84": {
+      "total": 95,
+      "user": "@Pedritoc84"
+    },
+    "@pendejo": {
+      "total": 1,
+      "user": "@pendejo"
+    },
+    "@petercervezas": {
+      "total": 18,
+      "user": "@PeterCervezas"
+    },
+    "@pettersdark": {
+      "total": 3,
+      "user": "@pettersdark"
+    },
+    "@phyno_84": {
+      "total": 3,
+      "user": "@Phyno_84"
+    },
+    "@psyco_psyco_psyco": {
+      "total": 219,
+      "user": "@PsYcO_PsYcO_PsYcO"
+    },
+    "@redhooka": {
+      "total": 1,
+      "user": "@Redhooka"
+    },
+    "@rhernandezm": {
+      "total": 9,
+      "user": "@RHernandezM"
+    },
+    "@rhober70": {
+      "total": 3,
+      "user": "@RHOBER70"
+    },
+    "@rikiwirm": {
+      "total": 8,
+      "user": "@RikiWirm"
+    },
+    "@roberto_magic": {
+      "total": 7,
+      "user": "@Roberto_magic"
+    },
+    "@sergiogonzalez": {
+      "total": 28,
+      "user": "@SergioGonzalez"
+    },
+    "@shaggylish": {
+      "total": 8,
+      "user": "@Shaggylish"
+    },
+    "@sirdrak": {
+      "total": 7,
+      "user": "@Sirdrak"
+    },
+    "@sirenindia": {
+      "total": 103,
+      "user": "@Sirenindia"
+    },
+    "@smoothkid13": {
+      "total": 1,
+      "user": "@SmoothKid13"
+    },
+    "@sotebcn": {
+      "total": 2,
+      "user": "@SoteBcn"
+    },
+    "@soyelputoboss": {
+      "total": 2,
+      "user": "@soyelputoboss"
+    },
+    "@ssalitre": {
+      "total": 1,
+      "user": "@ssalitre"
+    },
+    "@stshunz": {
+      "total": 21,
+      "user": "@stshunz"
+    },
+    "@superstrat08": {
+      "total": 86,
+      "user": "@SUPERSTRAT08"
+    },
+    "@sy4f3d0": {
+      "total": 9,
+      "user": "@sY4f3D0"
+    },
+    "@t0n3ch0": {
+      "total": 1,
+      "user": "@T0n3ch0"
+    },
+    "@tardiswho": {
+      "total": 5,
+      "user": "@TARDISWHO"
+    },
+    "@teide80": {
+      "total": 7,
+      "user": "@Teide80"
+    },
+    "@the_gring0": {
+      "total": 1,
+      "user": "@The_gring0"
+    },
+    "@themenda987": {
+      "total": 39,
+      "user": "@Themenda987"
+    },
+    "@thruman00mix": {
+      "total": 2,
+      "user": "@thruman00mix"
+    },
+    "@tinako83": {
+      "total": 14,
+      "user": "@tinako83"
+    },
+    "@tominskii": {
+      "total": 21,
+      "user": "@Tominskii"
+    },
+    "@toniferx": {
+      "total": 132,
+      "user": "@ToniFerx"
+    },
+    "@tucaratupapi": {
+      "total": 6,
+      "user": "@Tucaratupapi"
+    },
+    "@ulisez31": {
+      "total": 6,
+      "user": "@Ulisez31"
+    },
+    "@uryrcde82": {
+      "total": 8,
+      "user": "@uryRcde82"
+    },
+    "@vyseelpirata": {
+      "total": 91,
+      "user": "@Vyseelpirata"
+    },
+    "@xocodrop": {
+      "total": 2,
+      "user": "@xocodrop"
+    },
+    "@y4m4n3k0": {
+      "total": 5,
+      "user": "@y4m4n3k0"
+    },
+    "@yaz3k": {
+      "total": 1,
+      "user": "@Yaz3k"
+    },
+    "@zapador_1986": {
+      "total": 73,
+      "user": "@Zapador_1986"
+    }
+  },
+  "tipoBackup": "Backup automático después del sorteo"
+}

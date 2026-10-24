@@ -1,0 +1,240 @@
+// Pruebas del Worker de Cloudflare (worker/worker.js) con Firebase, GitHub,
+// Firebase Auth y Telegram simulados. Uso: npm test (desde la carpeta tests).
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+
+// worker.js es un módulo ES sin package.json propio: se importa desde una copia .mjs
+const dir = path.dirname(fileURLToPath(import.meta.url));
+const copia = path.join(os.tmpdir(), `worker-${process.pid}.mjs`);
+fs.copyFileSync(path.join(dir, '..', 'worker', 'worker.js'), copia);
+const { default: worker } = await import(pathToFileURL(copia).href);
+fs.unlinkSync(copia);
+
+let telegram = [], telegramFalla = false;
+let db = {}, etagN = 0, github = [], urls = [], failPutResult = false;
+const clone = v => v === undefined ? null : JSON.parse(JSON.stringify(v));
+const parts = p => p.split('/').filter(Boolean);
+const get = p => { let c = db; for (const k of parts(p)) { if (c == null) return null; c = c[k]; } return c === undefined ? null : c; };
+const setp = (p, v) => { const ks = parts(p); let c = db; for (const k of ks.slice(0, -1)) { c[k] = c[k] || {}; c = c[k]; } if (v === null) delete c[ks.at(-1)]; else c[ks.at(-1)] = clone(v); };
+const etagOf = p => 'E' + JSON.stringify(get(p)).length + '_' + Buffer.from(JSON.stringify(get(p))).toString('base64').slice(-12);
+globalThis.fetch = async (url, opt = {}) => {
+  urls.push(url);
+  if (url.startsWith('https://identitytoolkit.googleapis.com')) {
+    const tok = JSON.parse(opt.body).idToken;
+    if (!url.includes('key=APIKEY')) return new Response('{}', { status: 400 });
+    if (tok === 'tok-admin') return new Response(JSON.stringify({ users: [{ localId: 'UID_ADMIN' }] }));
+    if (tok === 'tok-otro') return new Response(JSON.stringify({ users: [{ localId: 'UID_OTRO' }] }));
+    return new Response('{"error":{}}', { status: 400 });
+  }
+  if (url.startsWith('https://t.me/')) return new Response('<html>telegram</html>');
+  if (url.startsWith('https://api.telegram.org/')) {
+    if (telegramFalla) return new Response('{"ok":false}', { status: 500 });
+    telegram.push({ url, ...JSON.parse(opt.body) });
+    return new Response('{"ok":true}');
+  }
+  if (url.startsWith('https://api.github.com')) {
+    const body = JSON.parse(opt.body);
+    github.push(JSON.parse(Buffer.from(body.content, 'base64').toString('utf8')));
+    return new Response('{}', { status: 201 });
+  }
+  const u = new URL(url); const p = u.pathname.replace(/\.json$/, '');
+  const method = opt.method || 'GET';
+  if (method === 'GET') return new Response(JSON.stringify(get(p)), { headers: { ETag: etagOf(p) } });
+  if (method === 'PUT') {
+    const im = opt.headers && opt.headers['If-Match'];
+    if (im && im !== '*' && im !== etagOf(p)) return new Response('conflict', { status: 412 });
+    const v = JSON.parse(opt.body);
+    if (failPutResult && p === '/sorteo_actual' && v.ganador) return new Response('boom', { status: 500 });
+    setp(p, v); return new Response(opt.body);
+  }
+  throw new Error('método ' + method);
+};
+let fails = 0; const check = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) fails++; };
+const env = { GITHUB_TOKEN: 'x' };
+const run = (e = env) => worker.scheduled({}, e, {});
+const lista = '1-@Alfa\n2-@Beta.\n3-@Gamma\n4-@Delta\n5-@Eps';
+const programado = (extra = {}) => ({ status: 'programado', targetTime: Date.now() - 1000, rawLines: lista, rawBlacklist: '', mesPremio: 'Octubre 2026', sorteoEspecial: false, premioEspecial: '', ...extra });
+const quiet = console.log; const qerr = console.error;
+console.log = () => {}; console.error = () => {};
+const out = []; const P = (c, m) => out.push([c, m]);
+
+// a. sorteo normal
+db = { sorteo_actual: programado(), historial_ganadores: { '-old': { user: '@Viejo', fecha: 'Sep', timestamp: 1 } } };
+await run();
+let h = Object.entries(db.historial_ganadores);
+P(db.sorteo_actual.ganador && !db.sorteo_actual.status, 'a: resultado guardado');
+P(h.length === 2 && h.some(([k]) => k.startsWith('sorteo_')), 'a: una entrada nueva en historial con clave fija');
+P(db.sorteo_actual.arcadeGroup.every(x => x.user !== '@Beta.') && db.sorteo_actual.arcadeGroup.some(x => x.user === '@Beta'), 'a: @Beta. se registra como usuario @Beta');
+P(github.length === 1 && github[0].tipoBackup === 'Backup automático después del sorteo' && Object.keys(github[0].historial_ganadores).length === 2, 'a: backup automático con datos de Firebase');
+P(!db.sorteo_actual.tiradaPendiente, 'a: resultado final sin campos temporales');
+P(db.sorteo_actual.arcadeGroup.length === 5, 'a: grupo arcade de 5');
+// e. ya hecho: no repite
+await run();
+P(Object.keys(db.historial_ganadores).length === 2, 'e: segunda ejecución no hace nada');
+
+// b. fallo a medias y retoma
+db = { sorteo_actual: programado() }; github = []; failPutResult = true;
+await run();
+P(db.sorteo_actual.status === 'procesando' && db.sorteo_actual.tiradaPendiente, 'b: queda en procesando con ganador guardado');
+const g1 = db.sorteo_actual.tiradaPendiente.ganador.user;
+P(Object.keys(db.historial_ganadores).length === 1, 'b: historial escrito antes del fallo');
+failPutResult = false;
+await run();
+P(db.sorteo_actual.status === 'procesando', 'b: no retoma antes de 5 min');
+db.sorteo_actual.processingAt = Date.now() - 6 * 60000;
+await run();
+P(db.sorteo_actual.ganador && db.sorteo_actual.ganador.user === g1, 'b: retoma con el MISMO ganador');
+P(Object.keys(db.historial_ganadores).length === 1, 'b: sigue habiendo UNA sola entrada en historial');
+
+// c. sin participantes
+db = { sorteo_actual: programado({ rawLines: 'hola\nnadie' }) };
+await run();
+P(db.sorteo_actual.status === 'error' && /participantes/.test(db.sorteo_actual.error), 'c: sin participantes queda en error');
+P(db.sorteo_actual.rawLines === 'hola\nnadie', 'c: conserva la lista original');
+const snapC = JSON.stringify(db); await run();
+P(JSON.stringify(db) === snapC && !db.historial_ganadores, 'c: en error el cron no reintenta');
+
+// d. todos en lista negra
+db = { sorteo_actual: programado({ rawLines: '1-@A\n2-@B', rawBlacklist: '@a\n@b' }) };
+await run();
+P(db.sorteo_actual.status === 'error' && /Lista Negra/.test(db.sorteo_actual.error), 'd: todos en lista negra queda en error');
+
+// f. no ha llegado la hora
+db = { sorteo_actual: programado({ targetTime: Date.now() + 60000 }) };
+await run();
+P(db.sorteo_actual.status === 'programado', 'f: antes de la hora no hace nada');
+
+// i. conflicto de bloqueo: otro cambia el dato entre lectura y bloqueo
+db = { sorteo_actual: programado() };
+const realFetch = globalThis.fetch; let first = true;
+globalThis.fetch = async (url, opt = {}) => { const r = await realFetch(url, opt); if (first && (opt.method || 'GET') === 'GET' && url.includes('sorteo_actual')) { first = false; db.sorteo_actual.rawLines += '\n6-@Nuevo'; } return r; };
+await run();
+globalThis.fetch = realFetch;
+P(db.sorteo_actual.status === 'programado' && !db.historial_ganadores, 'i: si cambia entre lectura y bloqueo, no sortea');
+
+// g. secreto
+urls = []; db = { sorteo_actual: programado() };
+await run({ GITHUB_TOKEN: 'x', FIREBASE_SECRET: 's3cr3t' });
+const fbUrls = urls.filter(u => u.includes('firebasedatabase'));
+P(fbUrls.length > 0 && fbUrls.every(u => u.includes('auth=s3cr3t')), 'g: con FIREBASE_SECRET todas las llamadas a Firebase llevan auth');
+urls = []; db = { sorteo_actual: programado() }; await run();
+P(urls.filter(u => u.includes('firebasedatabase')).every(u => !u.includes('auth=')), 'g: sin secreto, sin auth (como ahora)');
+
+// h. /backup ignora el cuerpo
+github = []; db = { historial_ganadores: { k: { user: '@Real' } }, mes_sorteo: 'Octubre' };
+const res = await worker.fetch(new Request('https://w/backup', { method: 'POST', body: JSON.stringify({ historial_ganadores: { x: { user: '@FALSO' } } }) }), env);
+const jr = await res.json();
+P(res.status === 200 && jr.ok && jr.archivo.startsWith('backups/'), 'h: /backup responde ok y archivo');
+P(github.length === 1 && JSON.stringify(github[0]).includes('@Real') && !JSON.stringify(github[0]).includes('@FALSO'), 'h: backup con datos de Firebase, no del cuerpo');
+P(github[0].tipoBackup === 'Backup manual desde la web', 'h: tipo manual');
+const r405 = await worker.fetch(new Request('https://w/backup'), env);
+P(r405.status === 405, 'h: GET /backup → 405');
+
+
+// j. autorización de /backup con ADMIN_UIDS
+const envAuth = { GITHUB_TOKEN: 'x', ADMIN_UIDS: 'UID_ADMIN, UID_DOS', FIREBASE_API_KEY: 'APIKEY' };
+const post = (h = {}) => worker.fetch(new Request('https://w/backup', { method: 'POST', headers: h, body: '{}' }), envAuth);
+github = [];
+P((await post()).status === 401, 'j: sin token → 401');
+P((await post({ Authorization: 'Bearer basura' })).status === 401, 'j: token inválido → 401');
+P((await post({ Authorization: 'Bearer tok-otro' })).status === 401, 'j: cuenta no admin → 401');
+P(github.length === 0, 'j: ningún backup sin autorización');
+const ok = await post({ Authorization: 'Bearer tok-admin' });
+P(ok.status === 200 && github.length === 1, 'j: admin → backup creado');
+P((await worker.fetch(new Request('https://w/backup', { method: 'POST', headers: { Authorization: 'Bearer tok-admin' } }), { ...envAuth, FIREBASE_API_KEY: undefined })).status === 401, 'j: sin FIREBASE_API_KEY → 401');
+const opt = await worker.fetch(new Request('https://w/backup', { method: 'OPTIONS' }), envAuth);
+P(opt.headers.get('Access-Control-Allow-Headers').includes('Authorization'), 'j: CORS permite Authorization');
+
+
+// k. errores devuelven JSON con CORS
+const realF = globalThis.fetch;
+globalThis.fetch = async (url, opt) => { if (url.includes('identitytoolkit')) throw new Error('red caída'); return realF(url, opt); };
+let rk = await post({ Authorization: 'Bearer tok-admin' });
+P(rk.status === 500 && rk.headers.get('Access-Control-Allow-Origin') && (await rk.json()).ok === false, 'k: fallo verificando token → 500 con CORS (no Failed to fetch)');
+globalThis.fetch = async (url, opt) => { if (url.includes('firebasedatabase')) return new Response('{"error":"Unauthorized"}', { status: 401 }); return realF(url, opt); };
+rk = await post({ Authorization: 'Bearer tok-admin' });
+const jk = await rk.json();
+P(rk.status === 500 && rk.headers.get('Access-Control-Allow-Origin') && jk.error.includes('FIREBASE_SECRET'), 'k: secreto mal → mensaje que lo indica');
+globalThis.fetch = realF;
+
+// l. lista negra privada (web nueva)
+const progNuevo = (extra = {}) => { const p = programado(extra); delete p.rawBlacklist; return p; };
+let elegidos = new Set();
+for (let i = 0; i < 25; i++) {
+  const t = Date.now() - 1000 - i;
+  db = { sorteo_actual: progNuevo({ targetTime: t, rawLines: '1-@Alfa\n2-@Beta\n3-@Gamma' }), sorteo_privado: { rawBlacklist: '@alfa\n@beta', targetTime: t } };
+  await run();
+  elegidos.add(db.sorteo_actual.ganador.user);
+}
+P(elegidos.size === 1 && elegidos.has('@Gamma'), 'l: respeta la lista negra privada (25 sorteos, siempre @Gamma)');
+P(!('rawBlacklist' in db.sorteo_actual) && !('log' in db.sorteo_actual), 'l: el resultado público no lleva lista negra ni registro');
+P(Array.isArray(db.sorteo_privado.log) && db.sorteo_privado.log.some(l => l.includes('Lista Negra') || l.includes('GANADORA')), 'l: el registro se guarda en sorteo_privado');
+P(db.sorteo_privado.rawBlacklist === '@alfa\n@beta', 'l: la lista negra sigue en sorteo_privado');
+P(db.sorteo_actual.revealAt - Date.now() > 25000 && db.sorteo_actual.revealAt - Date.now() <= 30000, 'l: revealAt unos 30 s en el futuro');
+
+// lock público sin log ni lista negra
+db = { sorteo_actual: programado({ rawBlacklist: '@zzz' }) }; failPutResult = true;
+await run(); failPutResult = false;
+P(db.sorteo_actual.status === 'procesando' && !('rawBlacklist' in db.sorteo_actual) && !('log' in db.sorteo_actual.tiradaPendiente), 'l: el bloqueo público no lleva lista negra ni registro');
+db.sorteo_actual.processingAt = Date.now() - 6 * 60000; await run();
+P(db.sorteo_actual.ganador && !('rawBlacklist' in db.sorteo_actual), 'l: retomado tras fallo, sigue sin lista negra pública');
+
+// compatibilidad: web antigua con lista negra en sorteo_actual
+db = { sorteo_actual: programado({ rawLines: '1-@A\n2-@B', rawBlacklist: '@a' }) };
+await run();
+P(db.sorteo_actual.ganador.user === '@B' && !('rawBlacklist' in db.sorteo_actual), 'l: web antigua: usa su lista negra y no la publica');
+
+// no se encuentra la lista negra de este sorteo
+db = { sorteo_actual: progNuevo(), sorteo_privado: { rawBlacklist: '@x', targetTime: 123 } };
+await run();
+P(db.sorteo_actual.status === 'error' && /Lista Negra de este sorteo/.test(db.sorteo_actual.error), 'l: lista negra de otro sorteo → error, no sortea');
+db = { sorteo_actual: progNuevo() };
+await run();
+P(db.sorteo_actual.status === 'error', 'l: sin sorteo_privado → error, no sortea');
+
+// m. proxy de Telegram solo desde la web
+const tg = h => worker.fetch(new Request('https://w/?url=x', { headers: h }), env);
+P((await tg({})).status === 403, 'm: proxy sin Origin → 403');
+P((await tg({ Origin: 'https://malo.com' })).status === 403, 'm: proxy desde otra web → 403');
+const rOk = await tg({ Origin: 'https://kb-retro.github.io' });
+P(rOk.status === 200 && (await rOk.text()).includes('telegram') && rOk.headers.get('Access-Control-Allow-Origin') === 'https://kb-retro.github.io', 'm: proxy desde la web → 200');
+P((await tg({ Referer: 'https://kb-retro.github.io/Sorteo-HoF-Patrulla-Retro/' })).status === 200, 'm: proxy con Referer de la web → 200');
+
+// n. avisos de Telegram
+const realTimeout = globalThis.setTimeout;
+globalThis.setTimeout = (fn) => { fn(); return 0; };   // sin esperar los 30 s
+const envTg = { GITHUB_TOKEN: 'x', TELEGRAM_BOT_TOKEN: 'BOT123', TELEGRAM_CHAT_ID: '@canal_sorteo' };
+telegram = []; urls = [];
+db = { sorteo_actual: programado({ rawLines: '7-@Ganador', mesPremio: 'Noviembre 2026' }) };
+await run(envTg);
+P(telegram.length === 1 && telegram[0].chat_id === '@canal_sorteo' && telegram[0].url.includes('/botBOT123/sendMessage'), 'n: anuncia el resultado en el canal configurado');
+P(telegram[0].text.includes('@Ganador') && telegram[0].text.includes('Boleto Nº 7') && telegram[0].text.includes('Noviembre 2026') && telegram[0].text.includes('kb-retro.github.io'), 'n: el mensaje lleva ganador, boleto, mes y enlace');
+telegram = [];
+db = { sorteo_actual: programado({ rawLines: '3-@Afortunado', sorteoEspecial: true, premioEspecial: 'Mando retro' }) };
+await run(envTg);
+P(telegram.length === 1 && telegram[0].text.includes('Sorteo Especial') && telegram[0].text.includes('Mando retro'), 'n: sorteo especial con su premio');
+telegram = [];
+db = { sorteo_actual: programado({ rawLines: 'nadie' }) };
+await run(envTg);
+P(telegram.length === 0, 'n: un error no se anuncia en el canal público');
+await run({ ...envTg, TELEGRAM_ADMIN_CHAT_ID: '-100999' });
+P(telegram.length === 0, 'n: un sorteo ya en error no vuelve a avisar');
+db = { sorteo_actual: programado({ rawLines: 'nadie' }) };
+await run({ ...envTg, TELEGRAM_ADMIN_CHAT_ID: '-100999' });
+P(telegram.length === 1 && telegram[0].chat_id === '-100999' && telegram[0].text.includes('no se ha podido realizar'), 'n: el error se avisa solo al chat de admins');
+telegram = []; telegramFalla = true;
+db = { sorteo_actual: programado() };
+await run(envTg);
+P(db.sorteo_actual.ganador && !db.sorteo_actual.status, 'n: si Telegram falla, el sorteo se completa igual');
+telegramFalla = false; telegram = []; urls = [];
+db = { sorteo_actual: programado() };
+await run();
+P(!urls.some(u => u.includes('api.telegram.org')), 'n: sin secretos de Telegram no se envía nada');
+globalThis.setTimeout = realTimeout;
+
+console.log = quiet; console.error = qerr;
+out.forEach(([c, m]) => check(c, m));
+console.log(fails ? fails + ' FALLOS' : 'TODO OK');
+process.exit(fails ? 1 : 0);

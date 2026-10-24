@@ -1,0 +1,11 @@
+{
+  "name": "pruebas-sorteo-hof",
+  "private": true,
+  "description": "Pruebas automáticas de la web y del Worker del Sorteo HoF",
+  "scripts": {
+    "test": "node worker.test.mjs && node web.test.cjs"
+  },
+  "devDependencies": {
+    "playwright": "1.63.0"
+  }
+}

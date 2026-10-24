@@ -1415,14 +1415,17 @@
             });
         }
 
+        // @Pepe y @pepe son la misma persona: se cuenta sin distinguir mayúsculas
+        // y se muestra el nombre tal como aparece en su victoria más reciente.
         let mapaConteo = {};
         historyToRender.forEach(function(item) {
             if(item && !item.especial && item.user) {
-                const userKey = item.user;
-                mapaConteo[userKey] = (mapaConteo[userKey] || 0) + 1;
+                const userKey = String(item.user).toLowerCase();
+                if (!mapaConteo[userKey]) mapaConteo[userKey] = { user: item.user, total: 0 };
+                mapaConteo[userKey].total++;
             }
         });
-        let winnersCountToRender = Object.keys(mapaConteo).map(usr => ({ user: usr, total: mapaConteo[usr] })).sort((a, b) => b.total - a.total);
+        let winnersCountToRender = Object.values(mapaConteo).sort((a, b) => b.total - a.total);
 
         const newStateWinners = JSON.stringify({ exp: isWinnersExpanded, list: winnersCountToRender, query: winnersSearchQuery });
         const newStateHistory = JSON.stringify({ exp: isHistoryExpanded, list: historyToRender });

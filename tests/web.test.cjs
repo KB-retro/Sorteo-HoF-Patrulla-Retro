@@ -1,0 +1,332 @@
+// Pruebas de la web (index.html) en Chromium con un Firebase simulado en memoria.
+// Uso: npm test (desde la carpeta tests). Opcional: BACKUPS_DIR=<carpeta> con
+// copias reales (*.json) para comprobar que pasan la validación de restauración.
+const { chromium } = require('playwright');
+const fs = require('fs'), path = require('path');
+
+const leerCopias = dir => fs.readdirSync(dir, { recursive: true })
+  .filter(f => String(f).endsWith('.json'))
+  .map(f => JSON.parse(fs.readFileSync(path.join(dir, String(f)), 'utf8')));
+
+let window_backupAuth = null; let backupCalls = 0; let backupFail = false;
+const REPO = path.join(__dirname, '..');
+const backup = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures', 'backup.json'), 'utf8'));
+const initial = { historial_ganadores: backup.historial_ganadores, hall_of_fame_juegos: backup.hall_of_fame_juegos, regalos: backup.regalos, mes_sorteo: 'Octubre' };
+let failures = 0;
+const check = (c, msg) => { console.log((c ? 'PASS ' : 'FAIL ') + msg); if (!c) failures++; };
+(async () => {
+  const browser = await chromium.launch();
+  const page = await browser.newPage();
+  const errors = [];
+  page.on('pageerror', e => errors.push(e.message));
+  page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
+  await page.addInitScript(`window.__INITIAL_DB__ = ${JSON.stringify(initial)};
+    window.__alerts = []; window.alert = m => window.__alerts.push(m);
+    window.__confirms = []; window.confirm = m => { window.__confirms.push(m); return true; };
+    window.prompt = () => 'patrulla123';`);
+  await page.route('**/*', route => {
+    const u = route.request().url();
+    if (u.includes('firebase-app-compat')) return route.fulfill({ body: fs.readFileSync(path.join(__dirname, 'fakefb.js'), 'utf8'), contentType: 'application/javascript' });
+    if (u.includes('firebase-auth-compat')) return route.fulfill({ body: '', contentType: 'application/javascript' });
+    if (u.includes('workers.dev/backup')) { window_backupAuth = route.request().headers()['authorization']; backupCalls++;
+      if (backupFail) return route.fulfill({ status: 500, body: JSON.stringify({ ok: false, error: 'GitHub caído' }), contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*' } });
+      return route.fulfill({ status: 200, body: JSON.stringify({ ok: true, archivo: 'backups/x.json' }), contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*' } }); }
+    if (u.includes('firebase-database-compat')) return route.fulfill({ body: '', contentType: 'application/javascript' });
+    if (u.includes('canvas-confetti')) return route.fulfill({ body: 'window.confetti=function(){}', contentType: 'application/javascript' });
+    if (u.startsWith('file://')) return route.continue();
+    return route.fulfill({ status: 500, body: '' });
+  });
+  await page.goto('file://' + path.join(REPO, 'index.html'));
+  await page.waitForTimeout(1500);
+  const db = p => page.evaluate(p => window.__DB__.get(p), p);
+  const ev = (f, a) => page.evaluate(f, a);
+  const hofTotal = h => Object.values(h || {}).reduce((a, x) => a + x.total, 0);
+
+  check(await page.$eval('#retroTimeDisplayValue', e => e.textContent) === '21:00', 'hora visible 21:00');
+  check(await page.$eval('#drawTimeInput', e => e.value) === '21:00', 'valor real 21:00');
+
+  check(!(await page.content()).includes('cGF0cnVsbGExMjM'), 'contraseña antigua eliminada del código');
+  const clicks = () => ev(() => { contarClicksAdmin(); contarClicksAdmin(); contarClicksAdmin(); });
+  await clicks(); await page.waitForTimeout(200);
+  check(await page.isVisible('#loginModal'), 'sin sesión: 3 clics abren el login');
+  await page.fill('#loginEmail', 'admin@test.es'); await page.fill('#loginPassword', 'mala'); await page.click('#loginSubmit');
+  await page.waitForTimeout(200);
+  check((await page.textContent('#loginError')).includes('incorrectos') && !(await ev(() => isAdminLoggedIn)), 'contraseña mala: error y sin panel');
+  await page.fill('#loginPassword', 'buena'); await page.click('#loginSubmit');
+  await page.waitForTimeout(500);
+  check(await ev(() => isAdminLoggedIn) && await page.isVisible('#adminPanel') && !(await page.isVisible('#loginModal')), 'contraseña buena: panel abierto');
+  check((await page.textContent('#adminUserEmail')) === 'admin@test.es', 'muestra el correo de la sesión');
+  check(await ev(() => window.__fbConfig && window.__fbConfig.apiKey && window.__fbConfig.authDomain), 'config con apiKey y authDomain');
+  // ocultar y volver a abrir sin pedir contraseña
+  await clicks(); await page.waitForTimeout(200);
+  check(!(await page.isVisible('#adminPanel')) && !(await ev(() => isAdminLoggedIn)), '3 clics con panel abierto lo ocultan');
+  await clicks(); await page.waitForTimeout(300);
+  check(await page.isVisible('#adminPanel') && !(await page.isVisible('#loginModal')), 'con sesión: 3 clics abren el panel sin login');
+  // backup manual con token
+  await ev(() => crearBackupGitHubManual()); await page.waitForTimeout(500);
+  check(window_backupAuth === 'Bearer tok-admin', 'backup GitHub envía el token de la sesión');
+
+  const hof0 = await db('hall_of_fame_juegos'); const hist0 = await db('historial_ganadores');
+  const n0 = Object.keys(hist0).length;
+  const lines = '1-@AlfaUser\n2-@BetaUser.\n3-@alfauser\nPUNTO EXTRA\n4-@GammaUser';
+  await ev((l) => { document.getElementById('listInput').value = l; }, lines);
+  await page.evaluate(l => { document.getElementById('listInput').value = l; }, lines);
+
+  // Programar
+  await ev(() => programarOEjecutarSorteo()); await page.waitForTimeout(300);
+  let s = await db('sorteo_actual'); let hof1 = await db('hall_of_fame_juegos');
+  check(s && s.status === 'programado', 'sorteo programado');
+  const t = new Date(s.targetTime); check(t.getHours() === 21 && t.getMinutes() === 0, 'programado a las 21:00');
+  check(hofTotal(hof1) === hofTotal(hof0) + 3, 'HoF +3 (alfa x2, beta x1, extra excluido)');
+  check(hof1['@betauser'] && hof1['@alfauser'].total >= 2, 'usuario con punto final guardado sin punto');
+
+  // Reprogramar: no duplica
+  await ev(() => programarOEjecutarSorteo()); await page.waitForTimeout(300);
+  check(hofTotal(await db('hall_of_fame_juegos')) === hofTotal(hof0) + 3, 'reprogramar no duplica HoF');
+  check((await ev(() => __confirms.slice(-1)[0])).includes('Ya hay un sorteo programado'), 'pide confirmar sustitución');
+
+  // Borrar programado: historial intacto, HoF revertido
+  await ev(() => borrarUltimoSorteo()); await page.waitForTimeout(300);
+  check(!(await db('sorteo_actual')), 'programación borrada');
+  check(Object.keys(await db('historial_ganadores')).length === n0, 'historial intacto al borrar programación');
+  check(JSON.stringify(await db('hall_of_fame_juegos')) === JSON.stringify(hof0), 'HoF revertido exactamente');
+
+  // Manual entry added later (old timestamp) then immediate draw then delete
+  await ev(() => { document.getElementById('manualUserAdmin').value = '@ManualViejo'; agregarGanadorManual(); });
+  await page.waitForTimeout(200);
+  await ev(() => document.getElementById('retroTimeCancel').click());
+  check(await page.$eval('#drawTimeInput', e => e.value) === '', 'quitar hora deja valor vacío');
+  await ev(() => programarOEjecutarSorteo()); await page.waitForTimeout(400);
+  s = await db('sorteo_actual');
+  check(s && s.ganador, 'sorteo inmediato con ganador');
+  check(Object.keys(await db('historial_ganadores')).length === n0 + 2, 'historial +1 (manual) +1 (sorteo)');
+  check(hofTotal(await db('hall_of_fame_juegos')) === hofTotal(hof0) + 3, 'HoF +3 tras sorteo inmediato');
+  await ev(() => borrarUltimoSorteo()); await page.waitForTimeout(400);
+  const hist2 = Object.values(await db('historial_ganadores'));
+  check(hist2.length === n0 + 1 && hist2.some(h => h.user === '@ManualViejo'), 'borra el sorteo, no el manual');
+  check(JSON.stringify(await db('hall_of_fame_juegos')) === JSON.stringify(hof0), 'HoF revertido tras borrar sorteo inmediato');
+
+  // Inactivo: no borra nada
+  await ev(() => borrarUltimoSorteo()); await page.waitForTimeout(300);
+  check(Object.keys(await db('historial_ganadores')).length === n0 + 1, 'sin sorteo actual no borra historial');
+  check((await ev(() => __alerts.slice(-1)[0])).includes('No hay ningún sorteo actual'), 'avisa que no hay sorteo');
+
+  // Sorteo inmediato sin participantes válidos
+  await ev(() => { document.getElementById('listInput').value = 'hola\nsin usuarios'; });
+  const hofA = await db('hall_of_fame_juegos');
+  await ev(() => programarOEjecutarSorteo()); await page.waitForTimeout(300);
+  check(JSON.stringify(await db('hall_of_fame_juegos')) === JSON.stringify(hofA), 'sin participantes: HoF no cambia');
+  check((await ev(() => __alerts.slice(-1)[0])).includes('No se ha realizado'), 'avisa de sorteo no realizado');
+
+  // Fecha pasada
+  await ev(() => { document.getElementById('listInput').value = '1-@AlfaUser'; document.getElementById('drawTimeInput').value='21:00'; document.getElementById('drawDateInput').value='2020-01-01'; programarOEjecutarSorteo(); });
+  await page.waitForTimeout(300);
+  check((await ev(() => __alerts.slice(-1)[0])).includes('ya han pasado'), 'rechaza fecha pasada');
+  check(!(await db('sorteo_actual')), 'no programa en el pasado');
+  await ev(() => { document.getElementById('drawDateInput').value=''; });
+
+  // XSS
+  await ev(() => window.__DB__.set('historial_ganadores/xss', { user: '<img src=x onerror="window.pwned=1">', fecha: 'Mes <b>x</b>', ticket: 't', timestamp: Date.now() - 1e9 }));
+  await ev(() => { isHistoryExpanded = true; isWinnersExpanded = true; refrescarHistorialAntiSpoiler(); });
+  await page.waitForTimeout(1500);
+  check(!(await ev(() => window.pwned)), 'nombre con HTML no se ejecuta');
+  check((await page.$eval('#historyList', e => e.textContent)).includes('<img src=x'), 'nombre se muestra como texto');
+
+  // Botón borrar ganador concreto
+  const btnOk = await ev(() => { const b = [...document.querySelectorAll('#historyList .delete-item-btn')]; b[b.length-1].click(); return b.length; });
+  await page.waitForTimeout(300);
+  check(btnOk > 0, 'botones de borrar presentes');
+
+  // Selector estable
+  await ev(() => { window.__opt = document.querySelector('#historyWinnerSelect option:nth-child(2)'); });
+  await page.waitForTimeout(2200);
+  check(await ev(() => window.__opt === document.querySelector('#historyWinnerSelect option:nth-child(2)')), 'selector no se reconstruye cada segundo');
+
+  // Corregir mes
+  const key = await ev(() => document.querySelector('#historyWinnerSelect option:nth-child(2)').value);
+  await ev((k) => { const s = document.getElementById('historyWinnerSelect'); s.value = k; s.onchange(); document.getElementById('historyWinnerMonth').value = '2025-03'; guardarMesGanadorHistorico(); }, key);
+  await page.waitForTimeout(300);
+  const e = await db('historial_ganadores/' + key);
+  check(e.fecha === 'Marzo 2025' && e.mesPremio === 'Marzo 2025', 'corrección actualiza fecha y mesPremio');
+
+  // HoF manual con usuario inválido
+  await ev(() => { document.getElementById('hofManualInput').value = '@uno = 3\n@dos. = 2'; guardarHoFManual(); });
+  await page.waitForTimeout(300);
+  const hm = await db('hall_of_fame_juegos');
+  check(hm && hm['@uno'] && Object.keys(hm).length === 1, 'HoF manual ignora usuario inválido y guarda el resto');
+
+  // Estado error del Worker
+  const hofE0 = await db('hall_of_fame_juegos');
+  await ev(() => { document.getElementById('listInput').value = '1-@ErrUno\n2-@ErrDos'; document.getElementById('drawDateInput').value=''; document.getElementById('drawTimeInput').value='21:00'; programarOEjecutarSorteo(); });
+  await page.waitForTimeout(300);
+  const hofE1 = await db('hall_of_fame_juegos');
+  check(hofTotal(hofE1) === hofTotal(hofE0) + 2, 'error: programación suma 2');
+  await ev(() => { const s = window.__DB__.get('sorteo_actual'); s.status = 'error'; s.error = 'Todos los participantes están en la Lista Negra.'; window.__DB__.set('sorteo_actual', s); });
+  await page.waitForTimeout(300);
+  check(!(await page.$eval('#adminDrawError', e => e.classList.contains('hidden'))), 'error: aviso visible al admin');
+  check((await page.$eval('#adminDrawErrorText', e => e.textContent)).includes('Lista Negra'), 'error: aviso muestra el motivo');
+  const nConf = await ev(() => __confirms.length);
+  await ev(() => { programarOEjecutarSorteo(); }); await page.waitForTimeout(300);
+  check(hofTotal(await db('hall_of_fame_juegos')) === hofTotal(hofE0) + 2, 'error: reprogramar tras error no duplica HoF');
+  check(!(await ev((n) => __confirms.slice(n).some(c => c.includes('Ya hay un sorteo programado')), nConf)), 'error: no pregunta por sustituir un sorteo fallido');
+  check(await page.$eval('#adminDrawError', e => e.classList.contains('hidden')), 'error: aviso desaparece al reprogramar');
+  await ev(() => { const s = window.__DB__.get('sorteo_actual'); s.status = 'error'; window.__DB__.set('sorteo_actual', s); });
+  await page.waitForTimeout(200);
+  const histE = Object.keys(await db('historial_ganadores')).length;
+  await ev(() => borrarUltimoSorteo()); await page.waitForTimeout(300);
+  check(!(await db('sorteo_actual')) && JSON.stringify(await db('hall_of_fame_juegos')) === JSON.stringify(hofE0), 'error: borrar sorteo fallido revierte HoF');
+  check(Object.keys(await db('historial_ganadores')).length === histE, 'error: borrar sorteo fallido no toca historial');
+
+  // Cerrar sesión
+  await ev(() => { isHistoryExpanded = true; refrescarHistorialAntiSpoiler(); });
+  await page.waitForTimeout(300);
+  check((await page.$$('#historyList .delete-item-btn')).length > 0, 'con sesión: botones de borrar visibles');
+  await ev(() => cerrarSesionAdmin()); await page.waitForTimeout(400);
+  check(!(await page.isVisible('#adminPanel')) && !(await ev(() => isAdminLoggedIn)), 'cerrar sesión oculta el panel');
+  check((await page.$$('#historyList .delete-item-btn')).length === 0, 'tras cerrar sesión no hay botones de borrar');
+  await clicks(); await page.waitForTimeout(200);
+  check(await page.isVisible('#loginModal'), 'tras cerrar sesión, 3 clics piden login otra vez');
+
+  // Recargar la página cierra la sesión
+  check(await ev(() => window.__persist) === 'none', 'sesión configurada solo en memoria');
+  await page.fill('#loginEmail', 'admin@test.es'); await page.fill('#loginPassword', 'buena'); await page.click('#loginSubmit');
+  await page.waitForTimeout(400);
+  check(await page.isVisible('#adminPanel'), 'login de nuevo antes de recargar');
+  await page.evaluate(() => localStorage.setItem('fakeAuthUser', JSON.stringify({ email: 'admin@test.es' })));
+  await page.reload(); await page.waitForTimeout(1200);
+  check(!(await page.isVisible('#adminPanel')), 'tras recargar el panel está cerrado');
+  await clicks(); await page.waitForTimeout(300);
+  check(await page.isVisible('#loginModal') && !(await ev(() => isAdminLoggedIn)), 'tras recargar (incluso con sesión antigua guardada) pide login');
+
+  // ===== PR A: restaurar, borrar todo, errores =====
+  check((await page.content()).includes('canvas-confetti@1.9.3/dist/confetti.browser.js" integrity="sha384-'), 'confeti con versión fija e integridad');
+  await page.fill('#loginEmail', 'admin@test.es'); await page.fill('#loginPassword', 'buena'); await page.click('#loginSubmit');
+  await page.waitForTimeout(400);
+  check(await ev(() => isAdminLoggedIn), 'login para pruebas PR A');
+
+  // Todas las copias reales del repo pasan la validación
+  const reales = process.env.BACKUPS_DIR ? leerCopias(process.env.BACKUPS_DIR) : [backup];
+  const errsReales = await ev((lista) => lista.map(d => analizarDatosBackup(d, {}).errores).filter(e => e.length), reales);
+  check(reales.length > 0 && errsReales.length === 0, `las ${reales.length} copias reales de GitHub son válidas ${JSON.stringify(errsReales)}`);
+
+  // Restaurar JSON válido
+  const jsonValido = reales[0];
+  const nReal = Object.keys(jsonValido.historial_ganadores).length;
+  await ev(() => window.__DB__.set('historial_ganadores/extra_x', { user: '@Temporal', fecha: 'x', timestamp: 1 }));
+  let bc0 = backupCalls; let nconf = await ev(() => __confirms.length);
+  await page.setInputFiles('#jsonFileInput', { name: 'copia.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(jsonValido)) });
+  await page.waitForTimeout(800);
+  const confRest = await ev((n) => __confirms.slice(n).join('\n---\n'), nconf);
+  check(confRest.includes('Ganadores en el historial') && confRest.includes('→'), 'restaurar JSON muestra resumen ahora → copia');
+  check(backupCalls === bc0 + 1, 'restaurar JSON hace copia previa en GitHub');
+  const histTrasRest = await db('historial_ganadores');
+  check(Object.keys(histTrasRest).length === nReal && !histTrasRest.extra_x, 'restaurar JSON aplica los datos de la copia');
+
+  // Restaurar JSON inválido
+  bc0 = backupCalls; const antesInv = JSON.stringify(await db('historial_ganadores'));
+  await page.setInputFiles('#jsonFileInput', { name: 'mala.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ historial_ganadores: { a: { fecha: 'sin usuario' } } })) });
+  await page.waitForTimeout(600);
+  check((await ev(() => __alerts.slice(-1)[0])).includes('No se puede restaurar'), 'JSON inválido: avisa y no restaura');
+  check(backupCalls === bc0 && JSON.stringify(await db('historial_ganadores')) === antesInv, 'JSON inválido: no toca datos ni hace copia');
+  await page.setInputFiles('#jsonFileInput', { name: 'rota.json', mimeType: 'application/json', buffer: Buffer.from('{ no es json') });
+  await page.waitForTimeout(400);
+  check((await ev(() => __alerts.slice(-1)[0])).includes('formato JSON válido'), 'JSON roto: avisa');
+
+  // Restaurar copia de Firebase con nodos ausentes y sorteo programado vencido
+  await ev(() => window.__DB__.set('backups/2026-01-01_1200', { etiqueta: 'Prueba', historial_ganadores: { k1: { user: '@SoloUno', fecha: 'Enero 2026', timestamp: 5 } }, sorteo_actual: { status: 'programado', targetTime: 1000, rawLines: '1-@a' } }));
+  await page.waitForTimeout(300);
+  nconf = await ev(() => __confirms.length);
+  await ev(() => { const s = document.getElementById('backupSelect'); s.value = '2026-01-01_1200'; return restaurarBackupSeleccionado(); });
+  await page.waitForTimeout(600);
+  const confFb = await ev((n) => __confirms.slice(n).join('\n'), nconf);
+  check(confFb.includes('YA HA PASADO'), 'avisa de sorteo programado vencido en la copia');
+  check(Object.keys(await db('historial_ganadores')).length === 1 && !(await db('hall_of_fame_juegos')), 'copia de Firebase: nodos ausentes quedan vacíos');
+
+  // Borrar todo
+  await page.setInputFiles('#jsonFileInput', { name: 'copia.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(jsonValido)) });
+  await page.waitForTimeout(800);
+  await ev(() => { window.prompt = () => 'borrar'; }); bc0 = backupCalls;
+  await ev(() => borrarTodo()); await page.waitForTimeout(400);
+  check(Object.keys(await db('historial_ganadores') || {}).length === nReal && backupCalls === bc0, 'borrar todo: "borrar" en minúsculas no borra');
+  await ev(() => { window.prompt = () => null; });
+  await ev(() => borrarTodo()); await page.waitForTimeout(300);
+  check(Object.keys(await db('historial_ganadores') || {}).length === nReal, 'borrar todo: cancelar no borra');
+  backupFail = true;
+  await ev(() => { window.prompt = () => 'BORRAR'; window.confirm = m => { window.__confirms.push(m); return !m.includes('SIN copia previa'); }; });
+  await ev(() => borrarTodo()); await page.waitForTimeout(500);
+  check(Object.keys(await db('historial_ganadores') || {}).length === nReal && (await ev(() => __confirms.slice(-1)[0])).includes('GitHub caído'), 'copia previa falla: pregunta y si dices no, no borra');
+  backupFail = false; bc0 = backupCalls;
+  await ev(() => { window.confirm = m => { window.__confirms.push(m); return true; }; });
+  await ev(() => borrarTodo()); await page.waitForTimeout(500);
+  check(backupCalls === bc0 + 1 && !(await db('historial_ganadores')) && !(await db('hall_of_fame_juegos')) && !(await db('regalos')), 'borrar todo con BORRAR: copia previa y borrado');
+  check((await ev(() => __alerts.slice(-1)[0])).includes('borrado'), 'borrar todo: confirma tras borrar');
+
+  // Errores de escritura
+  await ev(() => { window.__failWrites = true; document.getElementById('manualUserAdmin').value = '@Nuevo'; agregarGanadorManual(); });
+  await page.waitForTimeout(300);
+  check((await ev(() => __alerts.slice(-1)[0])).includes('No se pudieron añadir'), 'si Firebase rechaza, avisa del error (no de éxito)');
+  await ev(() => { document.getElementById('listInput').value = 'x'; guardarParticipantesFirebase(); });
+  await page.waitForTimeout(200);
+  check((await ev(() => __alerts.slice(-1)[0])).includes('lista de participantes'), 'error al guardar participantes: avisa');
+  await ev(() => { window.__failWrites = false; document.getElementById('manualUserAdmin').value = '@bien, @mal.user'; agregarGanadorManual(); });
+  await page.waitForTimeout(300);
+  check((await ev(() => __alerts.slice(-1)[0])).includes('no son válidos') && !(await db('historial_ganadores')), 'usuario manual inválido: no añade ninguno');
+  await ev(() => { document.getElementById('manualUserAdmin').value = '@bien, otro'; agregarGanadorManual(); });
+  await page.waitForTimeout(300);
+  check(Object.values(await db('historial_ganadores') || {}).map(x => x.user).sort().join() === '@bien,@otro', 'ganadores manuales válidos se añaden');
+
+  // ===== PR B: lista negra privada y rodillos =====
+  await ev(() => { window.__DB__.set('historial_ganadores', null); window.__DB__.set('sorteo_actual', null); });
+  await ev(() => { document.getElementById('listInput').value = '1-@Uno\n2-@Dos\n3-@Tres'; document.getElementById('blacklistInput').value = '@uno'; document.getElementById('drawDateInput').value=''; document.getElementById('drawTimeInput').value='21:00'; programarOEjecutarSorteo(); });
+  await page.waitForTimeout(400);
+  let sa = await db('sorteo_actual'), sp = await db('sorteo_privado');
+  check(sa.status === 'programado' && !('rawBlacklist' in sa), 'B: programado sin lista negra pública');
+  check(sp && sp.rawBlacklist === '@uno' && sp.targetTime === sa.targetTime, 'B: lista negra en sorteo_privado con su targetTime');
+  // procesando: los rodillos siguen activos
+  await ev(() => { const s = window.__DB__.get('sorteo_actual'); s.targetTime = Date.now() - 5000; s.status = 'procesando'; window.__DB__.set('sorteo_actual', s); });
+  await page.waitForTimeout(400);
+  check(await page.$eval('#slotMachineCard', e => e.classList.contains('active')) && (await page.textContent('#slotStatus')).includes('PROCESANDO'), 'B: en "procesando" la recreativa sigue girando');
+  // Resultado del Worker con revealAt
+  await ev(() => {
+    const ts = Date.now();
+    window.__DB__.set('historial_ganadores/sorteo_x', { user: '@Tres', ticket: '357-@Tres', fecha: 'Octubre 2026', timestamp: ts });
+    window.__DB__.set('sorteo_actual', { ganador: { user: '@Tres', ticket: '357-@Tres' }, arcadeGroup: [{ user: '@Tres', ticket: '357-@Tres' }], timestamp: ts, revealAt: ts + 3000, mesPremio: 'Octubre 2026', rawLines: 'x' });
+  });
+  await page.waitForTimeout(700);
+  const reels = await page.$$eval('.slot-reel', els => els.map(e => e.textContent).join(''));
+  check(reels === '357', 'B: rodillos paran en el número premiado (357)');
+  check((await page.textContent('#slotStatus')).includes('MOSTRANDO GANADOR EN'), 'B: cuenta atrás visible');
+  check(!(await page.isVisible('#winnerCard')), 'B: ganador oculto durante la cuenta atrás');
+  check(!(await page.textContent('#historyList')).includes('@Tres'), 'B: historial no revela al ganador antes de tiempo');
+  await page.waitForTimeout(3500);
+  check(await page.isVisible('#winnerCard') && (await page.textContent('#winnerName')).includes('@Tres'), 'B: tras la cuenta atrás se muestra el ganador');
+  check((await page.textContent('#historyList')).includes('@Tres'), 'B: tras la revelación aparece en el historial');
+  // Sorteo inmediato: sin cuenta atrás y sin lista negra pública
+  await ev(() => window.__DB__.set('sorteo_actual', null)); await page.waitForTimeout(200);
+  await ev(() => { document.getElementById('drawTimeInput').value = ''; document.getElementById('listInput').value = '1-@Uno\n2-@Dos'; document.getElementById('blacklistInput').value = '@uno'; programarOEjecutarSorteo(); });
+  await page.waitForTimeout(600);
+  sa = await db('sorteo_actual'); sp = await db('sorteo_privado');
+  check(sa.ganador.user === '@Dos' && !('rawBlacklist' in sa) && !('log' in sa) && !('revealAt' in sa), 'B: inmediato sin lista negra, sin registro y sin cuenta atrás');
+  check(sp.rawBlacklist === '@uno' && Array.isArray(sp.log), 'B: inmediato guarda lista negra y registro en privado');
+  check(await page.isVisible('#winnerCard'), 'B: inmediato muestra el ganador al momento');
+  await ev(() => borrarUltimoSorteo()); await page.waitForTimeout(400);
+  check(!(await db('sorteo_actual')) && !(await db('sorteo_privado')), 'B: borrar último sorteo limpia también el nodo privado');
+
+  // Ganadores: @Pepe y @pepe cuentan como la misma persona
+  await ev(() => {
+    window.__DB__.set('historial_ganadores/may1', { user: '@PepeMay', fecha: 'Enero 2026', timestamp: 1000 });
+    window.__DB__.set('historial_ganadores/may2', { user: '@pepemay', fecha: 'Febrero 2026', timestamp: 2000 });
+    winnersSearchQuery = 'pepemay'; refrescarHistorialAntiSpoiler();
+  });
+  await page.waitForTimeout(400);
+  const filasPepe = await page.$$eval('#winnersCountList li', els => els.map(e => e.textContent));
+  check(filasPepe.length === 1 && filasPepe[0].includes('2 veces'), 'ganadores: mayúsculas distintas cuentan como una persona ' + JSON.stringify(filasPepe));
+  check(filasPepe[0].includes('@pepemay'), 'ganadores: muestra el nombre de la victoria más reciente');
+  await ev(() => { winnersSearchQuery = ''; });
+
+  // Visitor doesn't write Telegram list
+  check(!errors.some(x => !/Telegram|Sheets|Cloudflare|Failed to load|500|Error iniciando sesión|integrity|Error en la copia previa|Error añadiendo ganadores manuales|Error guardando la lista de participantes/.test(x)), 'sin errores JS inesperados: ' + JSON.stringify(errors.filter(x => !/Telegram|Sheets|Cloudflare|Failed to load|500|Error iniciando sesión|integrity|Error en la copia previa|Error añadiendo ganadores manuales|Error guardando la lista de participantes/.test(x))));
+  await browser.close();
+  console.log(failures ? `${failures} FALLOS` : 'TODO OK');
+  process.exit(failures ? 1 : 0);
+})();
