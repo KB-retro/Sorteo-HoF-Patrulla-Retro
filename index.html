@@ -3548,9 +3548,16 @@
     // ============================================================
     //  ADMIN - BORRADOS BLINDADOS
     // ============================================================
-    // La sesión de Firebase se recuerda en el navegador: si ya se ha iniciado
-    // sesión, los tres clics en el logo abren el panel directamente.
+    // La sesión de admin solo dura mientras no se recargue la página: se guarda
+    // en memoria (Persistence.NONE) y al cargar se cierra cualquier sesión que
+    // hubiera quedado guardada de versiones anteriores.
     let usuarioAdmin = null;
+
+    const sesionPreparada = auth.setPersistence(firebase.auth.Auth.Persistence.NONE)
+        .then(() => auth.signOut())
+        .catch(function(error) {
+            console.error('Error configurando la sesión de admin:', error);
+        });
 
     auth.onAuthStateChanged(function(user) {
         usuarioAdmin = user;
@@ -3630,6 +3637,7 @@
         const submitBtn = document.getElementById('loginSubmit');
         if (submitBtn) submitBtn.disabled = true;
         try {
+            await sesionPreparada;
             const cred = await auth.signInWithEmailAndPassword(email, password);
             usuarioAdmin = cred.user;
             cerrarLoginModal();
