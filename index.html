@@ -853,6 +853,65 @@
         .barra-accesos small { font-size: .68rem; color: var(--muted); font-weight: bold; }
         .col-principal, #colListas, .col-listas .card { scroll-margin-top: 70px; }
 
+        /* ============================================================
+           PANEL DE ADMIN: pasos numerados y bloques ordenados
+           ============================================================ */
+        .admin-panel > h2 { margin-bottom: 4px; }
+        .admin-usuario { background: rgba(15,23,42,.6); border: 1px solid #334155; border-radius: 10px; padding: 6px 10px; }
+        .admin-programar { background: transparent !important; border: 0 !important; padding: 0 !important; }
+        .paso { background: rgba(15,23,42,.6); border: 1px solid #334155; border-radius: 12px; padding: 12px; margin-bottom: 10px; }
+        .paso-titulo { display: flex; align-items: center; gap: 8px; font-weight: bold; font-size: .95rem; margin-bottom: 10px; }
+        .paso-num {
+            flex: 0 0 auto; width: 24px; height: 24px; border-radius: 50%; background: var(--accent); color: #fff;
+            display: inline-flex; align-items: center; justify-content: center; font-size: .8rem;
+        }
+        .paso-ayuda { font-size: .78rem; color: var(--muted); margin: -4px 0 8px; line-height: 1.4; }
+        .campo-etiqueta { display: block; font-size: .82rem; font-weight: bold; margin: 10px 0 4px; }
+        .campo-etiqueta small { font-weight: normal; color: var(--muted); }
+        .textarea-corta { height: 70px; }
+        .fila-mes { display: flex; gap: 8px; align-items: stretch; }
+        .fila-mes > select, .fila-mes > input { flex: 1 1 auto; min-width: 0; margin: 0; }
+        .fila-mes > button { flex: 0 0 auto; width: auto; padding: 10px 14px; }
+        .paso .telegram-btn { margin-bottom: 0; }
+        .paso .admin-btn { margin-top: 12px; }
+
+        /* Especial / Prueba como tarjetas que se iluminan al marcarlas */
+        .opciones-sorteo { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+        .opcion {
+            display: flex; align-items: flex-start; gap: 8px; padding: 10px; margin: 0; cursor: pointer;
+            border: 1px solid #334155; border-radius: 10px; background: rgba(2,6,23,.4); transition: border-color .2s, background .2s;
+        }
+        .opcion input { width: 18px; height: 18px; margin: 2px 0 0; flex: 0 0 auto; }
+        .opcion span { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+        .opcion small { font-size: .72rem; color: var(--muted); line-height: 1.35; }
+        .opcion-especial input { accent-color: var(--gold); }
+        .opcion-prueba input { accent-color: var(--warning); }
+        .opcion-especial:has(input:checked) { border-color: var(--gold); background: rgba(245,158,11,.12); }
+        .opcion-prueba:has(input:checked) { border-color: var(--warning); background: rgba(245,158,11,.12); }
+        .opcion-prueba b { color: var(--warning); }
+        .opcion-especial b { color: var(--gold); }
+
+        /* Copias de seguridad y ajustes avanzados */
+        .bloque-ajustes { background: rgba(15,23,42,.6) !important; border: 1px solid #334155 !important; border-radius: 12px; }
+        .bloque-titulo { font-weight: bold; font-size: .9rem; margin-bottom: 8px; }
+        .grupo-titulo { font-size: .72rem; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin: 14px 4px 6px; font-weight: bold; }
+        .grupo-titulo.peligro { color: #fca5a5; }
+        .zona-peligro { border-color: rgba(239,68,68,.6) !important; background: rgba(239,68,68,.06) !important; }
+        .zona-peligro button { margin-top: 0; }
+        .botones-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+        .botones-2 > button { padding: 10px 8px; font-size: .85rem; }
+        button.btn-secundario { background: #334155; }
+        button.btn-secundario:hover { background: #475569; }
+        button.btn-primario { background: var(--accent); margin-top: 6px; }
+        button.btn-azul { background: #0284c7; }
+        button.btn-verde { background: #16a34a; }
+        button.btn-amarillo { background: var(--warning); color: #111827; }
+        button.btn-rojo { background: var(--danger); }
+        .bloque-ajustes .retro-time-picker { margin-bottom: 8px; }
+        @media (max-width: 420px) {
+            .opciones-sorteo { grid-template-columns: 1fr; }
+        }
+
         /* Buscador global */
         .buscador-global { position: relative; width: 100%; max-width: 520px; margin: 6px auto 4px; }
         .buscador-global input { width: 100%; padding: 11px 14px; border-radius: 999px; border: 1px solid rgba(139,92,246,.55); background: rgba(15,23,42,.92); color: var(--text); font-size: 0.95rem; }
@@ -1132,10 +1191,12 @@
             <div style="margin-top:6px; color:var(--muted); font-size:0.8rem;">Revisa la lista de participantes y la Lista Negra y vuelve a programarlo (los juegos ya sumados al Hall of Fame se ajustan solos), o bórralo con "Borrar último sorteo".</div>
         </div>
 
-        <!-- SECCIÓN PRINCIPAL: SORTEO -->
-        <div class="admin-section">
-            <label><b>📅 Mes correspondiente al Sorteo:</b></label>
-            <select id="monthSelect" style="margin-top: 8px;">
+        <!-- SECCIÓN PRINCIPAL: PROGRAMAR EL SORTEO, EN 4 PASOS -->
+        <div class="admin-section admin-programar">
+            <div class="paso">
+                <div class="paso-titulo"><span class="paso-num">1</span> 📅 Mes del sorteo</div>
+                <div class="fila-mes">
+                    <select id="monthSelect" aria-label="Mes del sorteo">
                 <option value="">-- Selecciona el mes --</option>
                 <option value="Enero">Enero</option>
                 <option value="Febrero">Febrero</option>
@@ -1149,32 +1210,41 @@
                 <option value="Octubre">Octubre</option>
                 <option value="Noviembre">Noviembre</option>
                 <option value="Diciembre">Diciembre</option>
-            </select>
-            <button style="margin-top: 10px; background-color: var(--accent);" onclick="guardarMesSorteo()">💾 GUARDAR MES DEL SORTEO</button>
+                    </select>
+                    <button class="btn-secundario" onclick="guardarMesSorteo()">💾 Guardar mes</button>
+                </div>
+            </div>
 
-            <div class="admin-section" style="margin-top: 12px; border: 1px solid var(--gold); background: rgba(245, 158, 11, 0.05);">
-                <label style="display:flex; align-items:center; gap:8px; cursor:pointer; margin:0;">
-                    <input type="checkbox" id="specialDrawCheckbox" style="width:18px; height:18px; accent-color:var(--gold);">
-                    <b>🎁 Sorteo Especial</b>
-                </label>
-                <p style="font-size:0.8rem; color:var(--muted); margin:5px 0 8px 26px;">
-                    Actívalo si el sorteo actual es especial. No contará como haber ganado la camiseta.
-                </p>
-                <div id="specialPrizeWrapper" class="hidden" style="margin-left:26px;">
-                    <label style="font-size:0.85rem; display:block; margin-bottom:4px;"><b>🎁 Premio del Sorteo Especial:</b></label>
+            <div class="paso">
+                <div class="paso-titulo"><span class="paso-num">2</span> 👥 Participantes</div>
+                <button class="telegram-btn" onclick="importarDesdeTelegram()">📲 CARGAR ÚLTIMA LISTA DE TELEGRAM</button>
+                <label class="campo-etiqueta" for="listInput">Lista de participantes</label>
+                <textarea id="listInput" placeholder="1-@M_1_c_h_3_l&#10;2-@cerebrosolido" oninput="calcularYMostrarProbabilidades()"></textarea>
+                <label class="campo-etiqueta" for="blacklistInput">⛔ Lista negra <small>(1 usuario por línea)</small></label>
+                <textarea id="blacklistInput" class="textarea-corta" placeholder="@usuario_excluido1&#10;@usuario_excluido2"></textarea>
+            </div>
+
+            <div class="paso">
+                <div class="paso-titulo"><span class="paso-num">3</span> 🎯 Tipo de sorteo</div>
+                <div class="opciones-sorteo">
+                    <label class="opcion opcion-especial">
+                        <input type="checkbox" id="specialDrawCheckbox">
+                        <span><b>🎁 Sorteo Especial</b><small>No cuenta como haber ganado la camiseta.</small></span>
+                    </label>
+                    <label class="opcion opcion-prueba">
+                        <input type="checkbox" id="pruebaCheckbox">
+                        <span><b>🧪 Tirada de prueba</b><small>Solo la veis los admins. No se guarda en el historial ni en el Hall of Fame, no hace backup, no avisa por Telegram y no toca el sorteo real.</small></span>
+                    </label>
+                </div>
+                <div id="specialPrizeWrapper" class="hidden" style="margin-top:10px;">
+                    <label class="campo-etiqueta" for="specialPrizeInput">🎁 Premio del Sorteo Especial</label>
                     <input type="text" id="specialPrizeInput" placeholder="Ej.: Juego DOOM, modificación de Switch, instalación de modchip..." autocomplete="off">
                 </div>
             </div>
 
-            <button class="telegram-btn" onclick="importarDesdeTelegram()" style="margin-top: 15px;">📲 CARGAR ÚLTIMA LISTA DE TELEGRAM</button>
-
-            <label style="margin-top: 10px; display: block;"><b>1. Participantes:</b></label>
-            <textarea id="listInput" placeholder="1-@M_1_c_h_3_l&#10;2-@cerebrosolido" oninput="calcularYMostrarProbabilidades()"></textarea>
-
-            <label style="margin-top: 10px; display: block;"><b>2. Excluidos / Lista Negra (1 por línea):</b></label>
-            <textarea id="blacklistInput" placeholder="@usuario_excluido1&#10;@usuario_excluido2"></textarea>
-
-            <label style="margin-top: 10px; display: block;"><b>3. Fecha y Hora ("Quitar hora" para sorteo inmediato):</b></label>
+            <div class="paso">
+                <div class="paso-titulo"><span class="paso-num">4</span> ⏰ Fecha y hora</div>
+                <p class="paso-ayuda">Elige el día y la hora. Con "Quitar hora" el sorteo es inmediato.</p>
             <div class="datetime-group" style="margin-top: 6px;">
                 <input type="hidden" id="drawDateInput" value="">
                 <div class="retro-date-picker" id="retroDatePicker">
@@ -1223,14 +1293,9 @@
                     </div>
                 </div>
             </div>
-
-            <label style="display:flex; align-items:center; gap:8px; margin:12px 0 4px 0; cursor:pointer; color:var(--warning);">
-                <input type="checkbox" id="pruebaCheckbox" style="width:18px; height:18px; accent-color:var(--warning);">
-                <b>🧪 Tirada de prueba</b>
-            </label>
-            <p style="font-size:0.75rem; color:var(--muted); margin:0 0 8px 26px;">Solo la veis los admins. No se guarda en el historial ni en el Hall of Fame, no hace backup, no avisa por Telegram y no toca el sorteo real.</p>
-            <button class="admin-btn" onclick="programarOEjecutarSorteo()">🎲 GUARDAR Y PROGRAMAR SORTEO</button>
-            <button type="button" id="borrarPruebaBtn" class="hidden" onclick="borrarTiradaPrueba()" style="margin-top:8px; background:#334155;">🧹 BORRAR TIRADA DE PRUEBA</button>
+                <button class="admin-btn" onclick="programarOEjecutarSorteo()">🎲 GUARDAR Y PROGRAMAR SORTEO</button>
+                <button type="button" id="borrarPruebaBtn" class="hidden btn-secundario" onclick="borrarTiradaPrueba()" style="margin-top:8px;">🧹 BORRAR TIRADA DE PRUEBA</button>
+            </div>
         </div>
 
         <!-- Copias de seguridad y ajustes avanzados (columna derecha en PC) -->
@@ -1244,33 +1309,32 @@
 
         <!-- ===== COPIAS DE SEGURIDAD (ocultas por defecto) ===== -->
         <div class="backup-settings-wrapper" id="backupSettingsWrapper">
-            <!-- Copias de Seguridad -->
-            <div class="admin-section" style="border: 1px solid var(--accent); background: rgba(99, 102, 241, 0.08);">
-                <label><b>💾 Copias de Seguridad y Restauración:</b></label>
-                <p style="font-size: 0.8rem; color: var(--muted); margin: 4px 0 10px 0;">
-                    Puedes guardar un punto de restauración en Firebase antes de hacer sorteos, o descargarte una copia física a tu PC.
-                </p>
-
-                <button style="background-color: #0284c7; margin-bottom: 10px;" onclick="crearBackupManual()">📀 COPIA EN FIREBASE (ESTÁNDAR)</button>
-                <button style="background-color: #22c55e; margin-bottom: 10px;" onclick="crearBackupGitHubManual()">🖴 COPIA EN GITHUB (SSD)</button>
-
-                <label style="font-size: 0.85rem; margin-top: 8px; display: block;"><b>📅 Seleccionar Copia para Restaurar o Borrar:</b></label>
-                <select id="backupSelect" style="margin-top: 4px; margin-bottom: 8px;">
-                    <option value="">-- Cargando copias disponibles... --</option>
-                </select>
-
-                <div style="display: flex; gap: 8px; margin-bottom: 10px;">
-                    <button style="flex: 1; background-color: var(--warning); color: black;" onclick="restaurarBackupSeleccionado()">🔄 RESTAURAR COPIA</button>
-                    <button style="flex: 1; background-color: var(--danger); color: white;" onclick="borrarBackupSeleccionado()">🗑️ BORRAR COPIA</button>
-                </div>
-
-                <div style="border-top: 1px dashed #334155; padding-top: 10px; display: flex; gap: 8px; flex-wrap: wrap;">
-                    <button style="flex: 1; background: #334155; font-size: 0.8rem; padding: 8px;" onclick="descargarBackupJSON()">📥 Descargar JSON PC</button>
-                    <button style="flex: 1; background: #334155; font-size: 0.8rem; padding: 8px;" onclick="document.getElementById('jsonFileInput').click()">📤 Cargar JSON PC</button>
-                    <input type="file" id="jsonFileInput" accept=".json" class="hidden" onchange="restaurarDesdeJSON(event)">
+            <div class="admin-section bloque-ajustes">
+                <div class="bloque-titulo">📀 Crear una copia</div>
+                <p class="paso-ayuda">Guarda un punto de restauración antes de hacer cambios importantes.</p>
+                <div class="botones-2">
+                    <button class="btn-azul" onclick="crearBackupManual()">📀 En Firebase</button>
+                    <button class="btn-verde" onclick="crearBackupGitHubManual()">🖴 En GitHub</button>
                 </div>
             </div>
-
+            <div class="admin-section bloque-ajustes">
+                <div class="bloque-titulo">🔄 Restaurar o borrar una copia</div>
+                <select id="backupSelect" aria-label="Copia de seguridad">
+                    <option value="">-- Cargando copias disponibles... --</option>
+                </select>
+                <div class="botones-2" style="margin-top:8px;">
+                    <button class="btn-amarillo" onclick="restaurarBackupSeleccionado()">🔄 Restaurar</button>
+                    <button class="btn-rojo" onclick="borrarBackupSeleccionado()">🗑️ Borrar</button>
+                </div>
+            </div>
+            <div class="admin-section bloque-ajustes">
+                <div class="bloque-titulo">💻 Archivo en tu PC</div>
+                <div class="botones-2">
+                    <button class="btn-secundario" onclick="descargarBackupJSON()">📥 Descargar JSON</button>
+                    <button class="btn-secundario" onclick="document.getElementById('jsonFileInput').click()">📤 Cargar JSON</button>
+                </div>
+                <input type="file" id="jsonFileInput" accept=".json" class="hidden" onchange="restaurarDesdeJSON(event)">
+            </div>
         </div>
 
         <!-- ===== BOTÓN PARA MOSTRAR/OCULTAR AJUSTES AVANZADOS ===== -->
@@ -1282,15 +1346,12 @@
         <!-- ===== AJUSTES AVANZADOS (ocultos por defecto) ===== -->
         <div class="advanced-settings-wrapper" id="advancedSettingsWrapper">
 
-            <!-- Añadir Ganadores Manuales -->
-            <div class="admin-section">
-                <label><b>➕ Añadir Ganador(es) Anterior(es) al Historial:</b></label>
-                <p style="font-size: 0.8rem; color: var(--muted); margin: 4px 0 8px 0;">
-                    Introduce los usuarios y selecciona el mes y año en el que obtuvieron el premio.
-                </p>
-                <textarea id="manualUserAdmin" placeholder="@usuario1&#10;@usuario2, @usuario3" style="height: 60px;"></textarea>
-                
-                <label style="margin-top: 8px; display: block; font-size: 0.85rem;"><b>📅 Mes y Año del Premio (opcional):</b></label>
+            <div class="grupo-titulo">📜 Historial de ganadores</div>
+            <div class="admin-section bloque-ajustes">
+                <div class="bloque-titulo">➕ Añadir ganadores anteriores</div>
+                <p class="paso-ayuda">Escribe los usuarios y, si quieres, el mes y año en que ganaron.</p>
+                <textarea id="manualUserAdmin" class="textarea-corta" placeholder="@usuario1&#10;@usuario2, @usuario3"></textarea>
+                <label class="campo-etiqueta">📅 Mes y año del premio <small>(opcional)</small></label>
                 <input type="hidden" id="manualWinnerMonth" value="">
                 <div class="retro-time-picker" id="retroMonthPicker" style="margin-top: 4px; margin-bottom: 8px;">
                     <button type="button" class="retro-time-display" id="retroMonthDisplay" aria-haspopup="dialog" aria-expanded="false">
@@ -1315,20 +1376,15 @@
                         <button type="button" class="retro-time-cancel" id="retroMonthCancel">CANCELAR</button>
                     </div>
                 </div>
-
-                <button style="background-color: #0284c7;" onclick="agregarGanadorManual()">➕ AÑADIR AL HISTORIAL</button>
+                <button class="btn-azul" onclick="agregarGanadorManual()">➕ Añadir al historial</button>
             </div>
-
-            <!-- Corrección de mes de ganadores ya realizados -->
-            <div class="admin-section" style="border: 1px solid var(--warning); background: rgba(245, 158, 11, 0.05);">
-                <label style="color: var(--warning);"><b>✏️ Corregir mes de un ganador:</b></label>
-                <p style="font-size: 0.8rem; color: var(--muted); margin: 4px 0 8px 0;">
-                    Permite corregir el mes del premio sin cambiar la fecha real en la que se realizó el sorteo.
-                </p>
-                <select id="historyWinnerSelect" style="margin-top: 4px;">
+            <div class="admin-section bloque-ajustes">
+                <div class="bloque-titulo">✏️ Corregir el mes de un ganador</div>
+                <p class="paso-ayuda">Cambia el mes del premio sin tocar la fecha real del sorteo.</p>
+                <select id="historyWinnerSelect" aria-label="Ganador">
                     <option value="">-- Selecciona un ganador --</option>
                 </select>
-                <label style="margin-top: 8px; display: block; font-size: 0.85rem;"><b>📅 Mes y Año del Premio:</b></label>
+                <label class="campo-etiqueta">📅 Mes y año del premio</label>
                 <input type="hidden" id="historyWinnerMonth" value="">
                 <div class="retro-time-picker" id="historyWinnerMonthPicker" style="margin-top: 4px; margin-bottom: 8px;">
                     <button type="button" class="retro-time-display" id="historyWinnerMonthDisplay" aria-haspopup="dialog" aria-expanded="false">
@@ -1353,36 +1409,34 @@
                         <button type="button" class="retro-time-cancel" id="historyWinnerMonthCancel">CANCELAR</button>
                     </div>
                 </div>
-                <button style="background-color: var(--warning); color: #111827; margin-top: 8px;" onclick="guardarMesGanadorHistorico()">💾 GUARDAR MES DEL GANADOR</button>
+                <button class="btn-amarillo" onclick="guardarMesGanadorHistorico()">💾 Guardar mes del ganador</button>
             </div>
 
-            <!-- Gestión de Regalos -->
-            <div class="admin-section" style="border: 1px solid var(--gold); background: rgba(245, 158, 11, 0.05);">
-                <label style="color: var(--gold);"><b>🎁 Gestión de Regalos:</b></label>
-                <p style="font-size: 0.8rem; color: var(--muted); margin: 4px 0 8px 0;">
-                    Añade aquí a los usuarios que hayan recibido una camiseta por cesión. Si vuelven a ganar un sorteo, seguirán contando como ganadores, pero aparecerá el aviso de Campeón.
-                </p>
-                <input type="text" id="giftUserInput" placeholder="@usuario" autocomplete="off">
-                <button style="background-color: var(--gold); color: #111827; margin-top: 8px;" onclick="agregarRegalo()">🎁 AÑADIR REGALO</button>
+            <div class="grupo-titulo">🎁 Regalos</div>
+            <div class="admin-section bloque-ajustes">
+                <p class="paso-ayuda" style="margin-top:0;">Usuarios que han recibido una camiseta por cesión. Si vuelven a ganar, siguen contando como ganadores, pero sale el aviso de Campeón.</p>
+                <div class="fila-mes">
+                    <input type="text" id="giftUserInput" placeholder="@usuario" autocomplete="off">
+                    <button class="btn-amarillo" onclick="agregarRegalo()">🎁 Añadir</button>
+                </div>
                 <ul id="adminGiftsList" class="custom-list" style="margin-top: 10px;"></ul>
             </div>
 
-            <!-- Gestión del Hall of Fame -->
-            <div class="admin-section" style="border: 1px solid var(--gold); background: rgba(245, 158, 11, 0.05);">
-                <label style="color: var(--gold);"><b>👾 Gestión del Hall of Fame (Histórico):</b></label>
-                <p style="font-size: 0.8rem; color: var(--muted); margin: 4px 0 8px 0;">
-                    Los juegos de la lista se sumarán automáticamente al ranking histórico al momento de programar o ejecutar el sorteo.
-                </p>
-                
-                <label style="margin-top: 15px; display: block; font-size: 0.85rem;"><b>✏️ Edición manual del Hall of Fame:</b></label>
-                <p style="font-size: 0.75rem; color: var(--danger); margin: 2px 0 6px 0;">Formato obligatorio: @usuario = cantidad</p>
+            <div class="grupo-titulo">👾 Hall of Fame</div>
+            <div class="admin-section bloque-ajustes">
+                <p class="paso-ayuda" style="margin-top:0;">Los juegos se suman solos al programar o hacer el sorteo. Aquí puedes corregirlo a mano con el formato <b>@usuario = cantidad</b>.</p>
                 <textarea id="hofManualInput" placeholder="@M_1_c_h_3_l = 15&#10;@cerebrosolido = 8" style="height: 80px;" onfocus="isHoFEditing = true;" onblur="isHoFEditing = false;"></textarea>
-                <button style="background-color: var(--accent); margin-top: 5px;" onclick="guardarHoFManual()">💾 SOBRESCRIBIR HALL OF FAME</button>
+                <button class="btn-primario" onclick="guardarHoFManual()">💾 Sobrescribir Hall of Fame</button>
             </div>
 
-            <!-- Botones de Borrado -->
-            <button class="warning-btn" onclick="borrarUltimoSorteo()">↩️ BORRAR ÚLTIMO SORTEO</button>
-            <button class="clear-btn" onclick="borrarTodo()">🧹 BORRAR TODO</button>
+            <div class="grupo-titulo peligro">⚠️ Zona peligrosa</div>
+            <div class="admin-section bloque-ajustes zona-peligro">
+                <p class="paso-ayuda" style="margin-top:0;">Estas acciones borran datos. Antes de "Borrar todo" se guarda una copia en GitHub.</p>
+                <div class="botones-2">
+                    <button class="warning-btn" onclick="borrarUltimoSorteo()">↩️ Borrar último sorteo</button>
+                    <button class="clear-btn" onclick="borrarTodo()">🧹 Borrar todo</button>
+                </div>
+            </div>
         </div>
         </div>
     </div>
