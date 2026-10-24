@@ -1187,9 +1187,11 @@
     // apiKey y authDomain no son secretos: identifican el proyecto. La seguridad
     // la ponen las reglas de la base de datos y las cuentas de Firebase Auth.
     const firebaseConfig = {
-        apiKey: "PENDIENTE_API_KEY",
+        apiKey: "AIzaSyBohtogR0Wu9NcxlYoju0aHRMb5Ql01rDM",
         authDomain: "sorteo-hof.firebaseapp.com",
-        databaseURL: "https://sorteo-hof-default-rtdb.europe-west1.firebasedatabase.app"
+        databaseURL: "https://sorteo-hof-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "sorteo-hof",
+        appId: "1:879114034400:web:d99d603c7bef53c0070485"
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
