@@ -23,7 +23,15 @@
 
     <link rel="icon" type="image/png" sizes="32x32" href="logo.png?v=2">
     <link rel="icon" type="image/png" sizes="16x16" href="logo.png?v=2">
-    <link rel="apple-touch-icon" sizes="180x180" href="logo.png?v=2">
+    <link rel="apple-touch-icon" sizes="180x180" href="icono-180.png">
+
+    <!-- Instalable como app en el móvil -->
+    <link rel="manifest" href="manifest.webmanifest">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="Sorteo HoF">
 
     <!-- CANVAS-CONFETTI CDN -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.js" integrity="sha384-/Ko/tqVwPYurnBe+Mj8WWw+39WmyOZn/kU+neqXn4hRxGI575k07mB/hIekAT51+" crossorigin="anonymous"></script>
@@ -1381,6 +1389,7 @@
 
     <div class="footer-buttons-group">
         <button class="footer-btn" onclick="abrirCreditos()">💳 Créditos</button>
+        <button type="button" id="instalarAppBtn" class="footer-btn hidden" onclick="instalarApp()" style="margin-left:8px;">📲 Instalar app</button>
     </div>
 </div>
 
@@ -4316,6 +4325,29 @@
     function irAlPanelAdmin() {
         const panel = document.getElementById('adminPanel');
         if (panel && !panel.classList.contains('hidden')) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // Instalar la web como app (Chrome, Edge, Android…). En iPhone se hace
+    // desde Compartir → "Añadir a pantalla de inicio".
+    let avisoInstalacion = null;
+    window.addEventListener('beforeinstallprompt', function(event) {
+        event.preventDefault();
+        avisoInstalacion = event;
+        const btn = document.getElementById('instalarAppBtn');
+        if (btn) btn.classList.remove('hidden');
+    });
+    window.addEventListener('appinstalled', function() {
+        avisoInstalacion = null;
+        const btn = document.getElementById('instalarAppBtn');
+        if (btn) btn.classList.add('hidden');
+    });
+    async function instalarApp() {
+        if (!avisoInstalacion) return;
+        avisoInstalacion.prompt();
+        await avisoInstalacion.userChoice;
+        avisoInstalacion = null;
+        const btn = document.getElementById('instalarAppBtn');
+        if (btn) btn.classList.add('hidden');
     }
 
     // Accesos rápidos de la barra

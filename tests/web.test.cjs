@@ -564,6 +564,18 @@ const check = (c, msg) => { console.log((c ? 'PASS ' : 'FAIL ') + msg); if (!c) 
   // Barras en Ganadores
   check(await ev(() => [...document.querySelectorAll('#winnersCountList li.custom-item')].every(li => li.style.background.includes('linear-gradient'))), 'ganadores: filas con barra de progreso');
 
+  // ===== Parte 4: instalable como app =====
+  const manifiesto = JSON.parse(fs.readFileSync(path.join(REPO, 'manifest.webmanifest'), 'utf8'));
+  check(manifiesto.display === 'standalone' && manifiesto.start_url === './' && manifiesto.icons.length === 3, 'app: manifiesto con modo app, inicio y tres iconos');
+  check(manifiesto.icons.every(i => fs.existsSync(path.join(REPO, i.src))), 'app: los iconos del manifiesto existen');
+  check(await ev(() => !!document.querySelector('link[rel="manifest"][href="manifest.webmanifest"]') && !!document.querySelector('meta[name="theme-color"]')), 'app: la página enlaza el manifiesto');
+  check(!(await page.isVisible('#instalarAppBtn')), 'app: el botón de instalar está oculto si el navegador no lo ofrece');
+  await ev(() => { const e = new Event('beforeinstallprompt'); e.prompt = () => { window.__instalado = true; }; e.userChoice = Promise.resolve({ outcome: 'accepted' }); window.dispatchEvent(e); });
+  await page.waitForTimeout(200);
+  check(await page.isVisible('#instalarAppBtn'), 'app: aparece "Instalar app" cuando el navegador lo ofrece');
+  await page.click('#instalarAppBtn'); await page.waitForTimeout(200);
+  check(await ev(() => window.__instalado === true) && !(await page.isVisible('#instalarAppBtn')), 'app: al pulsarlo se abre la instalación y el botón desaparece');
+
   // Visitor doesn't write Telegram list
   check(!errors.some(x => !/Telegram|Sheets|Cloudflare|Failed to load|500|Error iniciando sesión|integrity|Error en la copia previa|Error añadiendo ganadores manuales|Error guardando la lista de participantes/.test(x)), 'sin errores JS inesperados: ' + JSON.stringify(errors.filter(x => !/Telegram|Sheets|Cloudflare|Failed to load|500|Error iniciando sesión|integrity|Error en la copia previa|Error añadiendo ganadores manuales|Error guardando la lista de participantes/.test(x))));
   await browser.close();
