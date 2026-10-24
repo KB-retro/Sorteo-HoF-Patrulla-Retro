@@ -30,6 +30,7 @@
 
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 
     <style>
         :root {
@@ -115,7 +116,7 @@
         h2 { font-size: 1.2rem; margin: 0; text-align: center; }
         h3 { font-size: 1.05rem; margin: 0; text-align: center; }
         
-        textarea, input[type="text"], input[type="time"], input[type="date"], input[type="month"], select {
+        textarea, input[type="text"], input[type="email"], input[type="password"], input[type="time"], input[type="date"], input[type="month"], select {
             width: 100%;
             background: #0f172a;
             color: var(--text);
@@ -873,6 +874,10 @@
     <!-- ===== PANEL DE ADMINISTRACIÓN (CON AJUSTES AVANZADOS OCULTOS) ===== -->
     <div id="adminPanel" class="card admin-panel hidden">
         <h2>🛠️ Panel de Control</h2>
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin:-5px 0 15px 0; font-size:0.8rem; color:var(--muted);">
+            <span>👤 <span id="adminUserEmail"></span></span>
+            <button type="button" onclick="cerrarSesionAdmin()" style="width:auto; padding:6px 10px; font-size:0.8rem; background:#334155;">🚪 Cerrar sesión</button>
+        </div>
 
         <!-- Aviso cuando el servidor no pudo realizar el sorteo programado -->
         <div id="adminDrawError" class="hidden" style="margin-bottom:15px; padding:12px 14px; border:1px solid var(--danger); border-radius:10px; background:rgba(239, 68, 68, 0.1); color:var(--danger); font-size:0.9rem;">
@@ -1148,6 +1153,22 @@
     </div>
 </div>
 
+<div id="loginModal" class="modal-overlay hidden">
+    <div class="modal-card">
+        <h2 style="color: var(--gold); margin-top: 0; margin-bottom: 15px;">🔐 Acceso de administrador</h2>
+        <form id="loginForm" onsubmit="iniciarSesionAdmin(event)" style="text-align: left;">
+            <label for="loginEmail" style="font-size: 0.85rem;"><b>Correo</b></label>
+            <input type="email" id="loginEmail" autocomplete="username" required style="margin: 4px 0 10px 0;">
+            <label for="loginPassword" style="font-size: 0.85rem;"><b>Contraseña</b></label>
+            <input type="password" id="loginPassword" autocomplete="current-password" required style="margin-top: 4px;">
+            <div id="loginError" class="hidden" style="color: var(--danger); font-size: 0.85rem; margin-top: 10px;"></div>
+            <button type="submit" id="loginSubmit" style="background-color: var(--accent); margin-top: 15px;">Entrar</button>
+        </form>
+        <button type="button" onclick="recuperarPasswordAdmin()" style="background: transparent; color: var(--muted); font-size: 0.8rem; margin-top: 5px;">¿Has olvidado la contraseña?</button>
+        <button type="button" onclick="cerrarLoginModal()" style="background-color: #334155; margin-top: 5px;">Cancelar</button>
+    </div>
+</div>
+
 <div id="probabilitiesModal" class="modal-overlay hidden">
     <div class="modal-card">
         <h2 style="color: var(--gold); margin-top: 0; margin-bottom: 5px;">📊 Lista de Participantes</h2>
@@ -1163,11 +1184,16 @@
     // ============================================================
     //  CONFIGURACIÓN DE FIREBASE
     // ============================================================
+    // apiKey y authDomain no son secretos: identifican el proyecto. La seguridad
+    // la ponen las reglas de la base de datos y las cuentas de Firebase Auth.
     const firebaseConfig = {
+        apiKey: "PENDIENTE_API_KEY",
+        authDomain: "sorteo-hof.firebaseapp.com",
         databaseURL: "https://sorteo-hof-default-rtdb.europe-west1.firebasedatabase.app"
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
+    const auth = firebase.auth();
 
     // ============================================================
     //  VARIABLES GLOBALES
@@ -1934,7 +1960,9 @@
             const response = await fetch(`${MI_CLOUDFLARE_WORKER}/backup`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    // El Worker comprueba con este token que quien pide el backup es admin
+                    'Authorization': 'Bearer ' + await usuarioAdmin.getIdToken()
                 },
                 body: JSON.stringify(backupData)
             });
@@ -3518,18 +3546,120 @@
     // ============================================================
     //  ADMIN - BORRADOS BLINDADOS
     // ============================================================
+    // La sesión de Firebase se recuerda en el navegador: si ya se ha iniciado
+    // sesión, los tres clics en el logo abren el panel directamente.
+    let usuarioAdmin = null;
+
+    auth.onAuthStateChanged(function(user) {
+        usuarioAdmin = user;
+        if (!user && isAdminLoggedIn) ocultarPanelAdmin();
+    });
+
     function toggleAdminPanel() {
-        const pass = prompt("Introduce la clave de administrador:");
-        if (pass && btoa(pass) === "cGF0cnVsbGExMjM=") {
-            isAdminLoggedIn = true;
-            const panel = document.getElementById('adminPanel');
-            if(panel) panel.classList.remove('hidden');
-            importarDesdeTelegram(false);
-            refrescarHistorialAntiSpoiler();
-            cargarListaBackups();
-        } else if (pass !== null) {
-            alert("Contraseña incorrecta.");
+        const panel = document.getElementById('adminPanel');
+        if (panel && !panel.classList.contains('hidden')) {
+            ocultarPanelAdmin();
+        } else if (usuarioAdmin) {
+            abrirPanelAdmin();
+        } else {
+            abrirLoginModal();
         }
+    }
+
+    function abrirPanelAdmin() {
+        isAdminLoggedIn = true;
+        const panel = document.getElementById('adminPanel');
+        if(panel) panel.classList.remove('hidden');
+        const emailEl = document.getElementById('adminUserEmail');
+        if (emailEl) emailEl.textContent = usuarioAdmin ? (usuarioAdmin.email || '') : '';
+        importarDesdeTelegram(false);
+        lastRenderedHistoryState = "";
+        refrescarHistorialAntiSpoiler();
+        cargarListaBackups();
+    }
+
+    function ocultarPanelAdmin() {
+        isAdminLoggedIn = false;
+        const panel = document.getElementById('adminPanel');
+        if(panel) panel.classList.add('hidden');
+        // Quitar los botones de borrar del historial
+        lastRenderedHistoryState = "";
+        refrescarHistorialAntiSpoiler();
+    }
+
+    function abrirLoginModal() {
+        const modal = document.getElementById('loginModal');
+        const errorEl = document.getElementById('loginError');
+        if (errorEl) errorEl.classList.add('hidden');
+        if (modal) modal.classList.remove('hidden');
+        const emailEl = document.getElementById('loginEmail');
+        if (emailEl) setTimeout(() => emailEl.focus(), 50);
+    }
+
+    function cerrarLoginModal() {
+        const modal = document.getElementById('loginModal');
+        if (modal) modal.classList.add('hidden');
+        const passEl = document.getElementById('loginPassword');
+        if (passEl) passEl.value = '';
+    }
+
+    function mostrarErrorLogin(mensaje) {
+        const errorEl = document.getElementById('loginError');
+        if (!errorEl) return;
+        errorEl.textContent = mensaje;
+        errorEl.classList.remove('hidden');
+    }
+
+    function mensajeErrorAuth(error) {
+        const code = (error && error.code) || '';
+        if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found' || code === 'auth/invalid-email' || code === 'auth/invalid-login-credentials') {
+            return 'Correo o contraseña incorrectos.';
+        }
+        if (code === 'auth/too-many-requests') return 'Demasiados intentos. Espera unos minutos y vuelve a probar.';
+        if (code === 'auth/network-request-failed') return 'Sin conexión. Revisa tu internet.';
+        if (code === 'auth/user-disabled') return 'Esta cuenta está desactivada.';
+        return 'No se pudo iniciar sesión (' + (code || 'error desconocido') + ').';
+    }
+
+    async function iniciarSesionAdmin(event) {
+        event.preventDefault();
+        const email = document.getElementById('loginEmail').value.trim();
+        const password = document.getElementById('loginPassword').value;
+        const submitBtn = document.getElementById('loginSubmit');
+        if (submitBtn) submitBtn.disabled = true;
+        try {
+            const cred = await auth.signInWithEmailAndPassword(email, password);
+            usuarioAdmin = cred.user;
+            cerrarLoginModal();
+            abrirPanelAdmin();
+        } catch (error) {
+            console.error('Error iniciando sesión:', error);
+            mostrarErrorLogin(mensajeErrorAuth(error));
+        } finally {
+            if (submitBtn) submitBtn.disabled = false;
+        }
+    }
+
+    async function recuperarPasswordAdmin() {
+        const email = document.getElementById('loginEmail').value.trim();
+        if (!email) return mostrarErrorLogin('Escribe tu correo y vuelve a pulsar "¿Has olvidado la contraseña?".');
+        try {
+            await auth.sendPasswordResetEmail(email);
+            alert('📧 Si el correo corresponde a una cuenta, recibirás un enlace para cambiar la contraseña.');
+        } catch (error) {
+            console.error('Error enviando el correo de recuperación:', error);
+            mostrarErrorLogin(mensajeErrorAuth(error));
+        }
+    }
+
+    function cerrarSesionAdmin() {
+        if (!confirm('¿Cerrar la sesión de administrador en este navegador?')) return;
+        db.ref('backups').off();
+        listaBackupsCargada = false;
+        auth.signOut().catch(function(error) {
+            console.error('Error cerrando sesión:', error);
+        });
+        ocultarPanelAdmin();
     }
 
     function borrarUltimoSorteo() {
