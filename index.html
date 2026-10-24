@@ -874,6 +874,13 @@
     <div id="adminPanel" class="card admin-panel hidden">
         <h2>🛠️ Panel de Control</h2>
 
+        <!-- Aviso cuando el servidor no pudo realizar el sorteo programado -->
+        <div id="adminDrawError" class="hidden" style="margin-bottom:15px; padding:12px 14px; border:1px solid var(--danger); border-radius:10px; background:rgba(239, 68, 68, 0.1); color:var(--danger); font-size:0.9rem;">
+            <b>⚠️ El sorteo programado no se ha podido realizar.</b>
+            <div id="adminDrawErrorText" style="margin-top:4px;"></div>
+            <div style="margin-top:6px; color:var(--muted); font-size:0.8rem;">Revisa la lista de participantes y la Lista Negra y vuelve a programarlo (los juegos ya sumados al Hall of Fame se ajustan solos), o bórralo con "Borrar último sorteo".</div>
+        </div>
+
         <!-- SECCIÓN PRINCIPAL: SORTEO -->
         <div class="admin-section">
             <label><b>📅 Mes correspondiente al Sorteo:</b></label>
@@ -2768,6 +2775,12 @@
             
             programData = data || { status: 'inactivo' };
             actualizarCartelSorteoEspecial(data);
+
+            const adminDrawError = document.getElementById('adminDrawError');
+            const adminDrawErrorText = document.getElementById('adminDrawErrorText');
+            const sorteoConError = !!(data && data.status === 'error');
+            if (adminDrawError) adminDrawError.classList.toggle('hidden', !sorteoConError);
+            if (adminDrawErrorText) adminDrawErrorText.textContent = sorteoConError ? (data.error || 'Motivo desconocido.') : '';
             
             if (timerInterval) clearInterval(timerInterval);
             detenerTragaperras();
@@ -3533,8 +3546,9 @@
                 return;
             }
 
-            // Sorteo solo programado: todavía no hay ganador, el historial no se toca.
-            if (estado === 'programado') {
+            // Sorteo programado (o que el servidor no pudo realizar): todavía no hay
+            // ganador, el historial no se toca.
+            if (estado === 'programado' || estado === 'error') {
                 if (!confirm('⚠️ ¿Deseas BORRAR el sorteo programado?\n\n' + avisoHoF + '\n\nEl historial de ganadores no se modifica.')) return;
                 return Promise.all([
                     actualizarHoF('', lineasUsadas),
@@ -3654,7 +3668,9 @@
                 alert('⏳ El servidor está realizando ahora mismo el sorteo programado. Espera a que termine.');
                 return;
             }
-            const lineasProgramacionAnterior = (actual && actual.status === 'programado') ? (actual.rawLines || '') : '';
+            // Un sorteo programado o con error ya sumó sus juegos al Hall of Fame.
+            const habiaProgramacion = !!(actual && (actual.status === 'programado' || actual.status === 'error'));
+            const lineasProgramacionAnterior = habiaProgramacion ? (actual.rawLines || '') : '';
 
             if (!timeVal || timeVal === "--:--" || timeVal.trim() === "") {
                 if (!confirm("No has elegido hora: el sorteo se realizará de inmediato, ¿Continuar?")) return;
@@ -3695,7 +3711,7 @@
                 alert('⚠️ La fecha y hora elegidas (' + textoFecha + ') ya han pasado. Elige otra fecha.');
                 return;
             }
-            if (lineasProgramacionAnterior && !confirm('Ya hay un sorteo programado. ¿Sustituirlo por uno nuevo el ' + textoFecha + '?')) return;
+            if (actual && actual.status === 'programado' && !confirm('Ya hay un sorteo programado. ¿Sustituirlo por uno nuevo el ' + textoFecha + '?')) return;
 
             return db.ref('sorteo_actual').set({
                 status: 'programado',
