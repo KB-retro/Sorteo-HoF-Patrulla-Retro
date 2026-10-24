@@ -748,21 +748,100 @@
         .retro-date-confirm:hover{background:#8b5cf6}
         .retro-date-cancel{width:100%;margin-top:7px;padding:9px 12px;border:0;border-radius:10px;background:#475569;color:#fff;font-weight:800;cursor:pointer}
         .retro-date-cancel:hover{background:#334155}
+        /* ============================================================
+           DISEÑO ADAPTABLE: móvil (pestañas) y PC (dos columnas)
+           ============================================================ */
+        .cabecera { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+        .layout { display: flex; flex-direction: column; gap: 15px; }
+        .col-principal, .col-listas { display: flex; flex-direction: column; gap: 15px; min-width: 0; }
+        #slotMachineCard { margin: 0 auto; width: 100%; }
+        .winner-title { text-wrap: balance; }
+
+        /* Instrucciones plegables */
+        .instrucciones summary { cursor: pointer; list-style: none; user-select: none; }
+        .instrucciones summary::-webkit-details-marker { display: none; }
+        .instrucciones summary strong { margin-bottom: 0; }
+        .instrucciones summary strong::after { content: '▾'; margin-left: auto; opacity: .7; }
+        .instrucciones[open] summary strong { margin-bottom: 6px; }
+        .instrucciones[open] summary strong::after { content: '▴'; }
+
+        /* Pestañas de las listas */
+        .tabs-listas {
+            display: flex; gap: 6px; padding: 5px;
+            background: var(--card); border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+        }
+        .tab-lista {
+            flex: 1 1 0; min-width: 0; padding: 9px 4px; border: 0; border-radius: 8px;
+            background: transparent; color: var(--muted); font-weight: bold; font-size: 0.82rem;
+            cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .tab-lista.activa { background: var(--accent); color: #fff; }
+
+        /* Botón flotante para volver al panel de admin */
+        .ir-al-panel {
+            position: fixed; right: 14px; bottom: 14px; z-index: 900; width: auto;
+            padding: 10px 14px; border-radius: 999px; border: 1px solid rgba(255,255,255,.25);
+            background: #334155; color: #fff; font-weight: bold; font-size: 0.85rem;
+            box-shadow: 0 6px 18px rgba(0,0,0,.6); cursor: pointer;
+        }
+
+        /* Pantallas estrechas: una lista cada vez y cabecera compacta */
+        @media (max-width: 1023px) {
+            .col-listas[data-tab="ganadores"] #hallOfFameCard,
+            .col-listas[data-tab="ganadores"] #historyCard,
+            .col-listas[data-tab="hof"] #winnersCountCard,
+            .col-listas[data-tab="hof"] #historyCard,
+            .col-listas[data-tab="historial"] #winnersCountCard,
+            .col-listas[data-tab="historial"] #hallOfFameCard { display: none; }
+            .col-listas .card > h3 { display: none; }
+            .col-listas .card > h3 + div { margin-top: 0 !important; }
+            .col-listas { gap: 8px; }
+        }
+        @media (max-width: 600px) {
+            body { padding: 12px 10px; }
+            .header-logo { max-width: 96px; }
+            h1 { font-size: 1.3rem; }
+            .titulo-extra { display: none; }
+            .winner-title { font-size: 1rem; letter-spacing: .5px; }
+            .winner-name { font-size: 1.7rem; }
+        }
+
+        /* Pantallas anchas: dos columnas */
+        @media (min-width: 1024px) {
+            .container { max-width: 1180px; }
+            .layout {
+                display: grid;
+                grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+                gap: 20px;
+                align-items: start;
+            }
+            .tabs-listas { display: none; }
+            /* El logo del fondo está a la izquierda: que no se recorte */
+            body::before { background-position: left top; }
+            .admin-panel { max-width: 760px; width: 100%; margin-left: auto; margin-right: auto; }
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <img src="logo.png?v=2" alt="Logo Patrulla Retro" class="header-logo" onclick="contarClicksAdmin()">
-    <h1 id="mainTitle">🏆 Sorteo HoF Patrulla Retro</h1>
+    <header class="cabecera">
+        <img src="logo.png?v=2" alt="Logo Patrulla Retro" class="header-logo" onclick="contarClicksAdmin()">
+        <h1 id="mainTitle">🏆 Sorteo HoF <span class="titulo-extra">Patrulla Retro</span></h1>
 
-    <div class="top-prob-btn-container">
-        <button class="top-prob-btn" onclick="abrirProbabilidadesModal()">📊 Lista de Participantes</button>
-    </div>
+        <div class="top-prob-btn-container">
+            <button class="top-prob-btn" onclick="abrirProbabilidadesModal()">📊 Lista de Participantes</button>
+        </div>
+    </header>
 
     <div id="pruebaBanner" class="hidden" style="margin:0 auto 12px; max-width:620px; padding:10px 14px; border:2px dashed var(--warning); border-radius:10px; background:rgba(245, 158, 11, 0.12); color:var(--warning); text-align:center; font-weight:bold;">
         🧪 TIRADA DE PRUEBA · solo la veis los admins (no se guarda nada)
     </div>
+
+    <!-- En pantallas anchas: sorteo a la izquierda, listas a la derecha -->
+    <div class="layout">
+    <main class="col-principal">
 
     <div id="slotMachineCard" aria-live="polite">
         <div class="slot-marquee">★ 🕹️ SORTEO EN DIRECTO 🕹️ ★</div>
@@ -814,19 +893,19 @@
     </div>
 
     <div class="card" style="position: relative; z-index: 50;">
-        <div class="retro-info-box">
-            <strong>👾 Instrucciones para los elegidos:</strong>
+        <details class="retro-info-box instrucciones" id="instruccionesElegidos">
+            <summary><strong>👾 Instrucciones para los elegidos</strong></summary>
             <p style="margin: 6px 0;">🎮 <b>Elección de Arcade:</b> Usa este buscador para verificar tu propuesta. Si el resultado se ilumina en <span class="highlight-green">verde</span>, comunícaselo a <a href="https://t.me/M_1_c_h_3_l" target="_blank" style="color: #60a5fa; text-decoration: none; font-weight: bold;">@M_1_c_h_3_l</a> por Telegram.</p>
             <p style="margin: 6px 0; color: #fca5a5; font-size: 0.8rem;">⏳ <i>Importante: Tienes hasta las <b>15:00 del día siguiente</b> al sorteo. De lo contrario, el turno pasará a un reserva para poder publicar los juegos a las 21:00.</i></p>
             <p style="margin: 6px 0; padding-top: 6px; border-top: 1px dashed #334155;">👕 <b>Ganador del Premio:</b> Debes reclamar tu premio contactando con <a href="https://elreclamo.es/" target="_blank" style="color: #60a5fa; text-decoration: none; font-weight: bold;">elreclamo.es</a> mediante el botón de WhatsApp de su web.</p>
-        </div>
+        </details>
 
         <div class="search-container" style="margin-top: 0; background: transparent; border: none; padding: 0;">
             <label style="font-size: 0.95rem; color: var(--gold); display: block; margin-bottom: 10px; text-align: center;">
                 🔍 <b>Comprobar si un juego ya ha sido elegido:</b>
             </label>
             <div class="search-input-wrapper">
-                <input type="text" id="gameSearchInput" placeholder="Escribe al menos 4 caracteres o usa el micro..." oninput="comprobarJuegoEnSheets()" autocomplete="off">
+                <input type="text" id="gameSearchInput" placeholder="Nombre del juego (mín. 4 letras)" oninput="comprobarJuegoEnSheets()" autocomplete="off">
                 <button type="button" id="micBtn" class="mic-btn" onclick="activarBusquedaVoz()" title="Búsqueda por voz">🎤</button>
                 <div id="customSuggestions" class="custom-suggestions-dropdown"></div>
             </div>
@@ -838,6 +917,16 @@
             </div>
         </div>
     </div>
+
+    </main>
+
+    <aside class="col-listas" id="colListas" data-tab="ganadores">
+        <!-- Pestañas: solo se ven en pantallas estrechas -->
+        <div class="tabs-listas" role="tablist" aria-label="Listas">
+            <button type="button" role="tab" class="tab-lista activa" data-tab="ganadores" aria-selected="true" onclick="seleccionarPestanaListas('ganadores')">🏆 Ganadores</button>
+            <button type="button" role="tab" class="tab-lista" data-tab="hof" aria-selected="false" onclick="seleccionarPestanaListas('hof')">👾 Hall of Fame</button>
+            <button type="button" role="tab" class="tab-lista" data-tab="historial" aria-selected="false" onclick="seleccionarPestanaListas('historial')">📜 Historial</button>
+        </div>
 
     <div id="winnersCountCard" class="card">
         <h3>🏆 Ganadores 🏆</h3>
@@ -875,10 +964,13 @@
         <button id="btnToggleHistory" class="btn-toggle-view hidden" onclick="toggleHistoryView()">⬇️ Ver todo el historial</button>
     </div>
 
+    </aside>
+    </div>
+
     <!-- ===== PANEL DE ADMINISTRACIÓN (CON AJUSTES AVANZADOS OCULTOS) ===== -->
     <div id="adminPanel" class="card admin-panel hidden">
         <h2>🛠️ Panel de Control</h2>
-        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin:-5px 0 15px 0; font-size:0.8rem; color:var(--muted);">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin:8px 0 15px 0; font-size:0.8rem; color:var(--muted);">
             <span>👤 <span id="adminUserEmail"></span></span>
             <button type="button" onclick="cerrarSesionAdmin()" style="width:auto; padding:6px 10px; font-size:0.8rem; background:#334155;">🚪 Cerrar sesión</button>
         </div>
@@ -1145,6 +1237,8 @@
         <button class="footer-btn" onclick="abrirCreditos()">💳 Créditos</button>
     </div>
 </div>
+
+<button type="button" id="irAlPanelBtn" class="ir-al-panel hidden" onclick="irAlPanelAdmin()" title="Ir al panel de admin">🛠️ Panel</button>
 
 <div id="creditsModal" class="modal-overlay hidden">
     <div class="modal-card">
@@ -2526,11 +2620,13 @@
         mesSorteoActivo = mes || "";
         const titleEl = document.getElementById('mainTitle');
         const monthSelect = document.getElementById('monthSelect');
+        // "Patrulla Retro" se oculta en pantallas estrechas para que quepa en una línea
+        const tituloBase = '🏆 Sorteo HoF <span class="titulo-extra">Patrulla Retro</span>';
         if (mes) {
-            if(titleEl) titleEl.innerText = "🏆 Sorteo HoF Patrulla Retro de " + mes;
+            if(titleEl) titleEl.innerHTML = tituloBase + ' de ' + escapeHtmlSimple(mes);
             if(monthSelect) monthSelect.value = mes;
         } else {
-            if(titleEl) titleEl.innerText = "🏆 Sorteo HoF Patrulla Retro";
+            if(titleEl) titleEl.innerHTML = tituloBase;
         }
     });
 
@@ -2996,6 +3092,8 @@
                 
             } else if (data && data.ganador) {
                 actualGanadorUser = data.ganador.user;
+                const instrucciones = document.getElementById('instruccionesElegidos');
+                if (instrucciones) instrucciones.open = (Date.now() - (Number(data.timestamp) || 0)) < 36 * 60 * 60 * 1000;
                 if(waitingCard) waitingCard.classList.add('hidden');
                 const revealAt = Number(data.revealAt) || 0;
                 const restante = revealAt - Date.now();
@@ -3058,7 +3156,9 @@
                             const li = document.createElement('li');
                             li.className = 'custom-item';
                             const esGanador = item.user.toLowerCase() === data.ganador.user.toLowerCase();
-                            li.innerHTML = '<div class="custom-item-text"><strong>' + escapeHtmlSimple(item.user) + '</strong> <span style="color: var(--muted); font-size:0.8rem;">(' + escapeHtmlSimple(item.ticket) + ')</span></div>' +
+                            const numItem = String(item.ticket || '').match(/^(\d+)/);
+                            const boletoItem = numItem ? 'Nº ' + numItem[1] : String(item.ticket || '');
+                            li.innerHTML = '<div class="custom-item-text"><strong>' + escapeHtmlSimple(item.user) + '</strong> <span style="color: var(--muted); font-size:0.8rem; white-space:nowrap;">· ' + escapeHtmlSimple(boletoItem) + '</span></div>' +
                                 (esGanador ? '<span class="item-badge" style="background: var(--gold); color: black;">¡Ganador Principal!</span>' : '<span class="item-badge" style="background: #334155;">Elección Arcade</span>');
                             arcadeList.appendChild(li);
                         });
@@ -3767,12 +3867,34 @@
         cargarListaBackups();
         escucharTiradaPrueba();
         mostrarSorteoEnPantalla();
+        const irBtn = document.getElementById('irAlPanelBtn');
+        if (irBtn) irBtn.classList.remove('hidden');
+        irAlPanelAdmin();
+    }
+
+    function irAlPanelAdmin() {
+        const panel = document.getElementById('adminPanel');
+        if (panel && !panel.classList.contains('hidden')) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // Pestañas de Ganadores / Hall of Fame / Historial (solo en pantallas estrechas)
+    function seleccionarPestanaListas(nombre) {
+        const col = document.getElementById('colListas');
+        if (!col) return;
+        col.dataset.tab = nombre;
+        col.querySelectorAll('.tab-lista').forEach(function(btn) {
+            const activa = btn.dataset.tab === nombre;
+            btn.classList.toggle('activa', activa);
+            btn.setAttribute('aria-selected', activa ? 'true' : 'false');
+        });
     }
 
     function ocultarPanelAdmin() {
         isAdminLoggedIn = false;
         const panel = document.getElementById('adminPanel');
         if(panel) panel.classList.add('hidden');
+        const irBtn = document.getElementById('irAlPanelBtn');
+        if (irBtn) irBtn.classList.add('hidden');
         // Quitar los botones de borrar del historial
         lastRenderedHistoryState = "";
         refrescarHistorialAntiSpoiler();
