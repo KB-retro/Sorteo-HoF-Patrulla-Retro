@@ -56,10 +56,12 @@ const check = (c, msg) => { console.log((c ? 'PASS ' : 'FAIL ') + msg); if (!c) 
   await page.waitForTimeout(500);
   check(await ev(() => isAdminLoggedIn) && await page.isVisible('#adminPanel') && !(await page.isVisible('#loginModal')), 'contraseña buena: panel abierto');
   check((await page.textContent('#adminUserEmail')) === 'admin@test.es', 'muestra el correo de la sesión');
+  check(await page.isVisible('#irAlPanelBtn'), 'con el panel abierto aparece el botón flotante "Panel"');
   check(await ev(() => window.__fbConfig && window.__fbConfig.apiKey && window.__fbConfig.authDomain), 'config con apiKey y authDomain');
   // ocultar y volver a abrir sin pedir contraseña
   await clicks(); await page.waitForTimeout(200);
   check(!(await page.isVisible('#adminPanel')) && !(await ev(() => isAdminLoggedIn)), '3 clics con panel abierto lo ocultan');
+  check(!(await page.isVisible('#irAlPanelBtn')), 'al ocultar el panel desaparece el botón flotante');
   await clicks(); await page.waitForTimeout(300);
   check(await page.isVisible('#adminPanel') && !(await page.isVisible('#loginModal')), 'con sesión: 3 clics abren el panel sin login');
   // backup manual con token
@@ -379,6 +381,39 @@ const check = (c, msg) => { console.log((c ? 'PASS ' : 'FAIL ') + msg); if (!c) 
   check(!(await page.isVisible('#pruebaBanner')) && !(await page.textContent('#winnerName')).includes('@Oculto'), 'prueba: sin sesión no se ve la prueba');
   await page.fill('#loginEmail', 'admin@test.es').catch(() => {});
   await ev(() => window.__DB__.set('sorteo_prueba', null));
+
+  // ===== Diseño adaptable =====
+  for (const ancho of [320, 360, 390, 768, 1024, 1440, 1920]) {
+    await page.setViewportSize({ width: ancho, height: 900 });
+    await page.waitForTimeout(150);
+    const desborde = await ev(() => document.documentElement.scrollWidth - window.innerWidth);
+    check(desborde <= 0, `sin desplazamiento horizontal a ${ancho}px (sobran ${desborde}px)`);
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.waitForTimeout(200);
+  const visibles = () => ev(() => ['winnersCountCard', 'hallOfFameCard', 'historyCard'].filter(id => getComputedStyle(document.getElementById(id)).display !== 'none'));
+  check(await page.isVisible('.tabs-listas') && JSON.stringify(await visibles()) === '["winnersCountCard"]', 'móvil: pestañas visibles y solo la lista de Ganadores');
+  await page.click('.tab-lista[data-tab="hof"]'); await page.waitForTimeout(150);
+  check(JSON.stringify(await visibles()) === '["hallOfFameCard"]' && await ev(() => document.querySelector('.tab-lista[data-tab="hof"]').getAttribute('aria-selected') === 'true'), 'móvil: pestaña Hall of Fame');
+  await page.click('.tab-lista[data-tab="historial"]'); await page.waitForTimeout(150);
+  check(JSON.stringify(await visibles()) === '["historyCard"]', 'móvil: pestaña Historial');
+  check(!(await page.isVisible('.titulo-extra')), 'móvil: título compacto');
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.waitForTimeout(200);
+  check(!(await page.isVisible('.tabs-listas')) && (await visibles()).length === 3, 'PC: sin pestañas y con las tres listas');
+  const columnas = await ev(() => { const a = document.querySelector('.col-principal').getBoundingClientRect(), b = document.querySelector('.col-listas').getBoundingClientRect(); return b.left >= a.right && Math.abs(a.top - b.top) < 5; });
+  check(columnas, 'PC: dos columnas lado a lado');
+  check(await page.isVisible('.titulo-extra'), 'PC: título completo');
+  await ev(() => seleccionarPestanaListas('ganadores'));
+  // Grupo del Arcade sin repetir el nombre
+  await ev(() => { window.__DB__.set('sorteo_actual', { ganador: { user: '@Arc', ticket: '12-@Arc' }, arcadeGroup: [{ user: '@Arc', ticket: '12-@Arc' }, { user: '@Otro', ticket: '13-@Otro' }], timestamp: Date.now() - 1000, mesPremio: 'Octubre 2026', rawLines: 'x' }); });
+  await page.waitForTimeout(500);
+  const arcadeTxt = await page.textContent('#arcadeList');
+  check(arcadeTxt.includes('@Arc · Nº 12') && arcadeTxt.includes('@Otro · Nº 13') && !arcadeTxt.includes('12-@Arc'), 'Arcade: "@usuario · Nº" sin repetir el nombre');
+  check(await ev(() => document.getElementById('instruccionesElegidos').open), 'instrucciones abiertas con un ganador reciente');
+  await ev(() => window.__DB__.set('sorteo_actual', { ganador: { user: '@Viejo', ticket: '1-@Viejo' }, arcadeGroup: [], timestamp: Date.now() - 5 * 86400000, mesPremio: 'Septiembre 2026', rawLines: 'x' }));
+  await page.waitForTimeout(500);
+  check(!(await ev(() => document.getElementById('instruccionesElegidos').open)), 'instrucciones plegadas con un ganador antiguo');
 
   // Visitor doesn't write Telegram list
   check(!errors.some(x => !/Telegram|Sheets|Cloudflare|Failed to load|500|Error iniciando sesión|integrity|Error en la copia previa|Error añadiendo ganadores manuales|Error guardando la lista de participantes/.test(x)), 'sin errores JS inesperados: ' + JSON.stringify(errors.filter(x => !/Telegram|Sheets|Cloudflare|Failed to load|500|Error iniciando sesión|integrity|Error en la copia previa|Error añadiendo ganadores manuales|Error guardando la lista de participantes/.test(x))));
