@@ -786,6 +786,40 @@
             box-shadow: 0 6px 18px rgba(0,0,0,.6); cursor: pointer;
         }
 
+        /* Podio del Hall of Fame */
+        .podio { display: grid; grid-template-columns: 1fr 1.15fr 1fr; align-items: end; gap: 6px; list-style: none; margin: 4px 0 8px; }
+        .podio-puesto { display: flex; flex-direction: column; align-items: center; min-width: 0; text-align: center; }
+        .podio-medalla { font-size: 1.6rem; line-height: 1; }
+        .puesto-1 .podio-medalla { font-size: 2.1rem; }
+        .podio-nombre { font-weight: bold; font-size: .85rem; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 4px; }
+        .podio-valor { font-size: .75rem; color: #86efac; font-weight: bold; margin: 2px 0 6px; }
+        .podio-base {
+            width: 100%; border-radius: 8px 8px 0 0; display: flex; align-items: center; justify-content: center;
+            font-weight: 900; font-size: 1.3rem; color: rgba(0,0,0,.55);
+        }
+        .puesto-1 .podio-base { height: 64px; background: linear-gradient(180deg, #fde68a, #f59e0b); }
+        .puesto-2 .podio-base { height: 46px; background: linear-gradient(180deg, #e2e8f0, #94a3b8); }
+        .puesto-3 .podio-base { height: 34px; background: linear-gradient(180deg, #fdba74, #c2410c); }
+
+        /* Esqueletos de carga */
+        .esqueleto {
+            height: 38px; margin-bottom: 6px; border-radius: 6px; list-style: none;
+            background: linear-gradient(90deg, #0f172a 25%, #1e293b 50%, #0f172a 75%); background-size: 200% 100%;
+            animation: brillo-carga 1.2s linear infinite;
+        }
+        @keyframes brillo-carga { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+
+        /* Destello cuando aparece un ganador */
+        .winner-box.destello { animation: fadeIn 0.5s ease-in, destello-ganador 1.6s ease-out; }
+        @keyframes destello-ganador {
+            0% { box-shadow: 0 0 0 0 rgba(245,158,11,.9), 0 4px 20px rgba(0,0,0,.6); }
+            40% { box-shadow: 0 0 40px 12px rgba(245,158,11,.55), 0 4px 20px rgba(0,0,0,.6); }
+            100% { box-shadow: 0 4px 20px rgba(0,0,0,.6); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .esqueleto, .estado-sorteo.directo, .winner-box.destello { animation: none; }
+        }
+
         /* Franja de estado del sorteo */
         .estado-sorteo {
             margin: 2px auto 4px; padding: 7px 14px; border-radius: 999px; font-size: .88rem;
@@ -1039,6 +1073,7 @@
             <input type="text" id="winnersSearchInput" placeholder="🔍 Buscar usuario (@usuario)..." oninput="buscarEnWinners()" autocomplete="off" style="font-size: 0.85rem; padding: 8px 12px;">
         </div>
         <ul id="winnersCountList" class="custom-list">
+            <li class="esqueleto"></li><li class="esqueleto"></li><li class="esqueleto"></li>
         </ul>
         <button id="btnToggleWinners" class="btn-toggle-view hidden" onclick="toggleWinnersView()">⬇️ Ver todos los usuarios premiados</button>
 
@@ -1058,6 +1093,7 @@
             <input type="text" id="hofSearchInput" placeholder="🔍 Buscar usuario (@usuario)..." oninput="buscarEnHoF()" autocomplete="off" style="font-size: 0.85rem; padding: 8px 12px;">
         </div>
         <ul id="hallOfFameList" class="custom-list">
+            <li class="esqueleto"></li><li class="esqueleto"></li><li class="esqueleto"></li>
         </ul>
         <button id="btnToggleHoF" class="btn-toggle-view hidden" onclick="toggleHoFView()">⬇️ Ver todo el Hall of Fame</button>
     </div>
@@ -1065,6 +1101,7 @@
     <div id="historyCard" class="card">
         <h3>📜 Historial de Ganadores 📜</h3>
         <ul id="historyList" class="custom-list">
+            <li class="esqueleto"></li><li class="esqueleto"></li><li class="esqueleto"></li>
         </ul>
         <button id="btnToggleHistory" class="btn-toggle-view hidden" onclick="toggleHistoryView()">⬇️ Ver todo el historial</button>
     </div>
@@ -1660,12 +1697,12 @@
         const newStateHistory = JSON.stringify({ exp: isHistoryExpanded, list: historyToRender });
         const newStateHoF = JSON.stringify({ exp: isHoFExpanded, list: hofToRender, query: hofSearchQuery });
 
-        if (lastRenderedWinnersState !== newStateWinners) {
+        if (historialCargado && lastRenderedWinnersState !== newStateWinners) {
             renderWinnersList(winnersCountToRender);
             lastRenderedWinnersState = newStateWinners;
         }
 
-        if (lastRenderedHistoryState !== newStateHistory) {
+        if (historialCargado && lastRenderedHistoryState !== newStateHistory) {
             renderHistoryList(historyToRender);
             lastRenderedHistoryState = newStateHistory;
         }
@@ -1678,7 +1715,7 @@
             cargarSelectorEdicionHistorial(historyToRender);
         }
         
-        if (lastRenderedHoFState !== newStateHoF) {
+        if (hofCargado && lastRenderedHoFState !== newStateHoF) {
             renderHoFList(hofToRender);
             lastRenderedHoFState = newStateHoF;
         }
@@ -1737,7 +1774,12 @@
         refrescarHistorialAntiSpoiler();
     });
 
+    // Hasta que llegan los primeros datos, las listas muestran esqueletos de carga
+    let historialCargado = false;
+    let hofCargado = false;
+
     db.ref('hall_of_fame_juegos').on('value', function(snapshot) {
+        hofCargado = true;
         const data = snapshot.val();
         rawHoFItems = [];
         let manualText = "";
@@ -3523,7 +3565,12 @@
 
     function mostrarGanador(data) {
         const winnerCard = document.getElementById('winnerCard');
-        if(winnerCard) winnerCard.style.display = 'block';
+        if(winnerCard) {
+            winnerCard.style.display = 'block';
+            winnerCard.classList.remove('destello');
+            void winnerCard.offsetWidth;   // reinicia la animación
+            winnerCard.classList.add('destello');
+        }
         const slot = document.getElementById('slotMachineCard');
         if(slot) slot.classList.remove('active');
 
@@ -3667,6 +3714,7 @@
     //  RENDERIZADO DE LISTAS
     // ============================================================
     db.ref('historial_ganadores').on('value', function(snapshot) {
+        historialCargado = true;
         const data = snapshot.val();
         rawHistoryItems = [];
         if (data) {
@@ -3728,6 +3776,7 @@
             else medallaIcono = `<span style="color: var(--muted); font-size: 0.8rem; margin-right: 4px;">#${item.rank}</span>`;
             
             li.innerHTML = '<div class="custom-item-text"><strong>' + medallaIcono + '<span class="enlace-usuario" data-user="' + escapeHtmlSimple(item.user) + '">' + escapeHtmlSimple(item.user) + '</span></strong></div><span class="item-badge">' + escapeHtmlSimple(item.total) + ' ' + textoVez + '</span>';
+            ponerBarraProgreso(li, item.total, list[0].total, 'rgba(99,102,241,.22)');
             listEl.appendChild(li);
         });
     }
@@ -3830,6 +3879,49 @@
         });
     }
 
+    // Fondo de una fila con una barra proporcional al primero de la lista
+    function ponerBarraProgreso(li, valor, maximo, color) {
+        const pct = Math.max(0, Math.min(100, (Number(valor) || 0) / (Number(maximo) || 1) * 100));
+        li.style.background = 'linear-gradient(90deg, ' + color + ' ' + pct.toFixed(1) + '%, #0f172a ' + pct.toFixed(1) + '%)';
+    }
+
+    // Los números suben contando; solo la primera vez que aparece el podio
+    const sinAnimaciones = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let podioAnimado = false;
+
+    function animarContadores(contenedor) {
+        contenedor.querySelectorAll('.contador').forEach(function(el) {
+            const final = Number(el.dataset.valor) || 0;
+            if (sinAnimaciones || podioAnimado) { el.textContent = final; return; }
+            const inicio = performance.now(), duracion = 900;
+            const paso = ahora => {
+                const t = Math.min(1, (ahora - inicio) / duracion);
+                el.textContent = Math.round(final * (1 - Math.pow(1 - t, 3)));
+                if (t < 1) requestAnimationFrame(paso);
+            };
+            requestAnimationFrame(paso);
+        });
+        podioAnimado = true;
+    }
+
+    function crearPodioHoF(top3) {
+        const li = document.createElement('li');
+        li.className = 'podio';
+        // Orden visual: 2º, 1º, 3º
+        [top3[1], top3[0], top3[2]].forEach(function(item) {
+            const medalla = item.rank === 1 ? '🥇' : (item.rank === 2 ? '🥈' : '🥉');
+            const puesto = document.createElement('div');
+            puesto.className = 'podio-puesto puesto-' + item.rank;
+            puesto.innerHTML = '<div class="podio-medalla">' + medalla + '</div>' +
+                '<div class="podio-nombre enlace-usuario" data-user="' + escapeHtmlSimple(item.user) + '" title="' + escapeHtmlSimple(item.user) + '">' + escapeHtmlSimple(item.user) + '</div>' +
+                '<div class="podio-valor"><span class="contador" data-valor="' + (Number(item.total) || 0) + '">' + (Number(item.total) || 0) + '</span> juegos</div>' +
+                '<div class="podio-base">' + item.rank + '</div>';
+            li.appendChild(puesto);
+        });
+        animarContadores(li);
+        return li;
+    }
+
     function renderHoFList(list) {
         const listEl = document.getElementById('hallOfFameList');
         const btn = document.getElementById('btnToggleHoF');
@@ -3855,7 +3947,13 @@
                 return;
             }
         } else {
-            itemsToDisplay = isHoFExpanded ? listWithRank : listWithRank.slice(0, 3); 
+            // Podio con los tres primeros; debajo, el resto (si se despliega)
+            if (listWithRank.length >= 3) {
+                listEl.appendChild(crearPodioHoF(listWithRank.slice(0, 3)));
+                itemsToDisplay = isHoFExpanded ? listWithRank.slice(3) : [];
+            } else {
+                itemsToDisplay = listWithRank;
+            }
             if (btn) {
                 if (list.length > 3) {
                     btn.classList.remove('hidden');
@@ -3879,6 +3977,7 @@
             else iconoOId = `<span style="color: var(--muted); font-size: 0.8rem; margin-right: 4px;">#${item.rank}</span>`;
             
             li.innerHTML = '<div class="custom-item-text"><strong>' + iconoOId + '<span class="enlace-usuario" data-user="' + escapeHtmlSimple(item.user) + '">' + escapeHtmlSimple(item.user) + '</span></strong></div><span class="item-badge" style="background: var(--success);">' + escapeHtmlSimple(item.total) + ' ' + textoJuegos + '</span>';
+            ponerBarraProgreso(li, item.total, list[0].total, 'rgba(34,197,94,.18)');
             listEl.appendChild(li);
         });
     }

@@ -534,6 +534,36 @@ const check = (c, msg) => { console.log((c ? 'PASS ' : 'FAIL ') + msg); if (!c) 
   await ev(() => window.scrollTo(0, 0));
   await page.setViewportSize({ width: 1440, height: 900 });
 
+  // ===== Parte 3: podio, barras, contadores, esqueletos y destello =====
+  await page.setViewportSize({ width: 1440, height: 900 });
+  check(await ev(() => document.querySelectorAll('.esqueleto').length === 0), 'esqueletos: desaparecen al llegar los datos');
+  await ev(() => {
+    window.__DB__.set('hall_of_fame_juegos', {
+      '@a1': { user: '@Primero', total: 200 }, '@a2': { user: '@Segundo', total: 150 }, '@a3': { user: '@Tercero', total: 100 },
+      '@a4': { user: '@Cuarto', total: 50 }, '@a5': { user: '@Quinto', total: 20 }
+    });
+    isHoFExpanded = false; hofSearchQuery = ''; refrescarHistorialAntiSpoiler();
+  });
+  await page.waitForTimeout(1400);
+  const podio = await ev(() => [...document.querySelectorAll('#hallOfFameList .podio .podio-puesto')].map(p => [p.className.replace('podio-puesto ', ''), p.querySelector('.podio-nombre').textContent, p.querySelector('.contador').textContent]));
+  check(JSON.stringify(podio) === JSON.stringify([['puesto-2', '@Segundo', '150'], ['puesto-1', '@Primero', '200'], ['puesto-3', '@Tercero', '100']]), 'podio: 2º, 1º y 3º con sus juegos ' + JSON.stringify(podio));
+  check(await ev(() => document.querySelectorAll('#hallOfFameList > li.custom-item').length === 0), 'podio: plegado solo se ve el podio');
+  await ev(() => toggleHoFView()); await page.waitForTimeout(300);
+  const filas = await ev(() => [...document.querySelectorAll('#hallOfFameList > li.custom-item')].map(li => [li.textContent.includes('#4') || li.textContent.includes('#5'), li.style.background]));
+  check(filas.length === 2 && filas.every(f => f[0]) && / 25(\.0)?%,/.test(filas[0][1]) && / 10(\.0)?%,/.test(filas[1][1]), 'podio: al desplegar, el resto con barras proporcionales ' + JSON.stringify(filas));
+  await page.click('#hallOfFameList .podio .puesto-1 .podio-nombre'); await page.waitForTimeout(300);
+  check((await page.textContent('#fichaUsuarioNombre')).includes('@Primero'), 'podio: el nombre abre la ficha');
+  await ev(() => { cerrarFichaUsuario(); toggleHoFView(); });
+  await ev(() => hofSearchQuery = 'cuar'); await ev(() => refrescarHistorialAntiSpoiler()); await page.waitForTimeout(300);
+  check(await ev(() => !document.querySelector('#hallOfFameList .podio') && document.querySelector('#hallOfFameList').textContent.includes('@Cuarto')), 'podio: al buscar se ve la lista normal');
+  await ev(() => { hofSearchQuery = ''; refrescarHistorialAntiSpoiler(); });
+  // Destello del ganador
+  await ev(() => window.__DB__.set('sorteo_actual', { ganador: { user: '@Brillo', ticket: '3-@Brillo' }, arcadeGroup: [], timestamp: Date.now(), mesPremio: 'Octubre 2026', rawLines: 'x' }));
+  await page.waitForTimeout(400);
+  check(await ev(() => document.getElementById('winnerCard').classList.contains('destello')), 'destello: el ganador aparece con destello');
+  // Barras en Ganadores
+  check(await ev(() => [...document.querySelectorAll('#winnersCountList li.custom-item')].every(li => li.style.background.includes('linear-gradient'))), 'ganadores: filas con barra de progreso');
+
   // Visitor doesn't write Telegram list
   check(!errors.some(x => !/Telegram|Sheets|Cloudflare|Failed to load|500|Error iniciando sesión|integrity|Error en la copia previa|Error añadiendo ganadores manuales|Error guardando la lista de participantes/.test(x)), 'sin errores JS inesperados: ' + JSON.stringify(errors.filter(x => !/Telegram|Sheets|Cloudflare|Failed to load|500|Error iniciando sesión|integrity|Error en la copia previa|Error añadiendo ganadores manuales|Error guardando la lista de participantes/.test(x))));
   await browser.close();
