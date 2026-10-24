@@ -786,6 +786,42 @@
             box-shadow: 0 6px 18px rgba(0,0,0,.6); cursor: pointer;
         }
 
+        /* Buscador global */
+        .buscador-global { position: relative; width: 100%; max-width: 520px; margin: 6px auto 4px; }
+        .buscador-global input { width: 100%; padding: 11px 14px; border-radius: 999px; border: 1px solid rgba(139,92,246,.55); background: rgba(15,23,42,.92); color: var(--text); font-size: 0.95rem; }
+        .buscador-global input:focus { outline: none; border-color: #a78bfa; box-shadow: 0 0 0 3px rgba(139,92,246,.25); }
+        .resultados-global {
+            position: absolute; left: 0; right: 0; top: calc(100% + 6px); z-index: 1200;
+            background: #111827; border: 1px solid rgba(139,92,246,.55); border-radius: 12px;
+            box-shadow: 0 16px 40px rgba(0,0,0,.6); padding: 6px; text-align: left; max-height: 60vh; overflow-y: auto;
+        }
+        .resultados-titulo { font-size: .72rem; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); padding: 6px 8px 4px; }
+        .resultado-usuario {
+            display: flex; width: 100%; justify-content: space-between; align-items: center; gap: 8px;
+            padding: 8px 10px; margin: 0; border: 0; border-radius: 8px; background: transparent; color: var(--text);
+            cursor: pointer; text-align: left; font-size: .9rem;
+        }
+        .resultado-usuario:hover, .resultado-usuario:focus { background: rgba(139,92,246,.2); outline: none; }
+        .resultado-nombre { font-weight: bold; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .resultado-extra { color: var(--muted); font-size: .8rem; white-space: nowrap; }
+        .resultado-juego { padding: 8px 10px; font-size: .85rem; }
+
+        /* Nombres que abren la ficha */
+        .enlace-usuario { cursor: pointer; }
+        .enlace-usuario:hover { text-decoration: underline dotted; text-underline-offset: 3px; }
+
+        /* Ficha de usuario */
+        .ficha-datos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+        .ficha-dato { background: #0f172a; border: 1px solid #334155; border-radius: 10px; padding: 10px 6px; text-align: center; }
+        .ficha-valor { font-size: 1.25rem; font-weight: bold; }
+        .ficha-texto { font-size: .72rem; color: var(--muted); margin-top: 2px; }
+        .ficha-seccion { margin-top: 10px; padding: 10px; background: #0f172a; border: 1px solid #334155; border-radius: 10px; font-size: .85rem; line-height: 1.5; }
+
+        /* ¿Estoy en el sorteo? */
+        .buscarme-resultado { margin: 8px 0 4px; padding: 10px 12px; border-radius: 10px; font-size: .85rem; text-align: left; }
+        .buscarme-resultado.si { background: rgba(34,197,94,.12); border: 1px solid var(--success); }
+        .buscarme-resultado.no { background: rgba(239,68,68,.10); border: 1px solid var(--danger); }
+
         /* Pantallas estrechas: una lista cada vez y cabecera compacta */
         @media (max-width: 1023px) {
             .col-listas[data-tab="ganadores"] #hallOfFameCard,
@@ -840,6 +876,11 @@
         <img src="logo.png?v=2" alt="Logo Patrulla Retro" class="header-logo" onclick="contarClicksAdmin()">
         <h1 id="mainTitle">🏆 Sorteo HoF <span class="titulo-extra">Patrulla Retro</span></h1>
 
+        <div class="buscador-global" id="buscadorGlobalCaja">
+            <input type="search" id="buscadorGlobal" placeholder="🔍 Busca un @usuario o un juego" autocomplete="off" oninput="buscarGlobal()" onfocus="buscarGlobal()" aria-label="Buscar un usuario o un juego">
+            <div id="resultadosGlobal" class="resultados-global hidden" role="listbox"></div>
+        </div>
+
         <div class="top-prob-btn-container">
             <button class="top-prob-btn" onclick="abrirProbabilidadesModal()">📊 Lista de Participantes</button>
         </div>
@@ -871,7 +912,7 @@
 
     <div id="winnerCard" class="winner-box">
         <div id="winnerTitle" class="winner-title">🎉 ¡Tenemos Ganador Oficial! 🎉</div>
-        <div id="winnerName" class="winner-name">Cargando...</div>
+        <div id="winnerName" class="winner-name enlace-usuario">Cargando...</div>
         <div id="winnerTicket" class="winner-ticket"></div>
         <div id="winnerQuote" class="winner-quote"></div>
         <div id="specialPrizeDisplay" class="hidden" style="margin:10px auto 0; max-width:620px; padding:10px 14px; border:1px solid var(--gold); border-radius:10px; background:rgba(245,158,11,0.10); color:var(--gold); font-weight:bold; text-align:center;"></div>
@@ -1287,10 +1328,20 @@
     </div>
 </div>
 
+<div id="fichaUsuarioModal" class="modal-overlay hidden">
+    <div class="modal-card ficha-usuario">
+        <h2 id="fichaUsuarioNombre" style="color: var(--gold); margin-top: 0; margin-bottom: 12px;"></h2>
+        <div id="fichaUsuarioContenido" style="overflow-y:auto; text-align:left;"></div>
+        <button onclick="cerrarFichaUsuario()" style="background-color: var(--accent); margin-top: 12px;">Cerrar</button>
+    </div>
+</div>
+
 <div id="probabilitiesModal" class="modal-overlay hidden">
     <div class="modal-card">
         <h2 style="color: var(--gold); margin-top: 0; margin-bottom: 5px;">📊 Lista de Participantes</h2>
         <div id="uniqueUsersCount" style="color: var(--success); font-size: 0.9rem; font-weight: bold; margin-bottom: 10px;">Calculando...</div>
+        <input type="text" id="buscarmeInput" placeholder="🙋 ¿Estás en el sorteo? Escribe tu @usuario" oninput="buscarmeEnSorteo()" autocomplete="off" style="font-size:0.9rem;">
+        <div id="buscarmeResultado" class="buscarme-resultado hidden"></div>
         <ul id="participantsListModal" class="credits-list" style="margin: 5px 0 15px 0; max-height: 50vh;">
             <li class="custom-item" style="justify-content: center; color: var(--muted);">Cargando participantes...</li>
         </ul>
@@ -1503,11 +1554,10 @@
     //  FUNCIONES DE CONGELACIÓN (ANTI-SPOILER + ANTI PARPADEO)
     // ============================================================
 
-    function refrescarHistorialAntiSpoiler() {
-    try {
+    // Historial que se puede mostrar ahora: mientras se revela un sorteo se
+    // ocultan las entradas recientes para no destripar al ganador.
+    function obtenerHistorialVisible() {
         let historyToRender = rawHistoryItems || [];
-        let hofToRender = rawHoFItems || [];
-
         const ahora = Date.now();
         let enCongelacion = false;
         let freezeUntil = 0;
@@ -1532,6 +1582,13 @@
                 return itemTime < (ahora - 120000); 
             });
         }
+        return historyToRender;
+    }
+
+    function refrescarHistorialAntiSpoiler() {
+    try {
+        let historyToRender = obtenerHistorialVisible();
+        let hofToRender = rawHoFItems || [];
 
         // @Pepe y @pepe son la misma persona: se cuenta sin distinguir mayúsculas
         // y se muestra el nombre tal como aparece en su victoria más reciente.
@@ -1757,7 +1814,200 @@
         const probModal = document.getElementById('probabilitiesModal');
         if (event.target === credModal) cerrarCreditos();
         if (event.target === probModal) cerrarProbabilidadesModal();
+        if (event.target === document.getElementById('fichaUsuarioModal')) cerrarFichaUsuario();
     });
+
+    // Cualquier @usuario marcado como enlace abre su ficha
+    document.addEventListener('click', function(event) {
+        const enlace = event.target.closest && event.target.closest('.enlace-usuario, .resultado-usuario');
+        if (!enlace || !enlace.dataset.user) return;
+        abrirFichaUsuario(enlace.dataset.user);
+    });
+
+    // ============================================================
+    //  FICHA DE USUARIO
+    // ============================================================
+    function datosDeUsuario(user) {
+        const clave = String(user || '').toLowerCase();
+        const mismo = u => String(u || '').toLowerCase() === clave;
+        const historial = obtenerHistorialVisible().filter(item => item && mismo(item.user));
+        const victorias = historial.filter(item => !item.especial);
+        const especiales = historial.filter(item => item.especial);
+        const hofOrdenado = (rawHoFItems || []).slice().sort((a, b) => (Number(b.total) || 0) - (Number(a.total) || 0));
+        const posHoF = hofOrdenado.findIndex(item => item && mismo(item.user));
+        const regalo = Object.keys(regalosData || {}).some(k => {
+            const item = regalosData[k];
+            return mismo(item && typeof item === 'object' && item.user ? item.user : k);
+        });
+        const participacion = participacionDeUsuario(user);
+        const nombre = (historial[0] && historial[0].user) || (posHoF >= 0 && hofOrdenado[posHoF].user) || (participacion && participacion.user) || user;
+        return {
+            nombre, victorias, especiales, regalo, participacion,
+            hof: posHoF >= 0 ? { total: Number(hofOrdenado[posHoF].total) || 0, posicion: posHoF + 1 } : null
+        };
+    }
+
+    function abrirFichaUsuario(user) {
+        const d = datosDeUsuario(user);
+        const modal = document.getElementById('fichaUsuarioModal');
+        document.getElementById('fichaUsuarioNombre').textContent = '👤 ' + d.nombre;
+        const dato = (icono, valor, texto) => '<div class="ficha-dato"><div class="ficha-valor">' + icono + ' ' + valor + '</div><div class="ficha-texto">' + texto + '</div></div>';
+        let html = '<div class="ficha-datos">' +
+            dato('🏆', d.victorias.length, d.victorias.length === 1 ? 'victoria' : 'victorias') +
+            dato('👾', d.hof ? d.hof.total : 0, d.hof ? 'juegos · #' + d.hof.posicion + ' del HoF' : 'juegos en el HoF') +
+            dato('🎟️', d.participacion ? d.participacion.boletos.length : 0, d.participacion ? 'boletos este mes · ' + d.participacion.prob.toFixed(2) + '%' : 'boletos este mes') +
+            '</div>';
+        if (d.victorias.length) {
+            html += '<div class="ficha-seccion"><b>📜 Meses en que ganó:</b><br>' + d.victorias.map(v => escapeHtmlSimple(v.fecha || 'Sin mes')).join(' · ') + '</div>';
+        }
+        if (d.especiales.length) {
+            html += '<div class="ficha-seccion"><b>🎁 Sorteos especiales:</b><br>' + d.especiales.map(v => escapeHtmlSimple((v.fecha || 'Sin mes') + (v.premioEspecial ? ' (' + v.premioEspecial + ')' : ''))).join(' · ') + '</div>';
+        }
+        if (d.regalo) html += '<div class="ficha-seccion">🎁 Ha recibido una camiseta por cesión.</div>';
+        if (!d.victorias.length && !d.especiales.length && !d.hof && !d.participacion && !d.regalo) {
+            html += '<div class="ficha-seccion" style="color:var(--muted); text-align:center;">Todavía no hay datos de este usuario.</div>';
+        }
+        document.getElementById('fichaUsuarioContenido').innerHTML = html;
+        const resultados = document.getElementById('resultadosGlobal');
+        if (resultados) resultados.classList.add('hidden');
+        modal.classList.remove('hidden');
+    }
+
+    function cerrarFichaUsuario() {
+        document.getElementById('fichaUsuarioModal').classList.add('hidden');
+    }
+
+    // ============================================================
+    //  BUSCADOR GLOBAL (usuarios y juegos)
+    // ============================================================
+    let busquedaGlobalId = 0;
+
+    function usuariosConocidos() {
+        const mapa = {};
+        const anadir = u => { if (u && /^@\w+$/.test(u) && !mapa[u.toLowerCase()]) mapa[u.toLowerCase()] = u; };
+        obtenerHistorialVisible().forEach(item => item && anadir(item.user));
+        (rawHoFItems || []).forEach(item => item && anadir(item.user));
+        Object.keys(regalosData || {}).forEach(k => { const it = regalosData[k]; anadir(it && typeof it === 'object' && it.user ? it.user : k); });
+        const listInputDOM = document.getElementById('listInput');
+        Object.keys(contarBoletos(listInputDOM ? listInputDOM.value : '').boletosPorUsuario).forEach(anadir);
+        return Object.values(mapa);
+    }
+
+    async function buscarGlobal() {
+        const input = document.getElementById('buscadorGlobal');
+        const caja = document.getElementById('resultadosGlobal');
+        if (!input || !caja) return;
+        const consulta = input.value.trim();
+        const sinArroba = consulta.replace(/^@/, '').toLowerCase();
+        const id = ++busquedaGlobalId;
+        if (sinArroba.length < 2) { caja.classList.add('hidden'); caja.innerHTML = ''; return; }
+
+        // Usuarios
+        const usuarios = usuariosConocidos()
+            .filter(u => u.toLowerCase().includes(sinArroba))
+            .map(u => ({ user: u, d: datosDeUsuario(u) }))
+            .sort((a, b) => {
+                const pa = a.user.toLowerCase().startsWith('@' + sinArroba) ? 0 : 1, pb = b.user.toLowerCase().startsWith('@' + sinArroba) ? 0 : 1;
+                if (pa !== pb) return pa - pb;
+                return (b.d.hof ? b.d.hof.total : 0) - (a.d.hof ? a.d.hof.total : 0);
+            })
+            .slice(0, 6);
+
+        let html = '';
+        if (usuarios.length) {
+            html += '<div class="resultados-titulo">👤 Usuarios</div>' + usuarios.map(r =>
+                '<button type="button" class="resultado-usuario" data-user="' + escapeHtmlSimple(r.user) + '">' +
+                '<span class="resultado-nombre">' + escapeHtmlSimple(r.user) + '</span>' +
+                '<span class="resultado-extra">🏆 ' + r.d.victorias.length + ' · 👾 ' + (r.d.hof ? r.d.hof.total : 0) + (r.d.participacion ? ' · 🎟️ ' + r.d.participacion.boletos.length : '') + '</span>' +
+                '</button>').join('');
+        }
+
+        // Juegos (solo si no se busca claramente un @usuario)
+        const buscarJuegos = !consulta.startsWith('@') && sinArroba.length >= 4;
+        if (buscarJuegos) html += '<div class="resultados-titulo">🎮 Juegos</div><div class="resultado-juego" style="color:var(--muted);">Buscando…</div>';
+        if (!html) html = '<div class="resultado-juego" style="color:var(--muted);">Sin resultados.</div>';
+        caja.innerHTML = html;
+        caja.classList.remove('hidden');
+        if (!buscarJuegos) return;
+
+        const juegos = await obtenerJuegosDesdeSheets();
+        if (id !== busquedaGlobalId) return;   // ya hay una búsqueda más nueva
+        const q = normalizarTexto(consulta);
+        const encontrados = juegos.filter(j => normalizarTexto(j.titulo).includes(q)).slice(0, 5);
+        const pendiente = '<div class="resultados-titulo">🎮 Juegos</div><div class="resultado-juego" style="color:var(--muted);">Buscando…</div>';
+        let htmlJuegos;
+        if (encontrados.length) {
+            htmlJuegos = '<div class="resultados-titulo">🎮 Juegos</div>' + encontrados.map(j => '<div class="resultado-juego">❌ <b>' + escapeHtmlSimple(j.titulo) + '</b> ya se ha elegido' + (j.fecha ? ' · ' + escapeHtmlSimple(j.fecha) : '') + '</div>').join('');
+        } else if (usuarios.length) {
+            htmlJuegos = '';   // se buscaba un usuario: no hace falta hablar de juegos
+        } else {
+            htmlJuegos = '<div class="resultados-titulo">🎮 Juegos</div><div class="resultado-juego">✅ Ningún juego con ese nombre se ha elegido todavía.</div>';
+        }
+        caja.innerHTML = caja.innerHTML.replace(pendiente, htmlJuegos);
+    }
+
+    // Cerrar los resultados al pulsar fuera o con Escape
+    document.addEventListener('click', function(event) {
+        const caja = document.getElementById('buscadorGlobalCaja');
+        if (caja && !caja.contains(event.target)) {
+            const res = document.getElementById('resultadosGlobal');
+            if (res) res.classList.add('hidden');
+        }
+    });
+    document.addEventListener('keydown', function(event) {
+        if (event.key !== 'Escape') return;
+        const res = document.getElementById('resultadosGlobal');
+        if (res) res.classList.add('hidden');
+        cerrarFichaUsuario();
+    });
+
+    // Boletos de cada usuario en una lista de participantes.
+    function contarBoletos(rawLinesStr) {
+        let boletosPorUsuario = {};
+        let totalBoletosValidos = 0;
+        String(rawLinesStr || '').split('\n').forEach(function(line) {
+            const lineaLimpia = line.trim();
+            if (!lineaLimpia) return;
+            const matchUser = lineaLimpia.match(/@\w+/);
+            if (!matchUser) return;
+            const user = matchUser[0];
+            const numBoletoMatch = lineaLimpia.match(/^(\d+)/);
+            const numeroBoleto = numBoletoMatch ? numBoletoMatch[1] : (boletosPorUsuario[user] ? (boletosPorUsuario[user].length + 1).toString() : "1");
+            if (!boletosPorUsuario[user]) boletosPorUsuario[user] = [];
+            boletosPorUsuario[user].push(numeroBoleto);
+            totalBoletosValidos++;
+        });
+        return { boletosPorUsuario, totalBoletosValidos };
+    }
+
+    // Participación de un usuario en la lista actual (sin distinguir mayúsculas).
+    function participacionDeUsuario(user) {
+        const listInputDOM = document.getElementById('listInput');
+        const { boletosPorUsuario, totalBoletosValidos } = contarBoletos(listInputDOM ? listInputDOM.value : '');
+        const clave = Object.keys(boletosPorUsuario).find(u => u.toLowerCase() === String(user).toLowerCase());
+        if (!clave || !totalBoletosValidos) return null;
+        const boletos = boletosPorUsuario[clave];
+        return { user: clave, boletos: boletos, prob: boletos.length / totalBoletosValidos * 100 };
+    }
+
+    function buscarmeEnSorteo() {
+        const input = document.getElementById('buscarmeInput');
+        const res = document.getElementById('buscarmeResultado');
+        if (!input || !res) return;
+        let texto = input.value.trim();
+        if (!texto) { res.classList.add('hidden'); return; }
+        if (!texto.startsWith('@')) texto = '@' + texto;
+        const p = participacionDeUsuario(texto);
+        res.classList.remove('hidden');
+        if (p) {
+            res.className = 'buscarme-resultado si';
+            res.innerHTML = '✅ <b>' + escapeHtmlSimple(p.user) + '</b> está en el sorteo con <b>' + p.boletos.length + ' ' + (p.boletos.length === 1 ? 'boleto' : 'boletos') +
+                '</b> (Nº ' + escapeHtmlSimple(p.boletos.join(', ')) + ') · probabilidad <b>' + p.prob.toFixed(2) + '%</b>';
+        } else {
+            res.className = 'buscarme-resultado no';
+            res.innerHTML = '❌ <b>' + escapeHtmlSimple(texto) + '</b> no aparece en la lista de este mes.';
+        }
+    }
 
     function calcularYMostrarProbabilidades() {
         try {
@@ -1777,38 +2027,7 @@
                 return;
             }
             
-            const rawLines = rawLinesStr.split('\n');
-            let boletosPorUsuario = {};
-            let totalBoletosValidos = 0;
-            
-            let sumandoParaHoF = true; 
-            
-            rawLines.forEach(function(line) {
-                let lineaLimpia = line.trim();
-                if (!lineaLimpia) return;
-                
-                const matchUser = lineaLimpia.match(/@\w+/);
-                
-                let textoSinUsuario = lineaLimpia.toUpperCase();
-                if (matchUser) {
-                    textoSinUsuario = textoSinUsuario.replace(matchUser[0].toUpperCase(), '');
-                }
-                
-                if (textoSinUsuario.includes('EXTRA')) {
-                    sumandoParaHoF = false; 
-                }
-                
-                if (matchUser) {
-                    let user = matchUser[0];
-                    let numBoletoMatch = lineaLimpia.match(/^(\d+)/);
-                    let numeroBoleto = numBoletoMatch ? numBoletoMatch[1] : (boletosPorUsuario[user] ? (boletosPorUsuario[user].length + 1).toString() : "1");
-                    
-                    if (!boletosPorUsuario[user]) boletosPorUsuario[user] = [];
-                    boletosPorUsuario[user].push(numeroBoleto);
-                    totalBoletosValidos++;
-                }
-            });
-            
+            const { boletosPorUsuario, totalBoletosValidos } = contarBoletos(rawLinesStr);
             const numUsuariosUnicos = Object.keys(boletosPorUsuario).length;
             
             if (totalBoletosValidos === 0) {
@@ -1842,7 +2061,7 @@
                 li.className = 'custom-item';
                 let porcentajeStr = isNaN(p.prob) ? "0.000%" : p.prob.toFixed(3) + "%";
                 li.innerHTML = `<div class="custom-item-text">
-                                    <strong>${escapeHtmlSimple(p.user)}</strong> <span style="font-size:0.75rem; color:var(--muted);">(${p.count} ${p.count === 1 ? 'boleto' : 'boletos'})</span>
+                                    <strong class="enlace-usuario" data-user="${escapeHtmlSimple(p.user)}">${escapeHtmlSimple(p.user)}</strong> <span style="font-size:0.75rem; color:var(--muted);">(${p.count} ${p.count === 1 ? 'boleto' : 'boletos'})</span>
                                     <div style="font-size: 0.75rem; color: #aaa; margin-top: 2px; word-break: break-all;">Números: ${escapeHtmlSimple(p.boletos.join(', '))}</div>
                                </div>` +
                                `<span style="color: var(--gold); font-family: monospace; font-size: 0.9rem; white-space: nowrap;">${porcentajeStr}</span>`;
@@ -3129,7 +3348,7 @@
                 }
 
                 const wName = document.getElementById('winnerName');
-                if(wName) wName.innerText = data.ganador.user;
+                if(wName) { wName.innerText = data.ganador.user; wName.dataset.user = data.ganador.user; }
                 
                 let fraseFinal = data.frase;
                 if (!fraseFinal) {
@@ -3172,7 +3391,7 @@
                             const esGanador = item.user.toLowerCase() === data.ganador.user.toLowerCase();
                             const numItem = String(item.ticket || '').match(/^(\d+)/);
                             const boletoItem = numItem ? 'Nº ' + numItem[1] : String(item.ticket || '');
-                            li.innerHTML = '<div class="custom-item-text"><strong>' + escapeHtmlSimple(item.user) + '</strong> <span style="color: var(--muted); font-size:0.8rem; white-space:nowrap;">· ' + escapeHtmlSimple(boletoItem) + '</span></div>' +
+                            li.innerHTML = '<div class="custom-item-text"><strong class="enlace-usuario" data-user="' + escapeHtmlSimple(item.user) + '">' + escapeHtmlSimple(item.user) + '</strong> <span style="color: var(--muted); font-size:0.8rem; white-space:nowrap;">· ' + escapeHtmlSimple(boletoItem) + '</span></div>' +
                                 (esGanador ? '<span class="item-badge" style="background: var(--gold); color: black;">¡Ganador Principal!</span>' : '<span class="item-badge" style="background: #334155;">Elección Arcade</span>');
                             arcadeList.appendChild(li);
                         });
@@ -3399,7 +3618,7 @@
             else if (item.rank === 3) medallaIcono = '🥉 ';
             else medallaIcono = `<span style="color: var(--muted); font-size: 0.8rem; margin-right: 4px;">#${item.rank}</span>`;
             
-            li.innerHTML = '<div class="custom-item-text"><strong>' + medallaIcono + escapeHtmlSimple(item.user) + '</strong></div><span class="item-badge">' + escapeHtmlSimple(item.total) + ' ' + textoVez + '</span>';
+            li.innerHTML = '<div class="custom-item-text"><strong>' + medallaIcono + '<span class="enlace-usuario" data-user="' + escapeHtmlSimple(item.user) + '">' + escapeHtmlSimple(item.user) + '</span></strong></div><span class="item-badge">' + escapeHtmlSimple(item.total) + ' ' + textoVez + '</span>';
             listEl.appendChild(li);
         });
     }
@@ -3550,7 +3769,7 @@
             else if (item.rank === 3) iconoOId = '🥉 ';
             else iconoOId = `<span style="color: var(--muted); font-size: 0.8rem; margin-right: 4px;">#${item.rank}</span>`;
             
-            li.innerHTML = '<div class="custom-item-text"><strong>' + iconoOId + escapeHtmlSimple(item.user) + '</strong></div><span class="item-badge" style="background: var(--success);">' + escapeHtmlSimple(item.total) + ' ' + textoJuegos + '</span>';
+            li.innerHTML = '<div class="custom-item-text"><strong>' + iconoOId + '<span class="enlace-usuario" data-user="' + escapeHtmlSimple(item.user) + '">' + escapeHtmlSimple(item.user) + '</span></strong></div><span class="item-badge" style="background: var(--success);">' + escapeHtmlSimple(item.total) + ' ' + textoJuegos + '</span>';
             listEl.appendChild(li);
         });
     }
@@ -3813,7 +4032,7 @@
             const etiquetaEspecial = item.especial && item.premioEspecial
                 ? '🎁 Sorteo Especial: ' + escapeHtmlSimple(item.premioEspecial)
                 : (item.especial ? '🎁 Sorteo Especial' : '');
-            li.innerHTML = '<div class="custom-item-text"><strong>' + escapeHtmlSimple(item.user) + '</strong>' +
+            li.innerHTML = '<div class="custom-item-text"><strong class="enlace-usuario" data-user="' + escapeHtmlSimple(item.user) + '">' + escapeHtmlSimple(item.user) + '</strong>' +
                            (etiquetaEspecial ? '<div style="font-size:0.75rem; color:var(--gold); margin-top:2px;">' + etiquetaEspecial + '</div>' : '') +
                            '</div>' +
                            '<div style="display:flex; align-items:center; gap:6px;"><div style="font-size: 0.75rem; color: var(--muted);">' + escapeHtmlSimple(item.fecha) + '</div>' + deleteBtnHtml + '</div>';

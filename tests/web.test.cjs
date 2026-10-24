@@ -28,6 +28,7 @@ const check = (c, msg) => { console.log((c ? 'PASS ' : 'FAIL ') + msg); if (!c) 
     const u = route.request().url();
     if (u.includes('firebase-app-compat')) return route.fulfill({ body: fs.readFileSync(path.join(__dirname, 'fakefb.js'), 'utf8'), contentType: 'application/javascript' });
     if (u.includes('firebase-auth-compat')) return route.fulfill({ body: '', contentType: 'application/javascript' });
+    if (u.includes('docs.google.com')) return route.fulfill({ status: 200, body: 'Chrono Trigger,Enero 2025\nMetal Slug,Marzo 2024\nMetal Gear Solid,Junio 2025', contentType: 'text/csv', headers: { 'Access-Control-Allow-Origin': '*' } });
     if (u.includes('workers.dev/backup')) { window_backupAuth = route.request().headers()['authorization']; backupCalls++;
       if (backupFail) return route.fulfill({ status: 500, body: JSON.stringify({ ok: false, error: 'GitHub caído' }), contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*' } });
       return route.fulfill({ status: 200, body: JSON.stringify({ ok: true, archivo: 'backups/x.json' }), contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*' } }); }
@@ -423,6 +424,70 @@ const check = (c, msg) => { console.log((c ? 'PASS ' : 'FAIL ') + msg); if (!c) 
   await ev(() => window.__DB__.set('sorteo_actual', { ganador: { user: '@Viejo', ticket: '1-@Viejo' }, arcadeGroup: [], timestamp: Date.now() - 5 * 86400000, mesPremio: 'Septiembre 2026', rawLines: 'x' }));
   await page.waitForTimeout(500);
   check(!(await ev(() => document.getElementById('instruccionesElegidos').open)), 'instrucciones plegadas con un ganador antiguo');
+
+  // ===== Parte 1: buscador global, ficha de usuario y "¿Estoy en el sorteo?" =====
+  await page.setViewportSize({ width: 390, height: 844 });
+  await ev(() => {
+    window.__DB__.set('historial_ganadores', {
+      f1: { user: '@Fichado', fecha: 'Enero 2026', timestamp: 1000 },
+      f2: { user: '@fichado', fecha: 'Marzo 2026', timestamp: 2000 },
+      f3: { user: '@Fichado', fecha: 'Abril 2026', timestamp: 3000, especial: true, premioEspecial: 'Mando' },
+      f4: { user: '@Otra', fecha: 'Mayo 2026', timestamp: 4000 }
+    });
+    window.__DB__.set('hall_of_fame_juegos', { '@fichado': { user: '@Fichado', total: 50 }, '@otra': { user: '@Otra', total: 90 } });
+    window.__DB__.set('sorteo_actual', null);
+    document.getElementById('listInput').value = '1-@Fichado\n2-@Otra\n3-@Fichado\n4-@Tercero';
+  });
+  await page.waitForTimeout(500);
+  await page.fill('#buscadorGlobal', 'fich');
+  await page.waitForTimeout(300);
+  const res1 = await page.textContent('#resultadosGlobal');
+  check(await page.isVisible('#resultadosGlobal') && res1.includes('@Fichado') && res1.includes('🏆 2') && res1.includes('👾 50') && res1.includes('🎟️ 2'), 'buscador: encuentra al usuario con sus datos ' + JSON.stringify(res1));
+  await page.waitForTimeout(600);
+  check(!(await page.textContent('#resultadosGlobal')).includes('Ningún juego'), 'buscador: si encuentra usuarios no dice "ningún juego"');
+  await page.click('.resultado-usuario[data-user="@Fichado"]');
+  await page.waitForTimeout(300);
+  const ficha = await page.textContent('#fichaUsuarioModal');
+  check(await page.isVisible('#fichaUsuarioModal') && !(await page.isVisible('#resultadosGlobal')), 'buscador: al pulsar se abre la ficha');
+  check(ficha.includes('@Fichado') && ficha.includes('2victorias') && ficha.includes('#2 del HoF') && ficha.includes('Enero 2026') && ficha.includes('Marzo 2026') && ficha.includes('Mando'), 'ficha: victorias (sin distinguir mayúsculas), HoF y especiales ' + JSON.stringify(ficha));
+  check(ficha.includes('2boletos este mes · 50.00%'), 'ficha: boletos y probabilidad de este mes');
+  await page.keyboard.press('Escape'); await page.waitForTimeout(200);
+  check(!(await page.isVisible('#fichaUsuarioModal')), 'ficha: se cierra con Escape');
+  // Juegos
+  await page.fill('#buscadorGlobal', 'metal');
+  await page.waitForTimeout(800);
+  const res2 = await page.textContent('#resultadosGlobal');
+  check(res2.includes('Metal Slug') && res2.includes('Metal Gear Solid') && res2.includes('ya se ha elegido'), 'buscador: encuentra juegos ya elegidos ' + JSON.stringify(res2));
+  await page.fill('#buscadorGlobal', 'zelda');
+  await page.waitForTimeout(800);
+  check((await page.textContent('#resultadosGlobal')).includes('Ningún juego con ese nombre'), 'buscador: avisa si el juego no se ha elegido');
+  await page.fill('#buscadorGlobal', '@meta');
+  await page.waitForTimeout(500);
+  check(!(await page.textContent('#resultadosGlobal')).includes('Juegos'), 'buscador: con @ solo busca usuarios');
+  await page.fill('#buscadorGlobal', '');
+  await page.waitForTimeout(200);
+  // Nombres pulsables en las listas
+  await ev(() => seleccionarPestanaListas('hof'));
+  await page.waitForTimeout(300);
+  await page.click('#hallOfFameList .enlace-usuario[data-user="@Otra"]');
+  await page.waitForTimeout(300);
+  check(await page.isVisible('#fichaUsuarioModal') && (await page.textContent('#fichaUsuarioNombre')).includes('@Otra'), 'ficha: se abre al pulsar un nombre del Hall of Fame');
+  await ev(() => cerrarFichaUsuario());
+  await ev(() => seleccionarPestanaListas('ganadores'));
+  // ¿Estoy en el sorteo?
+  await ev(() => abrirProbabilidadesModal());
+  await page.fill('#buscarmeInput', 'fichado');
+  await page.waitForTimeout(200);
+  const yo = await page.textContent('#buscarmeResultado');
+  check(yo.includes('@Fichado') && yo.includes('2 boletos') && yo.includes('Nº 1, 3') && yo.includes('50.00%'), '¿Estoy?: encuentra al usuario sin @ ni mayúsculas ' + JSON.stringify(yo));
+  await page.fill('#buscarmeInput', '@nadie');
+  await page.waitForTimeout(200);
+  check((await page.textContent('#buscarmeResultado')).includes('no aparece'), '¿Estoy?: avisa si no está');
+  await ev(() => cerrarProbabilidadesModal());
+  // Sin desplazamiento horizontal con los resultados abiertos
+  await page.fill('#buscadorGlobal', 'fich'); await page.waitForTimeout(300);
+  check(await ev(() => document.documentElement.scrollWidth <= window.innerWidth), 'buscador: sin desplazamiento horizontal en móvil');
+  await page.fill('#buscadorGlobal', '');
 
   // Visitor doesn't write Telegram list
   check(!errors.some(x => !/Telegram|Sheets|Cloudflare|Failed to load|500|Error iniciando sesión|integrity|Error en la copia previa|Error añadiendo ganadores manuales|Error guardando la lista de participantes/.test(x)), 'sin errores JS inesperados: ' + JSON.stringify(errors.filter(x => !/Telegram|Sheets|Cloudflare|Failed to load|500|Error iniciando sesión|integrity|Error en la copia previa|Error añadiendo ganadores manuales|Error guardando la lista de participantes/.test(x))));
