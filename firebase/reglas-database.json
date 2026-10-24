@@ -1,6 +1,6 @@
 {
   "rules": {
-    ".write": "auth != null && (auth.uid === 'UID_ADMIN_1' || auth.uid === 'UID_ADMIN_2')",
+    ".write": "auth != null && (auth.uid === 'mowI2ZkiPTQoz7Kx4P43rfZjxpi1' || auth.uid === 'AlZIJROdtkgGLw48FwsJUchrSfO2')",
 
     "sorteo_actual": { ".read": true },
     "historial_ganadores": { ".read": true },
@@ -12,7 +12,7 @@
     "sorteo_participantes_raw": { ".read": true },
 
     "backups": {
-      ".read": "auth != null && (auth.uid === 'UID_ADMIN_1' || auth.uid === 'UID_ADMIN_2')"
+      ".read": "auth != null && (auth.uid === 'mowI2ZkiPTQoz7Kx4P43rfZjxpi1' || auth.uid === 'AlZIJROdtkgGLw48FwsJUchrSfO2')"
     }
   }
 }
