@@ -5,6 +5,12 @@ const FIREBASE_BASE =
 // otra ejecución del cron lo retoma.
 const MAX_PROCESANDO_MS = 300000;
 
+// Cuenta atrás de los rodillos antes de mostrar al ganador de un sorteo programado.
+const REVEAL_MS = 30000;
+
+// Única web desde la que se puede usar el Worker.
+const ORIGEN_WEB = "https://kb-retro.github.io";
+
 // URL REST de Firebase para una ruta. Si existe el secreto FIREBASE_SECRET
 // en Cloudflare se usa para autenticarse; si no existe, funciona como antes.
 function firebaseUrl(env, ruta) {
@@ -124,6 +130,27 @@ export default {
 
       console.log("⚠️ HA LLEGADO LA HORA DEL SORTEO.");
 
+      // La lista negra no es pública: la web la guarda en "sorteo_privado",
+      // que solo leen los admins y el Worker, junto con el targetTime de su
+      // sorteo. Los sorteos programados con la web antigua la llevan aún en
+      // sorteo_actual.
+      const privadoUrl = firebaseUrl(env, "sorteo_privado");
+      const lecturaPrivado = await fetch(privadoUrl);
+      if (!lecturaPrivado.ok) {
+        throw new Error(`Firebase respondió ${lecturaPrivado.status} al leer sorteo_privado`);
+      }
+      const privado = (await lecturaPrivado.json()) || {};
+
+      // El sorteo público, sin la lista negra (se elimina si venía de la web antigua).
+      const { rawBlacklist: blacklistAntigua, ...sorteoPublico } = sorteo;
+
+      let rawBlacklistStr = null;
+      if (typeof blacklistAntigua === "string") {
+        rawBlacklistStr = blacklistAntigua;
+      } else if (Number(privado.targetTime) === Number(sorteo.targetTime)) {
+        rawBlacklistStr = privado.rawBlacklist || "";
+      }
+
       // -------------------------------------------------------
       // 4. ELEGIR GANADOR (O REUTILIZAR EL YA ELEGIDO)
       // -------------------------------------------------------
@@ -135,7 +162,11 @@ export default {
       if (tirada && tirada.ganador) {
         console.log("♻️ Reutilizando el ganador ya elegido:", tirada.ganador.user);
       } else {
-        tirada = realizarTirada(sorteo.rawLines || "", sorteo.rawBlacklist || "");
+        // Si no se encuentra la lista negra de ESTE sorteo, no se sortea:
+        // es más seguro avisar al admin que sortear sin ella.
+        tirada = rawBlacklistStr === null
+          ? { error: "No se encontró la Lista Negra de este sorteo. Vuelve a programarlo." }
+          : realizarTirada(sorteo.rawLines || "", rawBlacklistStr);
 
         if (tirada.error) {
           console.error("❌ " + tirada.error);
@@ -148,7 +179,7 @@ export default {
               "If-Match": etag || "*"
             },
             body: JSON.stringify({
-              ...sorteo,
+              ...sorteoPublico,
               status: "error",
               error: tirada.error,
               errorAt: Date.now()
@@ -164,11 +195,17 @@ export default {
       // 5. BLOQUEO ATÓMICO (GUARDANDO EL GANADOR ELEGIDO)
       // -------------------------------------------------------
 
+      // El registro de la tirada ("log") nombra a los descartados por la Lista
+      // Negra, así que no va en el bloqueo público sino en sorteo_privado.
       const datosProcesando = {
-        ...sorteo,
+        ...sorteoPublico,
         status: "procesando",
         processingAt: Date.now(),
-        tiradaPendiente: tirada
+        tiradaPendiente: {
+          ganador: tirada.ganador,
+          arcadeGroup: tirada.arcadeGroup,
+          timestamp: tirada.timestamp
+        }
       };
 
       const bloqueo = await fetch(sorteoUrl, {
@@ -187,6 +224,21 @@ export default {
       }
 
       console.log("🔒 SORTEO BLOQUEADO CORRECTAMENTE.");
+
+      if (tirada.log) {
+        const privadoResponse = await fetch(privadoUrl, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            rawBlacklist: rawBlacklistStr || "",
+            targetTime: sorteo.targetTime,
+            log: tirada.log
+          })
+        });
+        if (!privadoResponse.ok) {
+          console.error("⚠️ No se pudo guardar el registro privado del sorteo:", privadoResponse.status);
+        }
+      }
 
       const ganadorEncontrado = tirada.ganador;
       const timestamp = tirada.timestamp;
@@ -238,13 +290,14 @@ export default {
       const resultadoFinal = {
         ganador: ganadorEncontrado,
         arcadeGroup: tirada.arcadeGroup,
-        log: tirada.log,
         timestamp: timestamp,
+        // La web muestra los rodillos con el número premiado y una cuenta
+        // atrás hasta esta hora antes de enseñar al ganador.
+        revealAt: Date.now() + REVEAL_MS,
         mesPremio: mesPremio,
         especial: !!sorteo.sorteoEspecial,
         premioEspecial: sorteo.sorteoEspecial ? String(sorteo.premioEspecial || '').trim() : '',
-        rawLines: sorteo.rawLines || "",        // <- SE AÑADE LA LISTA ORIGINAL
-        rawBlacklist: sorteo.rawBlacklist || "" // <- SE AÑADE LA LISTA NEGRA ORIGINAL
+        rawLines: sorteo.rawLines || ""         // <- SE AÑADE LA LISTA ORIGINAL
       };
 
       // -------------------------------------------------------
@@ -296,7 +349,7 @@ export default {
     // CORS
     // =========================================================
     const corsHeaders = {
-      "Access-Control-Allow-Origin": "https://kb-retro.github.io",
+      "Access-Control-Allow-Origin": ORIGEN_WEB,
       "Access-Control-Allow-Methods": "POST, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type, Authorization",
       "Vary": "Origin"
@@ -344,6 +397,14 @@ export default {
     // 2. PROXY DE TELEGRAM
     // =========================================================
 
+    // Solo responde a peticiones hechas desde la web del sorteo, para que
+    // nadie más gaste las peticiones gratuitas del Worker.
+    const origen = request.headers.get("Origin") || "";
+    const referer = request.headers.get("Referer") || "";
+    if (origen !== ORIGEN_WEB && !referer.startsWith(ORIGEN_WEB + "/")) {
+      return new Response("Acceso no permitido", { status: 403 });
+    }
+
     const timestamp = Date.now();
     const telegramUrl = `https://t.me/s/retrojuegodelmes?before=${timestamp}`;
     const response = await fetch(telegramUrl, {
@@ -353,7 +414,8 @@ export default {
 
     return new Response(html, {
       headers: {
-        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Origin": ORIGEN_WEB,
+        "Vary": "Origin",
         "Content-Type": "text/html; charset=utf-8"
       }
     });

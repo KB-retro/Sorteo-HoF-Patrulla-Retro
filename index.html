@@ -1233,6 +1233,7 @@
     let slotAnimationActive = false;
     let slotFinalizing = false;
     let slotRevealInterval = null;
+    let revelarGanadorTimeout = null;
     const SLOT_REVEAL_MS = 30000;
     const HORA_SORTEO_POR_DEFECTO = "21:00";
 
@@ -1401,7 +1402,8 @@
                 freezeUntil = programData.targetTime + 120000;
                 if (ahora > (programData.targetTime - 60000) && ahora < freezeUntil) enCongelacion = true;
             } else if (tieneSuspense && programData.timestamp) {
-                freezeUntil = programData.timestamp + 120000;
+                // Hasta que los rodillos revelan al ganador (o 2 min si no hay hora de revelación)
+                freezeUntil = Number(programData.revealAt) || (programData.timestamp + 120000);
                 if (ahora < freezeUntil) enCongelacion = true;
             }
         }
@@ -2906,13 +2908,14 @@
             if (adminDrawErrorText) adminDrawErrorText.textContent = sorteoConError ? (data.error || 'Motivo desconocido.') : '';
             
             if (timerInterval) clearInterval(timerInterval);
+            clearTimeout(revelarGanadorTimeout);
             detenerTragaperras();
 
             const slot = document.getElementById('slotMachineCard');
             const winnerCard = document.getElementById('winnerCard');
             const waitingCard = document.getElementById('waitingCard');
 
-            if (data && data.status === 'programado' && data.targetTime) {
+            if (data && (data.status === 'programado' || data.status === 'procesando') && data.targetTime) {
                 if(winnerCard) winnerCard.style.display = 'none';
                 if(waitingCard) waitingCard.classList.add('hidden');
                 
@@ -2928,7 +2931,8 @@
                 if (restante > 0) {
                     if(winnerCard) winnerCard.style.display = 'none';
                     finalizarTragaperras(data.ganador, revealAt);
-                    setTimeout(() => {
+                    clearTimeout(revelarGanadorTimeout);
+                    revelarGanadorTimeout = setTimeout(() => {
                         const wCard = document.getElementById('winnerCard');
                         if (wCard && wCard.style.display !== 'block') {
                             detenerTragaperras();
@@ -3117,21 +3121,24 @@
         const resultadoData = {
             ganador: ganadorEncontrado,
             arcadeGroup: arcadeGroup,
-            log: log,
             timestamp: Date.now(),
             frase: fraseGanador,
             mesPremio: mesPremio,
             especial: !!sorteoEspecial,
             premioEspecial: sorteoEspecial ? String(premioEspecial || '').trim() : '',
-            rawLines: rawLinesStr,        
-            rawBlacklist: rawBlacklistStr 
+            rawLines: rawLinesStr
         };
 
         if (animarResultado) {
             resultadoData.revealAt = Date.now() + SLOT_REVEAL_MS;
         }
 
-        return Promise.all([guardadoHistorial, db.ref('sorteo_actual').set(resultadoData)]);
+        // La lista negra y el registro (que nombra a los descartados) no son
+        // públicos: van a "sorteo_privado", que solo leen los admins y el Worker.
+        return Promise.all([guardadoHistorial, db.ref().update({
+            sorteo_actual: resultadoData,
+            sorteo_privado: { rawBlacklist: rawBlacklistStr, log: log }
+        })]);
     }
 
     // ============================================================
@@ -3785,7 +3792,7 @@
                 if (!confirm('⚠️ ¿Deseas BORRAR el sorteo programado?\n\n' + avisoHoF + '\n\nEl historial de ganadores no se modifica.')) return;
                 return Promise.all([
                     actualizarHoF('', lineasUsadas),
-                    db.ref('sorteo_actual').remove()
+                    db.ref().update({ sorteo_actual: null, sorteo_privado: null })
                 ]).then(function() {
                     alert('Programación borrada y Hall of Fame revertido con éxito.');
                 });
@@ -3819,7 +3826,7 @@
 
                     const operaciones = [
                         actualizarHoF('', lineasUsadas),
-                        db.ref('sorteo_actual').remove()
+                        db.ref().update({ sorteo_actual: null, sorteo_privado: null })
                     ];
                     if (keyBorrar) operaciones.push(db.ref('historial_ganadores/' + keyBorrar).remove());
                     return Promise.all(operaciones).then(function() {
@@ -3847,7 +3854,8 @@
                 historial_ganadores: null,
                 hall_of_fame_juegos: null,
                 regalos: null,
-                sorteo_participantes_raw: null
+                sorteo_participantes_raw: null,
+                sorteo_privado: null
             });
         } catch (error) {
             console.error('Error borrando todo:', error);
@@ -3956,14 +3964,21 @@
             }
             if (actual && actual.status === 'programado' && !confirm('Ya hay un sorteo programado. ¿Sustituirlo por uno nuevo el ' + textoFecha + '?')) return;
 
-            return db.ref('sorteo_actual').set({
-                status: 'programado',
-                targetTime: targetDate.getTime(),
-                rawLines: rawLines,
-                rawBlacklist: rawBlacklist,
-                mesPremio: obtenerMesPremioCompleto(mesSorteoActivo, targetDate),
-                sorteoEspecial: sorteoEspecial,
-                premioEspecial: sorteoEspecial ? premioEspecial : ''
+            // La lista negra va en "sorteo_privado" (solo admins y Worker), con el
+            // targetTime para que el Worker sepa que es la de este sorteo.
+            return db.ref().update({
+                sorteo_actual: {
+                    status: 'programado',
+                    targetTime: targetDate.getTime(),
+                    rawLines: rawLines,
+                    mesPremio: obtenerMesPremioCompleto(mesSorteoActivo, targetDate),
+                    sorteoEspecial: sorteoEspecial,
+                    premioEspecial: sorteoEspecial ? premioEspecial : ''
+                },
+                sorteo_privado: {
+                    rawBlacklist: rawBlacklist,
+                    targetTime: targetDate.getTime()
+                }
             })
                 .then(() => actualizarHoF(rawLines, lineasProgramacionAnterior))
                 .then(() => alert("¡Sorteo programado con éxito para el " + textoFecha + "!"));
