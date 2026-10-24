@@ -786,6 +786,31 @@
             box-shadow: 0 6px 18px rgba(0,0,0,.6); cursor: pointer;
         }
 
+        /* Franja de estado del sorteo */
+        .estado-sorteo {
+            margin: 2px auto 4px; padding: 7px 14px; border-radius: 999px; font-size: .88rem;
+            background: rgba(15,23,42,.92); border: 1px solid #334155; color: var(--text); max-width: 100%;
+        }
+        .estado-sorteo.proximo { border-color: rgba(139,92,246,.7); }
+        .estado-sorteo.directo { border-color: var(--danger); color: #fecaca; animation: latido 1.4s ease-in-out infinite; }
+        .estado-sorteo.ganador { border-color: var(--gold); color: #fde68a; }
+        .estado-sorteo.pendiente { color: var(--muted); }
+        @keyframes latido { 0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,.45); } 50% { box-shadow: 0 0 0 6px rgba(239,68,68,0); } }
+
+        /* Barra de accesos rápidos */
+        .barra-accesos {
+            display: flex; justify-content: space-around; gap: 2px; z-index: 950;
+            background: rgba(15,23,42,.96); border: 1px solid #334155; backdrop-filter: blur(6px);
+        }
+        .barra-accesos button {
+            flex: 1 1 0; min-width: 0; width: auto; display: flex; flex-direction: column; align-items: center; gap: 1px;
+            padding: 6px 2px; border: 0; border-radius: 10px; background: transparent; color: var(--text); cursor: pointer;
+        }
+        .barra-accesos button:hover, .barra-accesos button:focus-visible { background: rgba(139,92,246,.2); outline: none; }
+        .barra-accesos span { font-size: 1.15rem; line-height: 1.2; }
+        .barra-accesos small { font-size: .68rem; color: var(--muted); font-weight: bold; }
+        .col-principal, #colListas, .col-listas .card { scroll-margin-top: 70px; }
+
         /* Buscador global */
         .buscador-global { position: relative; width: 100%; max-width: 520px; margin: 6px auto 4px; }
         .buscador-global input { width: 100%; padding: 11px 14px; border-radius: 999px; border: 1px solid rgba(139,92,246,.55); background: rgba(15,23,42,.92); color: var(--text); font-size: 0.95rem; }
@@ -831,16 +856,27 @@
             .col-listas[data-tab="historial"] #winnersCountCard,
             .col-listas[data-tab="historial"] #hallOfFameCard { display: none; }
             .col-listas .card > h3 { display: none; }
+            /* Barra fija abajo, como en las apps */
+            .barra-accesos {
+                position: fixed; left: 0; right: 0; bottom: 0; border-width: 1px 0 0;
+                padding: 4px 6px calc(4px + env(safe-area-inset-bottom));
+            }
+            body { padding-bottom: 76px; }
+            .ir-al-panel { bottom: 80px; }
+            .col-principal, #colListas, .col-listas .card { scroll-margin-top: 12px; }
             .col-listas .card > h3 + div { margin-top: 0 !important; }
             .col-listas { gap: 8px; }
         }
         @media (max-width: 600px) {
-            body { padding: 12px 10px; }
+            body { padding-top: 12px; padding-left: 10px; padding-right: 10px; }
             .header-logo { max-width: 96px; }
             h1 { font-size: 1.3rem; }
             .titulo-extra { display: none; }
             .winner-title { font-size: 1rem; letter-spacing: .5px; }
             .winner-name { font-size: 1.7rem; }
+            .estado-sorteo { font-size: .82rem; padding: 6px 12px; }
+            .estado-largo { display: none; }
+            .slot-marquee { font-size: .95rem; letter-spacing: 1px; white-space: nowrap; }
         }
 
         /* Pantallas anchas: dos columnas */
@@ -853,6 +889,13 @@
                 align-items: start;
             }
             .tabs-listas { display: none; }
+            /* Barra fija arriba */
+            .barra-accesos {
+                position: sticky; top: 8px; width: 100%; max-width: 560px; margin: 0 auto;
+                border-radius: 14px; padding: 4px; box-shadow: 0 6px 18px rgba(0,0,0,.5);
+            }
+            .barra-accesos button { flex-direction: row; justify-content: center; gap: 6px; padding: 7px 4px; }
+            .barra-accesos small { font-size: .78rem; }
             /* El logo del fondo está a la izquierda: que no se recorte */
             body::before { background-position: left top; }
             /* Panel de admin del mismo ancho que las dos columnas juntas:
@@ -876,6 +919,8 @@
         <img src="logo.png?v=2" alt="Logo Patrulla Retro" class="header-logo" onclick="contarClicksAdmin()">
         <h1 id="mainTitle">🏆 Sorteo HoF <span class="titulo-extra">Patrulla Retro</span></h1>
 
+        <div id="estadoSorteo" class="estado-sorteo hidden" aria-live="polite"></div>
+
         <div class="buscador-global" id="buscadorGlobalCaja">
             <input type="search" id="buscadorGlobal" placeholder="🔍 Busca un @usuario o un juego" autocomplete="off" oninput="buscarGlobal()" onfocus="buscarGlobal()" aria-label="Buscar un usuario o un juego">
             <div id="resultadosGlobal" class="resultados-global hidden" role="listbox"></div>
@@ -885,6 +930,15 @@
             <button class="top-prob-btn" onclick="abrirProbabilidadesModal()">📊 Lista de Participantes</button>
         </div>
     </header>
+
+    <!-- Accesos rápidos: abajo en móvil, arriba (fija) en PC -->
+    <nav class="barra-accesos" aria-label="Accesos rápidos">
+        <button type="button" onclick="irASeccion('sorteo')"><span>🎰</span><small>Sorteo</small></button>
+        <button type="button" onclick="irASeccion('ganadores')"><span>🏆</span><small>Ganadores</small></button>
+        <button type="button" onclick="irASeccion('hof')"><span>👾</span><small>HoF</small></button>
+        <button type="button" onclick="irASeccion('historial')"><span>📜</span><small>Historial</small></button>
+        <button type="button" onclick="irASeccion('buscar')"><span>🔍</span><small>Buscar</small></button>
+    </nav>
 
     <div id="pruebaBanner" class="hidden" style="margin:0 auto 12px; max-width:620px; padding:10px 14px; border:2px dashed var(--warning); border-radius:10px; background:rgba(245, 158, 11, 0.12); color:var(--warning); text-align:center; font-weight:bold;">
         🧪 TIRADA DE PRUEBA · solo la veis los admins (no se guarda nada)
@@ -2851,6 +2905,7 @@
     db.ref('mes_sorteo').on('value', function(snapshot) {
         const mes = snapshot.val();
         mesSorteoActivo = mes || "";
+        if (typeof actualizarEstadoSorteo === 'function') actualizarEstadoSorteo();
         const titleEl = document.getElementById('mainTitle');
         const monthSelect = document.getElementById('monthSelect');
         // "Patrulla Retro" se oculta en pantallas estrechas para que quepa en una línea
@@ -3292,7 +3347,61 @@
         if (adminDrawErrorText) adminDrawErrorText.textContent = motivos.join(' · ');
     }
 
+    // Franja bajo el título con el estado del sorteo (se actualiza cada segundo)
+    let ultimoEstadoSorteo = '';
+
+    function textoFaltan(ms) {
+        const seg = Math.max(0, Math.floor(ms / 1000));
+        const d = Math.floor(seg / 86400), h = Math.floor(seg % 86400 / 3600), m = Math.floor(seg % 3600 / 60), s = seg % 60;
+        if (d > 0) return d + 'd ' + h + 'h';
+        if (h > 0) return h + 'h ' + String(m).padStart(2, '0') + 'm';
+        return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+    }
+
+    function actualizarEstadoSorteo() {
+        const el = document.getElementById('estadoSorteo');
+        if (!el) return;
+        const esPrueba = !!(isAdminLoggedIn && datosSorteoPrueba);
+        const data = esPrueba ? datosSorteoPrueba : datosSorteoReal;
+        const ahora = Date.now();
+        const prefijo = esPrueba ? '🧪 ' : '';
+        let clase = '', html = '';
+
+        if (data && (data.status === 'programado' || data.status === 'procesando') && data.targetTime) {
+            const falta = Number(data.targetTime) - ahora;
+            if (falta > 0) {
+                const fecha = new Date(Number(data.targetTime));
+                const dia = fecha.toLocaleDateString('es-ES', { weekday: 'short', day: '2-digit', month: '2-digit' }).replace(',', '');
+                const hora = fecha.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+                clase = 'proximo';
+                html = prefijo + '⏳ <span class="estado-largo">Próximo sorteo: </span><b>' + escapeHtmlSimple(dia) + ' · ' + escapeHtmlSimple(hora) + '</b> · faltan <b>' + textoFaltan(falta) + '</b>';
+            } else {
+                clase = 'directo';
+                html = prefijo + '🔴 ¡Sorteo en directo!';
+            }
+        } else if (data && data.ganador) {
+            if ((Number(data.revealAt) || 0) > ahora) {
+                clase = 'directo';
+                html = prefijo + '🔴 ¡Sorteo en directo!';
+            } else {
+                clase = 'ganador';
+                html = prefijo + '🏆 Ganador' + (data.mesPremio ? ' de ' + escapeHtmlSimple(data.mesPremio) : '') + ': <b class="enlace-usuario" data-user="' + escapeHtmlSimple(data.ganador.user) + '">' + escapeHtmlSimple(data.ganador.user) + '</b>';
+            }
+        } else if (mesSorteoActivo) {
+            clase = 'pendiente';
+            html = prefijo + '⏳ Sorteo de ' + escapeHtmlSimple(mesSorteoActivo) + ': pendiente de programar';
+        }
+
+        const estado = clase + '|' + html;
+        if (estado === ultimoEstadoSorteo) return;
+        ultimoEstadoSorteo = estado;
+        el.className = 'estado-sorteo ' + clase + (html ? '' : ' hidden');
+        el.innerHTML = html;
+    }
+    setInterval(actualizarEstadoSorteo, 1000);
+
     function mostrarSorteoEnPantalla() {
+        actualizarEstadoSorteo();
         const esPrueba = !!(isAdminLoggedIn && datosSorteoPrueba);
         const data = esPrueba ? datosSorteoPrueba : datosSorteoReal;
 
@@ -4108,6 +4217,29 @@
     function irAlPanelAdmin() {
         const panel = document.getElementById('adminPanel');
         if (panel && !panel.classList.contains('hidden')) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // Accesos rápidos de la barra
+    function irASeccion(seccion) {
+        const pantallaAncha = window.matchMedia('(min-width: 1024px)').matches;
+        const tarjetas = { ganadores: 'winnersCountCard', hof: 'hallOfFameCard', historial: 'historyCard' };
+        let destino = null;
+        if (seccion === 'buscar') {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            const input = document.getElementById('buscadorGlobal');
+            if (input) setTimeout(() => input.focus({ preventScroll: true }), 300);
+            return;
+        }
+        if (seccion === 'sorteo') destino = document.querySelector('.col-principal');
+        if (tarjetas[seccion]) {
+            if (!pantallaAncha) {
+                seleccionarPestanaListas(seccion);
+                destino = document.getElementById('colListas');
+            } else {
+                destino = document.getElementById(tarjetas[seccion]);
+            }
+        }
+        if (destino) destino.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     // Pestañas de Ganadores / Hall of Fame / Historial (solo en pantallas estrechas)

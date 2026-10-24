@@ -489,6 +489,51 @@ const check = (c, msg) => { console.log((c ? 'PASS ' : 'FAIL ') + msg); if (!c) 
   check(await ev(() => document.documentElement.scrollWidth <= window.innerWidth), 'buscador: sin desplazamiento horizontal en móvil');
   await page.fill('#buscadorGlobal', '');
 
+  // ===== Parte 2: franja de estado y barra de accesos =====
+  await page.setViewportSize({ width: 390, height: 844 });
+  if (await ev(() => isAdminLoggedIn)) await ev(() => ocultarPanelAdmin());
+  await ev(() => window.__DB__.set('sorteo_actual', { status: 'programado', targetTime: Date.now() + 2 * 86400000 + 5 * 3600000 + 1800000, rawLines: 'x' }));
+  await page.waitForTimeout(1200);
+  let estado = await page.textContent('#estadoSorteo');
+  check(await page.isVisible('#estadoSorteo') && estado.includes('Próximo sorteo') && estado.includes('faltan 2d 5h'), 'franja: próximo sorteo con cuenta atrás ' + JSON.stringify(estado));
+  await ev(() => window.__DB__.set('sorteo_actual', { status: 'programado', targetTime: Date.now() + 90000, rawLines: 'x' }));
+  await page.waitForTimeout(1200);
+  estado = await page.textContent('#estadoSorteo');
+  check(/faltan 01:\d\d/.test(estado), 'franja: en la última hora cuenta en minutos y segundos ' + JSON.stringify(estado));
+  await ev(() => window.__DB__.set('sorteo_actual', { status: 'procesando', targetTime: Date.now() - 1000, rawLines: 'x' }));
+  await page.waitForTimeout(1200);
+  check((await page.textContent('#estadoSorteo')).includes('en directo'), 'franja: "en directo" mientras se procesa');
+  await ev(() => { const t = Date.now(); window.__DB__.set('sorteo_actual', { ganador: { user: '@Franja', ticket: '9-@Franja' }, timestamp: t, revealAt: t + 2500, mesPremio: 'Octubre 2026', rawLines: 'x' }); });
+  await page.waitForTimeout(800);
+  estado = await page.textContent('#estadoSorteo');
+  check(estado.includes('en directo') && !estado.includes('@Franja'), 'franja: no revela al ganador durante la cuenta atrás');
+  await page.waitForTimeout(2600);
+  estado = await page.textContent('#estadoSorteo');
+  check(estado.includes('Ganador de Octubre 2026') && estado.includes('@Franja'), 'franja: muestra al ganador tras la revelación');
+  await page.click('#estadoSorteo .enlace-usuario'); await page.waitForTimeout(300);
+  check(await page.isVisible('#fichaUsuarioModal'), 'franja: el ganador abre su ficha');
+  await ev(() => cerrarFichaUsuario());
+  await ev(() => window.__DB__.set('sorteo_actual', null)); await page.waitForTimeout(1200);
+  check((await page.textContent('#estadoSorteo')).includes('pendiente de programar'), 'franja: sin sorteo, pendiente de programar');
+  // Barra de accesos en móvil
+  const barra = await ev(() => { const b = document.querySelector('.barra-accesos').getBoundingClientRect(); return { abajo: Math.abs(b.bottom - innerHeight) < 2, ancho: Math.abs(b.width - innerWidth) < 2, alto: b.height, relleno: parseFloat(getComputedStyle(document.body).paddingBottom) }; });
+  check(barra.abajo && barra.ancho && barra.relleno >= barra.alto, 'barra: fija abajo en móvil sin tapar el contenido ' + JSON.stringify(barra));
+  await page.click('.barra-accesos button:nth-child(3)'); await page.waitForTimeout(700);
+  check(await ev(() => document.getElementById('colListas').dataset.tab === 'hof') && await ev(() => { const r = document.getElementById('colListas').getBoundingClientRect(); return r.top >= 0 && r.top < innerHeight - 150; }), 'barra: HoF abre su pestaña y la muestra en pantalla');
+  await page.click('.barra-accesos button:nth-child(5)'); await page.waitForTimeout(800);
+  check(await ev(() => document.activeElement && document.activeElement.id === 'buscadorGlobal' && scrollY < 5), 'barra: Buscar sube y pone el cursor en el buscador');
+  await ev(() => seleccionarPestanaListas('ganadores'));
+  // Barra en PC
+  // Ventana baja para que la página tenga que desplazarse
+  await page.setViewportSize({ width: 1440, height: 500 });
+  await page.waitForTimeout(300);
+  await ev(() => window.scrollTo(0, 800)); await page.waitForTimeout(300);
+  check(await ev(() => { const b = document.querySelector('.barra-accesos').getBoundingClientRect(); return b.top >= 0 && b.top < 20 && b.width <= 562; }), 'barra: en PC queda fija arriba al bajar');
+  await page.click('.barra-accesos button:nth-child(4)'); await page.waitForTimeout(800);
+  check(await ev(() => { const r = document.getElementById('historyCard').getBoundingClientRect(), b = document.querySelector('.barra-accesos').getBoundingClientRect(); return r.top >= b.bottom - 1 && r.top < innerHeight - 100; }), 'barra: en PC Historial baja a su tarjeta sin quedar tapada');
+  await ev(() => window.scrollTo(0, 0));
+  await page.setViewportSize({ width: 1440, height: 900 });
+
   // Visitor doesn't write Telegram list
   check(!errors.some(x => !/Telegram|Sheets|Cloudflare|Failed to load|500|Error iniciando sesión|integrity|Error en la copia previa|Error añadiendo ganadores manuales|Error guardando la lista de participantes/.test(x)), 'sin errores JS inesperados: ' + JSON.stringify(errors.filter(x => !/Telegram|Sheets|Cloudflare|Failed to load|500|Error iniciando sesión|integrity|Error en la copia previa|Error añadiendo ganadores manuales|Error guardando la lista de participantes/.test(x))));
   await browser.close();
