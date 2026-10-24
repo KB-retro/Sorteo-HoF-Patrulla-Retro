@@ -15,6 +15,10 @@
       ".read": "auth != null && (auth.uid === 'mowI2ZkiPTQoz7Kx4P43rfZjxpi1' || auth.uid === 'AlZIJROdtkgGLw48FwsJUchrSfO2')"
     },
 
+    "sorteo_prueba": {
+      ".read": "auth != null && (auth.uid === 'mowI2ZkiPTQoz7Kx4P43rfZjxpi1' || auth.uid === 'AlZIJROdtkgGLw48FwsJUchrSfO2')"
+    },
+
     "backups": {
       ".read": "auth != null && (auth.uid === 'mowI2ZkiPTQoz7Kx4P43rfZjxpi1' || auth.uid === 'AlZIJROdtkgGLw48FwsJUchrSfO2')"
     }

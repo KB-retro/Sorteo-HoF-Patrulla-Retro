@@ -324,6 +324,62 @@ const check = (c, msg) => { console.log((c ? 'PASS ' : 'FAIL ') + msg); if (!c) 
   check(filasPepe[0].includes('@pepemay'), 'ganadores: muestra el nombre de la victoria más reciente');
   await ev(() => { winnersSearchQuery = ''; });
 
+  // ===== Tiradas de prueba =====
+  await ev(() => { if (!isAdminLoggedIn) abrirPanelAdmin(); });
+  await page.waitForTimeout(300);
+  await ev(() => {
+    window.__DB__.set('sorteo_actual', { ganador: { user: '@RealWin', ticket: '4-@RealWin' }, arcadeGroup: [{ user: '@RealWin', ticket: '4-@RealWin' }], timestamp: 1000, mesPremio: 'Septiembre 2026', rawLines: 'x' });
+    window.__DB__.set('historial_ganadores', { r1: { user: '@RealWin', fecha: 'Septiembre 2026', timestamp: 1000 } });
+  });
+  await page.waitForTimeout(400);
+  const histP0 = JSON.stringify(await db('historial_ganadores')), hofP0 = JSON.stringify(await db('hall_of_fame_juegos')), realP0 = JSON.stringify(await db('sorteo_actual')), privP0 = JSON.stringify(await db('sorteo_privado'));
+  check(!(await page.isVisible('#pruebaBanner')) && (await page.textContent('#winnerName')).includes('@RealWin'), 'prueba: sin prueba se ve el sorteo real');
+  // Prueba inmediata
+  await ev(() => { document.getElementById('pruebaCheckbox').checked = true; document.getElementById('drawTimeInput').value = ''; document.getElementById('listInput').value = '1-@Uno\n2-@Dos\n3-@Tres'; document.getElementById('blacklistInput').value = '@uno\n@dos'; programarOEjecutarSorteo(); });
+  await page.waitForTimeout(700);
+  const pr = await db('sorteo_prueba');
+  check(pr && pr.prueba === true && pr.ganador.user === '@Tres' && Array.isArray(pr.log) && pr.rawBlacklist === '@uno\n@dos', 'prueba: inmediata guardada en sorteo_prueba, respetando la lista negra');
+  check(JSON.stringify(await db('historial_ganadores')) === histP0 && JSON.stringify(await db('hall_of_fame_juegos')) === hofP0, 'prueba: no toca historial ni Hall of Fame');
+  check(JSON.stringify(await db('sorteo_actual')) === realP0 && JSON.stringify(await db('sorteo_privado')) === privP0, 'prueba: no toca el sorteo real ni su lista negra');
+  check(await page.isVisible('#pruebaBanner') && (await page.textContent('#winnerName')).includes('@Tres'), 'prueba: el admin la ve con la banda de prueba');
+  check((await page.textContent('#winnerTitle')).includes('tirada de prueba'), 'prueba: el título dice que es de prueba');
+  check(await page.isVisible('#borrarPruebaBtn'), 'prueba: aparece el botón de borrar la prueba');
+  check((await ev(() => __alerts.slice(-1)[0])).includes('Tirada de prueba realizada'), 'prueba: avisa de que no se ha guardado nada');
+  // Ocultar el panel: se vuelve a ver el sorteo real
+  await clicks(); await page.waitForTimeout(400);
+  check(!(await page.isVisible('#pruebaBanner')) && (await page.textContent('#winnerName')).includes('@RealWin'), 'prueba: con el panel oculto se ve el sorteo real');
+  check((await page.textContent('#winnerTitle')).includes('Ganador Oficial'), 'prueba: el sorteo real mantiene su título');
+  await clicks(); await page.waitForTimeout(400);
+  check(await page.isVisible('#pruebaBanner'), 'prueba: al reabrir el panel se vuelve a ver la prueba');
+  // Prueba programada con cuenta atrás (resultado como lo deja el Worker)
+  const nConfP = await ev(() => __confirms.length);
+  await ev(() => { document.getElementById('drawDateInput').value = ''; document.getElementById('drawTimeInput').value = '21:00'; programarOEjecutarSorteo(); });
+  await page.waitForTimeout(500);
+  const prog = await db('sorteo_prueba');
+  check(prog.status === 'programado' && prog.prueba === true && prog.rawBlacklist === '@uno\n@dos' && JSON.stringify(await db('sorteo_actual')) === realP0, 'prueba: programada en sorteo_prueba sin tocar el real');
+  check(!(await ev((n) => __confirms.slice(n).some(c => c.includes('Ya hay un sorteo programado')), nConfP)), 'prueba: no pregunta por sustituir el sorteo real');
+  await ev(() => { const t = Date.now(); window.__DB__.set('sorteo_prueba', { ganador: { user: '@Tres', ticket: '853-@Tres' }, arcadeGroup: [{ user: '@Tres', ticket: '853-@Tres' }], timestamp: t, revealAt: t + 2000, prueba: true, mesPremio: 'Octubre 2026', rawLines: 'x' }); });
+  await page.waitForTimeout(600);
+  check((await page.$$eval('.slot-reel', els => els.map(e => e.textContent).join(''))) === '853' && !(await page.isVisible('#winnerCard')), 'prueba: rodillos con cuenta atrás para el admin');
+  await page.waitForTimeout(2200);
+  check(await page.isVisible('#winnerCard') && (await page.textContent('#winnerName')).includes('@Tres'), 'prueba: tras la cuenta atrás se muestra el ganador de prueba');
+  // Error en la prueba
+  await ev(() => window.__DB__.set('sorteo_prueba', { status: 'error', error: 'Sin participantes', prueba: true, targetTime: 1 }));
+  await page.waitForTimeout(400);
+  check((await page.textContent('#adminDrawErrorText')).includes('Tirada de prueba: Sin participantes') && await page.isVisible('#adminDrawError'), 'prueba: un error de la prueba se avisa en el panel');
+  // Borrar la prueba
+  await ev(() => borrarTiradaPrueba()); await page.waitForTimeout(400);
+  check(!(await db('sorteo_prueba')) && !(await page.isVisible('#pruebaBanner')) && (await page.textContent('#winnerName')).includes('@RealWin') && !(await page.isVisible('#borrarPruebaBtn')), 'prueba: borrarla vuelve a mostrar el sorteo real');
+  check(!(await page.isVisible('#adminDrawError')), 'prueba: al borrarla desaparece su aviso de error');
+  await ev(() => { document.getElementById('pruebaCheckbox').checked = false; });
+  // Al cerrar sesión no se ve la prueba
+  await ev(() => window.__DB__.set('sorteo_prueba', { ganador: { user: '@Oculto', ticket: '1-@Oculto' }, timestamp: 5, prueba: true }));
+  await page.waitForTimeout(300);
+  await ev(() => cerrarSesionAdmin()); await page.waitForTimeout(400);
+  check(!(await page.isVisible('#pruebaBanner')) && !(await page.textContent('#winnerName')).includes('@Oculto'), 'prueba: sin sesión no se ve la prueba');
+  await page.fill('#loginEmail', 'admin@test.es').catch(() => {});
+  await ev(() => window.__DB__.set('sorteo_prueba', null));
+
   // Visitor doesn't write Telegram list
   check(!errors.some(x => !/Telegram|Sheets|Cloudflare|Failed to load|500|Error iniciando sesión|integrity|Error en la copia previa|Error añadiendo ganadores manuales|Error guardando la lista de participantes/.test(x)), 'sin errores JS inesperados: ' + JSON.stringify(errors.filter(x => !/Telegram|Sheets|Cloudflare|Failed to load|500|Error iniciando sesión|integrity|Error en la copia previa|Error añadiendo ganadores manuales|Error guardando la lista de participantes/.test(x))));
   await browser.close();
