@@ -1,0 +1,18 @@
+{
+  "rules": {
+    ".write": "auth != null && (auth.uid === 'mowI2ZkiPTQoz7Kx4P43rfZjxpi1' || auth.uid === 'AlZIJROdtkgGLw48FwsJUchrSfO2')",
+
+    "sorteo_actual": { ".read": true },
+    "historial_ganadores": { ".read": true },
+    "hall_of_fame_juegos": { ".read": true },
+    "regalos": { ".read": true },
+    "mes_sorteo": { ".read": true },
+    "juegos_proximo_sorteo": { ".read": true },
+    "config_sorteo_especial": { ".read": true },
+    "sorteo_participantes_raw": { ".read": true },
+
+    "backups": {
+      ".read": "auth != null && (auth.uid === 'mowI2ZkiPTQoz7Kx4P43rfZjxpi1' || auth.uid === 'AlZIJROdtkgGLw48FwsJUchrSfO2')"
+    }
+  }
+}

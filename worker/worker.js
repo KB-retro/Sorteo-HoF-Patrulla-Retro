@@ -14,6 +14,33 @@ function firebaseUrl(env, ruta) {
     : url;
 }
 
+// Comprueba que la petición viene de un administrador de la web.
+// Mientras no exista el secreto ADMIN_UIDS en Cloudflare, se permite todo
+// (como hasta ahora), para poder activarlo sin cortar el servicio.
+async function esPeticionDeAdmin(request, env) {
+  if (!env.ADMIN_UIDS) return true;
+
+  const cabecera = request.headers.get("Authorization") || "";
+  const idToken = cabecera.startsWith("Bearer ") ? cabecera.slice(7).trim() : "";
+  if (!idToken || !env.FIREBASE_API_KEY) return false;
+
+  // Firebase Auth valida el token y nos dice de qué cuenta es.
+  const respuesta = await fetch(
+    `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${encodeURIComponent(env.FIREBASE_API_KEY)}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ idToken: idToken })
+    }
+  );
+  if (!respuesta.ok) return false;
+
+  const datos = await respuesta.json();
+  const uid = datos.users && datos.users[0] && datos.users[0].localId;
+  const permitidos = env.ADMIN_UIDS.split(",").map(u => u.trim()).filter(Boolean);
+  return !!uid && permitidos.includes(uid);
+}
+
 export default {
 
   // =========================================================
@@ -271,7 +298,7 @@ export default {
     const corsHeaders = {
       "Access-Control-Allow-Origin": "https://kb-retro.github.io",
       "Access-Control-Allow-Methods": "POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
       "Vary": "Origin"
     };
 
@@ -286,6 +313,12 @@ export default {
     if (urlObj.pathname === "/backup") {
       if (request.method !== "POST") {
         return new Response("Método no permitido", { status: 405, headers: corsHeaders });
+      }
+      if (!(await esPeticionDeAdmin(request, env))) {
+        return new Response(
+          JSON.stringify({ ok: false, error: "No autorizado. Inicia sesión como administrador." }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
       }
       try {
         // Los datos NO se toman de la petición: el Worker los lee él mismo
