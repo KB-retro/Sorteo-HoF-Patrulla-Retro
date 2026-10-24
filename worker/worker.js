@@ -30,17 +30,32 @@ async function enviarTelegram(env, chatId, texto) {
   }
 }
 
-function textoResultadoTelegram(ganador, mesPremio, especial, premioEspecial) {
-  const numero = String(ganador.ticket || "").match(/^(\d+)/);
+function numeroBoleto(ticket) {
+  const numero = String(ticket || "").match(/^(\d+)/);
+  return numero ? `Nº ${numero[1]}` : String(ticket || "");
+}
+
+function textoResultadoTelegram(ganador, mesPremio, especial, premioEspecial, arcadeGroup) {
   const lineas = [
     especial
       ? `🎁 ¡Ya tenemos ganador del Sorteo Especial de ${mesPremio}!`
       : `🏆 ¡Ya tenemos ganador del Sorteo HoF de ${mesPremio}!`,
     "",
     `👤 ${ganador.user}`,
-    numero ? `🎟️ Boleto Nº ${numero[1]}` : `🎟️ ${ganador.ticket}`
+    `🎟️ Boleto ${numeroBoleto(ganador.ticket)}`
   ];
   if (especial && premioEspecial) lineas.push(`🎁 Premio: ${premioEspecial}`);
+
+  // Los mismos 5 usuarios que la web muestra en "Eligen el Arcade del Mes".
+  // En los Sorteos Especiales no se elige Arcade.
+  const grupo = Array.isArray(arcadeGroup) ? arcadeGroup.filter(p => p && p.user) : [];
+  if (!especial && grupo.length) {
+    lineas.push("", `🕹️ Eligen el Arcade del Mes (${grupo.length} usuarios):`);
+    grupo.forEach(p => {
+      const esGanador = p.user.toLowerCase() === String(ganador.user).toLowerCase();
+      lineas.push(`• ${p.user} (${numeroBoleto(p.ticket)})${esGanador ? " 🏆" : ""}`);
+    });
+  }
   lineas.push("", `🌐 ${URL_WEB_SORTEO}`);
   return lineas.join("\n");
 }
@@ -376,7 +391,7 @@ export default {
         const espera = resultadoFinal.revealAt - Date.now();
         if (espera > 0) await new Promise(resolve => setTimeout(resolve, espera));
         await enviarTelegram(env, env.TELEGRAM_CHAT_ID,
-          textoResultadoTelegram(ganadorEncontrado, mesPremio, resultadoFinal.especial, resultadoFinal.premioEspecial));
+          textoResultadoTelegram(ganadorEncontrado, mesPremio, resultadoFinal.especial, resultadoFinal.premioEspecial, resultadoFinal.arcadeGroup));
       }
 
       console.log("======================================");
