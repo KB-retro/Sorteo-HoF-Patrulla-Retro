@@ -10,6 +10,40 @@ const REVEAL_MS = 30000;
 
 // Única web desde la que se puede usar el Worker.
 const ORIGEN_WEB = "https://kb-retro.github.io";
+const URL_WEB_SORTEO = "https://kb-retro.github.io/Sorteo-HoF-Patrulla-Retro/";
+
+// Envía un mensaje de texto con el bot de Telegram. Si faltan el token o el
+// chat, no hace nada. Un fallo de Telegram nunca interrumpe el sorteo.
+async function enviarTelegram(env, chatId, texto) {
+  if (!env.TELEGRAM_BOT_TOKEN || !chatId) return;
+  try {
+    const respuesta = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_id: chatId, text: texto, disable_web_page_preview: true })
+    });
+    if (!respuesta.ok) {
+      console.error("⚠️ Telegram rechazó el mensaje:", respuesta.status, await respuesta.text());
+    }
+  } catch (error) {
+    console.error("⚠️ No se pudo enviar el mensaje de Telegram:", error);
+  }
+}
+
+function textoResultadoTelegram(ganador, mesPremio, especial, premioEspecial) {
+  const numero = String(ganador.ticket || "").match(/^(\d+)/);
+  const lineas = [
+    especial
+      ? `🎁 ¡Ya tenemos ganador del Sorteo Especial de ${mesPremio}!`
+      : `🏆 ¡Ya tenemos ganador del Sorteo HoF de ${mesPremio}!`,
+    "",
+    `👤 ${ganador.user}`,
+    numero ? `🎟️ Boleto Nº ${numero[1]}` : `🎟️ ${ganador.ticket}`
+  ];
+  if (especial && premioEspecial) lineas.push(`🎁 Premio: ${premioEspecial}`);
+  lineas.push("", `🌐 ${URL_WEB_SORTEO}`);
+  return lineas.join("\n");
+}
 
 // URL REST de Firebase para una ruta. Si existe el secreto FIREBASE_SECRET
 // en Cloudflare se usa para autenticarse; si no existe, funciona como antes.
@@ -172,7 +206,7 @@ export default {
           console.error("❌ " + tirada.error);
           // Se marca como error para que el cron no lo reintente cada minuto
           // y el administrador vea el aviso en la web.
-          await fetch(sorteoUrl, {
+          const marcaError = await fetch(sorteoUrl, {
             method: "PUT",
             headers: {
               "Content-Type": "application/json",
@@ -185,6 +219,11 @@ export default {
               errorAt: Date.now()
             })
           });
+          // El aviso de error va solo al chat de los admins (si está configurado).
+          if (marcaError.ok) {
+            await enviarTelegram(env, env.TELEGRAM_ADMIN_CHAT_ID,
+              `⚠️ El sorteo programado no se ha podido realizar.\n\nMotivo: ${tirada.error}\n\nRevisa el panel de admin: ${URL_WEB_SORTEO}`);
+          }
           return;
         }
 
@@ -325,6 +364,19 @@ export default {
         await crearBackupAutomatico(env, "Backup automático después del sorteo");
       } catch (backupError) {
         console.error("⚠️ Fallo en el backup automático, pero el sorteo terminó con éxito:", backupError);
+      }
+
+      // -------------------------------------------------------
+      // 11. ANUNCIAR EL GANADOR EN TELEGRAM
+      // -------------------------------------------------------
+
+      // Se espera a que termine la cuenta atrás de la web para no
+      // destripar el resultado antes de tiempo.
+      if (env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHAT_ID) {
+        const espera = resultadoFinal.revealAt - Date.now();
+        if (espera > 0) await new Promise(resolve => setTimeout(resolve, espera));
+        await enviarTelegram(env, env.TELEGRAM_CHAT_ID,
+          textoResultadoTelegram(ganadorEncontrado, mesPremio, resultadoFinal.especial, resultadoFinal.premioEspecial));
       }
 
       console.log("======================================");
