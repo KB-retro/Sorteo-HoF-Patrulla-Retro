@@ -239,6 +239,37 @@ telegramFalla = false; telegram = []; urls = [];
 db = { sorteo_actual: programado() };
 await run();
 P(!urls.some(u => u.includes('api.telegram.org')), 'n: sin secretos de Telegram no se envía nada');
+
+// o. tiradas de prueba
+telegram = []; github = []; urls = [];
+const envTodo = { ...envTg, TELEGRAM_ADMIN_CHAT_ID: '-100999' };
+const realFuturo = programado({ targetTime: Date.now() + 3600000 });
+db = { sorteo_actual: realFuturo, historial_ganadores: { h1: { user: '@Viejo' } },
+       sorteo_prueba: { status: 'programado', targetTime: Date.now() - 1000, rawLines: '1-@Uno\n2-@Dos\n3-@Tres', rawBlacklist: '@uno\n@dos', mesPremio: 'Octubre 2026', prueba: true } };
+await run(envTodo);
+const sp = db.sorteo_prueba;
+P(sp.ganador && sp.ganador.user === '@Tres' && sp.prueba === true && sp.revealAt > Date.now(), 'o: la prueba se sortea, respeta su lista negra y tiene cuenta atrás');
+P(Array.isArray(sp.log) && sp.rawBlacklist === '@uno\n@dos', 'o: la prueba guarda su registro y su lista negra (nodo privado)');
+P(Object.keys(db.historial_ganadores).length === 1, 'o: la prueba no toca el historial');
+P(github.length === 0, 'o: la prueba no hace backup en GitHub');
+P(telegram.length === 0 && !urls.some(u => u.includes('api.telegram.org')), 'o: la prueba no envía nada a Telegram (ni al chat de admins)');
+P(JSON.stringify(db.sorteo_actual) === JSON.stringify(realFuturo), 'o: la prueba no toca el sorteo real programado');
+db.sorteo_prueba = { status: 'programado', targetTime: Date.now() - 1000, rawLines: 'nadie', prueba: true };
+telegram = [];
+await run(envTodo);
+P(db.sorteo_prueba.status === 'error' && telegram.length === 0, 'o: prueba fallida queda en error sin avisar por Telegram');
+// real y prueba a la vez
+telegram = []; github = [];
+db = { sorteo_actual: programado({ rawLines: '9-@Real' }),
+       sorteo_prueba: { status: 'programado', targetTime: Date.now() - 1000, rawLines: '5-@Probando', rawBlacklist: '', prueba: true } };
+await run(envTodo);
+P(db.sorteo_actual.ganador.user === '@Real' && db.sorteo_prueba.ganador.user === '@Probando', 'o: real y prueba a la vez se resuelven cada uno en su sitio');
+P(Object.values(db.historial_ganadores).map(h => h.user).join() === '@Real' && github.length === 1 && telegram.length === 1 && telegram[0].text.includes('@Real') && !telegram[0].text.includes('@Probando'), 'o: solo el real va al historial, al backup y a Telegram');
+// un fallo en la prueba no afecta al real
+db = { sorteo_actual: programado({ rawLines: '9-@Real' }), sorteo_prueba: { status: 'procesando', targetTime: 1, processingAt: Date.now() - 600000, tiradaPendiente: { ganador: null } } };
+await run(envTodo);
+P(db.sorteo_actual.ganador && db.sorteo_actual.ganador.user === '@Real', 'o: un problema en la prueba no impide el sorteo real');
+
 globalThis.setTimeout = realTimeout;
 
 console.log = quiet; console.error = qerr;

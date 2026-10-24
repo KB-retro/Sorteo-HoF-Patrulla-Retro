@@ -760,6 +760,10 @@
         <button class="top-prob-btn" onclick="abrirProbabilidadesModal()">📊 Lista de Participantes</button>
     </div>
 
+    <div id="pruebaBanner" class="hidden" style="margin:0 auto 12px; max-width:620px; padding:10px 14px; border:2px dashed var(--warning); border-radius:10px; background:rgba(245, 158, 11, 0.12); color:var(--warning); text-align:center; font-weight:bold;">
+        🧪 TIRADA DE PRUEBA · solo la veis los admins (no se guarda nada)
+    </div>
+
     <div id="slotMachineCard" aria-live="polite">
         <div class="slot-marquee">★ 🕹️ SORTEO EN DIRECTO 🕹️ ★</div>
         <div class="slot-cabinet">
@@ -777,7 +781,7 @@
     </div>
 
     <div id="winnerCard" class="winner-box">
-        <div class="winner-title">🎉 ¡Tenemos Ganador Oficial! 🎉</div>
+        <div id="winnerTitle" class="winner-title">🎉 ¡Tenemos Ganador Oficial! 🎉</div>
         <div id="winnerName" class="winner-name">Cargando...</div>
         <div id="winnerTicket" class="winner-ticket"></div>
         <div id="winnerQuote" class="winner-quote"></div>
@@ -928,7 +932,7 @@
             <label style="margin-top: 10px; display: block;"><b>2. Excluidos / Lista Negra (1 por línea):</b></label>
             <textarea id="blacklistInput" placeholder="@usuario_excluido1&#10;@usuario_excluido2"></textarea>
 
-            <label style="margin-top: 10px; display: block;"><b>3. Fecha y Hora (Cancelar para sorteo inmediato):</b></label>
+            <label style="margin-top: 10px; display: block;"><b>3. Fecha y Hora ("Quitar hora" para sorteo inmediato):</b></label>
             <div class="datetime-group" style="margin-top: 6px;">
                 <input type="hidden" id="drawDateInput" value="">
                 <div class="retro-date-picker" id="retroDatePicker">
@@ -978,7 +982,13 @@
                 </div>
             </div>
 
+            <label style="display:flex; align-items:center; gap:8px; margin:12px 0 4px 0; cursor:pointer; color:var(--warning);">
+                <input type="checkbox" id="pruebaCheckbox" style="width:18px; height:18px; accent-color:var(--warning);">
+                <b>🧪 Tirada de prueba</b>
+            </label>
+            <p style="font-size:0.75rem; color:var(--muted); margin:0 0 8px 26px;">Solo la veis los admins. No se guarda en el historial ni en el Hall of Fame, no hace backup, no avisa por Telegram y no toca el sorteo real.</p>
             <button class="admin-btn" onclick="programarOEjecutarSorteo()">🎲 GUARDAR Y PROGRAMAR SORTEO</button>
+            <button type="button" id="borrarPruebaBtn" class="hidden" onclick="borrarTiradaPrueba()" style="margin-top:8px; background:#334155;">🧹 BORRAR TIRADA DE PRUEBA</button>
         </div>
 
         <!-- ===== BOTÓN PARA MOSTRAR/OCULTAR COPIAS DE SEGURIDAD ===== -->
@@ -2897,19 +2907,78 @@
     // ============================================================
     //  OBSERVADOR DE SORTEO ACTUAL
     // ============================================================
-    db.ref('sorteo_actual').on('value', function(snapshot) {
-        try {
-            const data = snapshot.val();
-            
-            programData = data || { status: 'inactivo' };
-            actualizarCartelSorteoEspecial(data);
+    // Los admins con sesión ven la tirada de prueba (si hay una) en lugar del
+    // sorteo real; los visitantes siempre ven el sorteo real.
+    let datosSorteoReal = null;
+    let datosSorteoPrueba = null;
+    let ultimaVistaSorteo = '';
 
-            const adminDrawError = document.getElementById('adminDrawError');
-            const adminDrawErrorText = document.getElementById('adminDrawErrorText');
-            const sorteoConError = !!(data && data.status === 'error');
-            if (adminDrawError) adminDrawError.classList.toggle('hidden', !sorteoConError);
-            if (adminDrawErrorText) adminDrawErrorText.textContent = sorteoConError ? (data.error || 'Motivo desconocido.') : '';
-            
+    db.ref('sorteo_actual').on('value', function(snapshot) {
+        datosSorteoReal = snapshot.val();
+        programData = datosSorteoReal || { status: 'inactivo' };
+        actualizarCartelSorteoEspecial(datosSorteoReal);
+        actualizarAvisoErrorAdmin();
+        mostrarSorteoEnPantalla();
+    });
+
+    let escuchandoPrueba = false;
+
+    function escucharTiradaPrueba() {
+        if (escuchandoPrueba) return;
+        escuchandoPrueba = true;
+        db.ref('sorteo_prueba').on('value', function(snapshot) {
+            datosSorteoPrueba = snapshot.val();
+            const borrarBtn = document.getElementById('borrarPruebaBtn');
+            if (borrarBtn) borrarBtn.classList.toggle('hidden', !datosSorteoPrueba);
+            actualizarAvisoErrorAdmin();
+            mostrarSorteoEnPantalla();
+        }, function(error) {
+            console.error('No se pudo leer la tirada de prueba:', error);
+        });
+    }
+
+    function dejarDeEscucharTiradaPrueba() {
+        db.ref('sorteo_prueba').off();
+        escuchandoPrueba = false;
+        datosSorteoPrueba = null;
+        actualizarAvisoErrorAdmin();
+        mostrarSorteoEnPantalla();
+    }
+
+    function borrarTiradaPrueba() {
+        if (!confirm('¿Borrar la tirada de prueba?')) return;
+        db.ref('sorteo_prueba').remove().catch(function(error) {
+            console.error('Error borrando la tirada de prueba:', error);
+            alert('❌ No se pudo borrar la tirada de prueba.\n\n' + error.message);
+        });
+    }
+
+    function actualizarAvisoErrorAdmin() {
+        const adminDrawError = document.getElementById('adminDrawError');
+        const adminDrawErrorText = document.getElementById('adminDrawErrorText');
+        const motivos = [];
+        if (datosSorteoReal && datosSorteoReal.status === 'error') motivos.push(datosSorteoReal.error || 'Motivo desconocido.');
+        if (datosSorteoPrueba && datosSorteoPrueba.status === 'error') motivos.push('🧪 Tirada de prueba: ' + (datosSorteoPrueba.error || 'Motivo desconocido.'));
+        if (adminDrawError) adminDrawError.classList.toggle('hidden', !motivos.length);
+        if (adminDrawErrorText) adminDrawErrorText.textContent = motivos.join(' · ');
+    }
+
+    function mostrarSorteoEnPantalla() {
+        const esPrueba = !!(isAdminLoggedIn && datosSorteoPrueba);
+        const data = esPrueba ? datosSorteoPrueba : datosSorteoReal;
+
+        // Solo se vuelve a pintar si cambia lo que hay que mostrar, para no
+        // reiniciar la animación ni lanzar el confeti otra vez.
+        const vista = JSON.stringify({ esPrueba: esPrueba, data: data });
+        if (vista === ultimaVistaSorteo) return;
+        ultimaVistaSorteo = vista;
+
+        const pruebaBanner = document.getElementById('pruebaBanner');
+        if (pruebaBanner) pruebaBanner.classList.toggle('hidden', !esPrueba);
+        const winnerTitle = document.getElementById('winnerTitle');
+        if (winnerTitle) winnerTitle.textContent = esPrueba ? '🧪 Ganador de la tirada de prueba' : '🎉 ¡Tenemos Ganador Oficial! 🎉';
+
+        try {
             if (timerInterval) clearInterval(timerInterval);
             clearTimeout(revelarGanadorTimeout);
             detenerTragaperras();
@@ -2969,7 +3038,7 @@
                     }
                 }
                 const repeatNotice = document.getElementById('repeatNotice');
-                if (repeatNotice && data.especial) repeatNotice.classList.add('hidden');
+                if (repeatNotice && (data.especial || data.prueba)) repeatNotice.classList.add('hidden');
                 
                 let numeroBoleto = data.ganador.ticket;
                 const matchNum = String(data.ganador.ticket || '').match(/^(\d+)/);
@@ -3006,9 +3075,9 @@
                 refrescarHistorialAntiSpoiler();
             }
         } catch (e) {
-            console.error("Error al procesar data de sorteo_actual:", e);
+            console.error("Error al mostrar el sorteo:", e);
         }
-    });
+    }
 
     function mostrarGanador(data) {
         const winnerCard = document.getElementById('winnerCard');
@@ -3027,16 +3096,18 @@
             }
         }
 
+        // Ni los sorteos especiales ni las tiradas de prueba muestran el aviso de campeón repetido
+        const sinAvisoRepetido = !!(data && (data.especial || data.prueba));
         const repeatNotice = document.getElementById('repeatNotice');
-        if (repeatNotice) repeatNotice.classList.toggle('hidden', !!(data && data.especial));
+        if (repeatNotice) repeatNotice.classList.toggle('hidden', sinAvisoRepetido);
 
         // LANZAR FUEGOS ARTIFICIALES CUANDO SE MUESTRA EL GANADOR
         lanzarFuegosArtificiales();
 
-        verificarRepetidoVisual(!!(data && data.especial));
+        verificarRepetidoVisual(sinAvisoRepetido);
     }
 
-    function calcularYEjecutarTirada(rawLinesStr, rawBlacklistStr, animarResultado = true, mesPremioOverride = "", sorteoEspecial = false, premioEspecial = "") {
+    function calcularYEjecutarTirada(rawLinesStr, rawBlacklistStr, animarResultado = true, mesPremioOverride = "", sorteoEspecial = false, premioEspecial = "", prueba = false) {
         const rawLines = rawLinesStr.split('\n');
         const rawBlacklist = rawBlacklistStr.split('\n');
 
@@ -3111,7 +3182,8 @@
 
         const fraseGanador = fraseVideojuegoAleatoria();
 
-        const guardadoHistorial = db.ref('historial_ganadores').push({
+        // Las tiradas de prueba no se guardan en el historial.
+        const guardadoHistorial = prueba ? null : db.ref('historial_ganadores').push({
             user: ganadorEncontrado.user,
             ticket: ganadorEncontrado.ticket,
             fecha: fechaFormateada,
@@ -3134,6 +3206,11 @@
 
         if (animarResultado) {
             resultadoData.revealAt = Date.now() + SLOT_REVEAL_MS;
+        }
+
+        // La tirada de prueba va a "sorteo_prueba", que solo leen los admins.
+        if (prueba) {
+            return db.ref('sorteo_prueba').set({ ...resultadoData, prueba: true, rawBlacklist: rawBlacklistStr, log: log });
         }
 
         // La lista negra y el registro (que nombra a los descartados) no son
@@ -3688,6 +3765,8 @@
         lastRenderedHistoryState = "";
         refrescarHistorialAntiSpoiler();
         cargarListaBackups();
+        escucharTiradaPrueba();
+        mostrarSorteoEnPantalla();
     }
 
     function ocultarPanelAdmin() {
@@ -3697,6 +3776,8 @@
         // Quitar los botones de borrar del historial
         lastRenderedHistoryState = "";
         refrescarHistorialAntiSpoiler();
+        // Volver a mostrar el sorteo real
+        mostrarSorteoEnPantalla();
     }
 
     function abrirLoginModal() {
@@ -3769,6 +3850,7 @@
         if (!confirm('¿Cerrar la sesión de administrador en este navegador?')) return;
         db.ref('backups').off();
         listaBackupsCargada = false;
+        dejarDeEscucharTiradaPrueba();
         auth.signOut().catch(function(error) {
             console.error('Error cerrando sesión:', error);
         });
@@ -3858,7 +3940,8 @@
                 hall_of_fame_juegos: null,
                 regalos: null,
                 sorteo_participantes_raw: null,
-                sorteo_privado: null
+                sorteo_privado: null,
+                sorteo_prueba: null
             });
         } catch (error) {
             console.error('Error borrando todo:', error);
@@ -3910,6 +3993,8 @@
         const rawBlacklist = blInput.value.trim();
         const sorteoEspecial = !!(specialCheckbox && specialCheckbox.checked);
         const premioEspecial = specialPrizeInput ? specialPrizeInput.value.trim() : '';
+        const pruebaCheckbox = document.getElementById('pruebaCheckbox');
+        const esPrueba = !!(pruebaCheckbox && pruebaCheckbox.checked);
 
         if (!rawLines) return alert("Pega o importa la lista de participantes.");
         if (sorteoEspecial && !premioEspecial) return alert("Indica qué premio se sortea en el Sorteo Especial.");
@@ -3918,26 +4003,30 @@
         // ya se sumaron al Hall of Fame y hay que restarlos para no duplicarlos.
         db.ref('sorteo_actual').once('value').then(function(snapActual) {
             const actual = snapActual.val();
-            if (actual && actual.status === 'procesando') {
+            // La tirada de prueba no depende del sorteo real ni lo modifica.
+            if (!esPrueba && actual && actual.status === 'procesando') {
                 alert('⏳ El servidor está realizando ahora mismo el sorteo programado. Espera a que termine.');
                 return;
             }
             // Un sorteo programado o con error ya sumó sus juegos al Hall of Fame.
-            const habiaProgramacion = !!(actual && (actual.status === 'programado' || actual.status === 'error'));
+            const habiaProgramacion = !esPrueba && !!(actual && (actual.status === 'programado' || actual.status === 'error'));
             const lineasProgramacionAnterior = habiaProgramacion ? (actual.rawLines || '') : '';
 
             if (!timeVal || timeVal === "--:--" || timeVal.trim() === "") {
-                if (!confirm("No has elegido hora: el sorteo se realizará de inmediato, ¿Continuar?")) return;
+                if (!confirm(esPrueba
+                    ? "🧪 No has elegido hora: la TIRADA DE PRUEBA se hará de inmediato (solo la veis los admins). ¿Continuar?"
+                    : "No has elegido hora: el sorteo se realizará de inmediato, ¿Continuar?")) return;
                 detenerTragaperras();
                 mostrarRecreativa(true);
                 const slotStatus = document.getElementById('slotStatus');
                 if(slotStatus) slotStatus.innerText = '🎰 SORTEO INMEDIATO...';
-                const tirada = calcularYEjecutarTirada(rawLines, rawBlacklist, false, obtenerMesPremioCompleto(mesSorteoActivo, new Date()), sorteoEspecial, premioEspecial);
+                const tirada = calcularYEjecutarTirada(rawLines, rawBlacklist, false, obtenerMesPremioCompleto(mesSorteoActivo, new Date()), sorteoEspecial, premioEspecial, esPrueba);
                 if (!tirada) {
                     mostrarRecreativa(false);
                     alert("❌ No se ha realizado el sorteo: no hay participantes válidos o todos están en la Lista Negra.");
                     return;
                 }
+                if (esPrueba) return tirada.then(() => alert("🧪 Tirada de prueba realizada. No se ha guardado nada."));
                 return tirada
                     .then(() => actualizarHoF(rawLines, lineasProgramacionAnterior))
                     .then(() => alert("¡Sorteo finalizado y Hall of Fame actualizado!"));
@@ -3964,6 +4053,18 @@
             if (targetDate.getTime() <= Date.now()) {
                 alert('⚠️ La fecha y hora elegidas (' + textoFecha + ') ya han pasado. Elige otra fecha.');
                 return;
+            }
+            if (esPrueba) {
+                return db.ref('sorteo_prueba').set({
+                    status: 'programado',
+                    targetTime: targetDate.getTime(),
+                    rawLines: rawLines,
+                    rawBlacklist: rawBlacklist,
+                    mesPremio: obtenerMesPremioCompleto(mesSorteoActivo, targetDate),
+                    sorteoEspecial: sorteoEspecial,
+                    premioEspecial: sorteoEspecial ? premioEspecial : '',
+                    prueba: true
+                }).then(() => alert("🧪 Tirada de prueba programada para el " + textoFecha + ". Solo la veréis los admins."));
             }
             if (actual && actual.status === 'programado' && !confirm('Ya hay un sorteo programado. ¿Sustituirlo por uno nuevo el ' + textoFecha + '?')) return;
 
