@@ -403,6 +403,15 @@ const check = (c, msg) => { console.log((c ? 'PASS ' : 'FAIL ') + msg); if (!c) 
   check(!(await page.isVisible('.tabs-listas')) && (await visibles()).length === 3, 'PC: sin pestañas y con las tres listas');
   const columnas = await ev(() => { const a = document.querySelector('.col-principal').getBoundingClientRect(), b = document.querySelector('.col-listas').getBoundingClientRect(); return b.left >= a.right && Math.abs(a.top - b.top) < 5; });
   check(columnas, 'PC: dos columnas lado a lado');
+  // Panel de admin del mismo ancho que las dos columnas juntas
+  await ev(() => { if (!isAdminLoggedIn) abrirPanelAdmin(); });
+  await page.waitForTimeout(300);
+  const panelOk = await ev(() => {
+    const pa = document.getElementById('adminPanel').getBoundingClientRect(), l = document.querySelector('.layout').getBoundingClientRect();
+    const sec = document.querySelector('#adminPanel > .admin-section').getBoundingClientRect(), aj = document.querySelector('#adminPanel .admin-ajustes').getBoundingClientRect();
+    return Math.abs(pa.left - l.left) < 2 && Math.abs(pa.width - l.width) < 2 && aj.left >= sec.right && Math.abs(aj.top - sec.top) < 2;
+  });
+  check(panelOk, 'PC: panel de admin del ancho de las dos columnas, con los ajustes a la derecha');
   check(await page.isVisible('.titulo-extra'), 'PC: título completo');
   await ev(() => seleccionarPestanaListas('ganadores'));
   // Grupo del Arcade sin repetir el nombre

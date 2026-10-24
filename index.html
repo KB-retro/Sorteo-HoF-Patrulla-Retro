@@ -819,7 +819,17 @@
             .tabs-listas { display: none; }
             /* El logo del fondo está a la izquierda: que no se recorte */
             body::before { background-position: left top; }
-            .admin-panel { max-width: 760px; width: 100%; margin-left: auto; margin-right: auto; }
+            /* Panel de admin del mismo ancho que las dos columnas juntas:
+               programación a la izquierda; copias de seguridad y ajustes
+               avanzados a la derecha */
+            .admin-panel:not(.hidden) {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+                column-gap: 20px;
+                align-items: start;
+            }
+            .admin-panel > h2, .admin-panel > .admin-usuario, .admin-panel > #adminDrawError { grid-column: 1 / -1; }
+            .admin-panel > .admin-section { margin-bottom: 0; }
         }
     </style>
 </head>
@@ -970,7 +980,7 @@
     <!-- ===== PANEL DE ADMINISTRACIÓN (CON AJUSTES AVANZADOS OCULTOS) ===== -->
     <div id="adminPanel" class="card admin-panel hidden">
         <h2>🛠️ Panel de Control</h2>
-        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin:8px 0 15px 0; font-size:0.8rem; color:var(--muted);">
+        <div class="admin-usuario" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin:8px 0 15px 0; font-size:0.8rem; color:var(--muted);">
             <span>👤 <span id="adminUserEmail"></span></span>
             <button type="button" onclick="cerrarSesionAdmin()" style="width:auto; padding:6px 10px; font-size:0.8rem; background:#334155;">🚪 Cerrar sesión</button>
         </div>
@@ -1082,6 +1092,9 @@
             <button class="admin-btn" onclick="programarOEjecutarSorteo()">🎲 GUARDAR Y PROGRAMAR SORTEO</button>
             <button type="button" id="borrarPruebaBtn" class="hidden" onclick="borrarTiradaPrueba()" style="margin-top:8px; background:#334155;">🧹 BORRAR TIRADA DE PRUEBA</button>
         </div>
+
+        <!-- Copias de seguridad y ajustes avanzados (columna derecha en PC) -->
+        <div class="admin-ajustes">
 
         <!-- ===== BOTÓN PARA MOSTRAR/OCULTAR COPIAS DE SEGURIDAD ===== -->
         <button class="btn-backup-toggle" id="btnBackupToggle" onclick="toggleBackupSettings()">
@@ -1230,6 +1243,7 @@
             <!-- Botones de Borrado -->
             <button class="warning-btn" onclick="borrarUltimoSorteo()">↩️ BORRAR ÚLTIMO SORTEO</button>
             <button class="clear-btn" onclick="borrarTodo()">🧹 BORRAR TODO</button>
+        </div>
         </div>
     </div>
 
