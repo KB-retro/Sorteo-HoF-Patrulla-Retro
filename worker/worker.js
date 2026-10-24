@@ -1,0 +1,558 @@
+const FIREBASE_BASE =
+  "https://sorteo-hof-default-rtdb.europe-west1.firebasedatabase.app";
+
+// Si 5 minutos después de bloquear el sorteo sigue en "procesando",
+// otra ejecución del cron lo retoma.
+const MAX_PROCESANDO_MS = 300000;
+
+// URL REST de Firebase para una ruta. Si existe el secreto FIREBASE_SECRET
+// en Cloudflare se usa para autenticarse; si no existe, funciona como antes.
+function firebaseUrl(env, ruta) {
+  const url = `${FIREBASE_BASE}/${ruta}.json`;
+  return env.FIREBASE_SECRET
+    ? `${url}?auth=${encodeURIComponent(env.FIREBASE_SECRET)}`
+    : url;
+}
+
+export default {
+
+  // =========================================================
+  // CRON AUTOMÁTICO
+  // =========================================================
+
+  async scheduled(event, env, ctx) {
+
+    try {
+
+      console.log("======================================");
+      console.log("CRON EJECUTADO:", new Date().toISOString());
+      console.log("======================================");
+
+      const sorteoUrl = firebaseUrl(env, "sorteo_actual");
+
+      // -------------------------------------------------------
+      // 1. LEER SORTEO ACTUAL + ETAG
+      // -------------------------------------------------------
+
+      const lectura = await fetch(sorteoUrl, {
+        headers: {
+          "X-Firebase-ETag": "true"
+        }
+      });
+
+      if (!lectura.ok) {
+        throw new Error(
+          `Firebase respondió ${lectura.status} al leer sorteo_actual`
+        );
+      }
+
+      const sorteo = await lectura.json();
+      const etag = lectura.headers.get("ETag");
+
+      console.log("DATOS DE FIREBASE:", JSON.stringify(sorteo));
+
+      // -------------------------------------------------------
+      // 2. COMPROBAR SI HAY SORTEO PROGRAMADO
+      // -------------------------------------------------------
+
+      if (!sorteo) {
+        console.log("No hay datos de sorteo.");
+        return;
+      }
+
+      if (sorteo.status !== "programado") {
+        // Verificar si se quedó atascado en procesando por más de 5 minutos
+        if (sorteo.status === "procesando" && sorteo.processingAt) {
+            const tiempoProcesando = Date.now() - sorteo.processingAt;
+            if (tiempoProcesando > MAX_PROCESANDO_MS) {
+                console.log("⚠️ El sorteo anterior se quedó atascado en 'procesando'. Retomando...");
+            } else {
+                console.log("El sorteo se está procesando actualmente por otro proceso.");
+                return;
+            }
+        } else {
+            console.log("No hay ningún sorteo programado.");
+            return;
+        }
+      }
+
+      if (!sorteo.targetTime) {
+        console.log("El sorteo está marcado como programado pero no tiene targetTime.");
+        return;
+      }
+
+      const ahora = Date.now();
+
+      console.log("Hora actual:", new Date(ahora).toISOString());
+      console.log("Hora del sorteo:", new Date(sorteo.targetTime).toISOString());
+
+      // -------------------------------------------------------
+      // 3. TODAVÍA NO HA LLEGADO LA HORA
+      // -------------------------------------------------------
+
+      if (ahora < Number(sorteo.targetTime)) {
+        console.log("Todavía no ha llegado la hora del sorteo.");
+        return;
+      }
+
+      console.log("⚠️ HA LLEGADO LA HORA DEL SORTEO.");
+
+      // -------------------------------------------------------
+      // 4. ELEGIR GANADOR (O REUTILIZAR EL YA ELEGIDO)
+      // -------------------------------------------------------
+
+      // Si una ejecución anterior se quedó a medias, el ganador ya está
+      // guardado en el bloqueo: se reutiliza para no sortear dos veces.
+      let tirada = sorteo.status === "procesando" ? sorteo.tiradaPendiente : null;
+
+      if (tirada && tirada.ganador) {
+        console.log("♻️ Reutilizando el ganador ya elegido:", tirada.ganador.user);
+      } else {
+        tirada = realizarTirada(sorteo.rawLines || "", sorteo.rawBlacklist || "");
+
+        if (tirada.error) {
+          console.error("❌ " + tirada.error);
+          // Se marca como error para que el cron no lo reintente cada minuto
+          // y el administrador vea el aviso en la web.
+          await fetch(sorteoUrl, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              "If-Match": etag || "*"
+            },
+            body: JSON.stringify({
+              ...sorteo,
+              status: "error",
+              error: tirada.error,
+              errorAt: Date.now()
+            })
+          });
+          return;
+        }
+
+        tirada.timestamp = Date.now();
+      }
+
+      // -------------------------------------------------------
+      // 5. BLOQUEO ATÓMICO (GUARDANDO EL GANADOR ELEGIDO)
+      // -------------------------------------------------------
+
+      const datosProcesando = {
+        ...sorteo,
+        status: "procesando",
+        processingAt: Date.now(),
+        tiradaPendiente: tirada
+      };
+
+      const bloqueo = await fetch(sorteoUrl, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "If-Match": etag || "*"
+        },
+        body: JSON.stringify(datosProcesando)
+      });
+
+      if (!bloqueo.ok) {
+        const textoBloqueo = await bloqueo.text();
+        console.log("🔒 OTRO PROCESO YA HA TOMADO EL SORTEO.", textoBloqueo);
+        return;
+      }
+
+      console.log("🔒 SORTEO BLOQUEADO CORRECTAMENTE.");
+
+      const ganadorEncontrado = tirada.ganador;
+      const timestamp = tirada.timestamp;
+
+      console.log("🏆 GANADOR:", ganadorEncontrado.user);
+
+      // -------------------------------------------------------
+      // 6. FECHA DEL SORTEO
+      // -------------------------------------------------------
+
+      const ahoraFecha = new Date();
+      const nombresMeses = [
+        "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+        "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+      ];
+      const fechaFormateada = `${nombresMeses[ahoraFecha.getUTCMonth()]} ${ahoraFecha.getUTCFullYear()}`;
+      const mesPremio = sorteo.mesPremio || fechaFormateada;
+
+      // -------------------------------------------------------
+      // 7. GUARDAR GANADOR EN HISTORIAL
+      // -------------------------------------------------------
+
+      // Clave fija para este sorteo: si se retoma tras un fallo, se vuelve a
+      // escribir la misma entrada en lugar de añadir un segundo ganador.
+      const claveHistorial = `sorteo_${sorteo.targetTime}_${timestamp}`;
+      const historialUrl = firebaseUrl(env, `historial_ganadores/${claveHistorial}`);
+      const historialResponse = await fetch(historialUrl, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            user: ganadorEncontrado.user,
+            ticket: ganadorEncontrado.ticket,
+            fecha: mesPremio,
+            mesPremio: mesPremio,
+            timestamp: timestamp,
+            especial: !!sorteo.sorteoEspecial,
+            premioEspecial: sorteo.sorteoEspecial ? String(sorteo.premioEspecial || '').trim() : ''
+          })
+      });
+
+      if (!historialResponse.ok) {
+        throw new Error(`No se pudo guardar el historial. Firebase: ${historialResponse.status}`);
+      }
+
+      // -------------------------------------------------------
+      // 8. CREAR RESULTADO FINAL
+      // -------------------------------------------------------
+
+      const resultadoFinal = {
+        ganador: ganadorEncontrado,
+        arcadeGroup: tirada.arcadeGroup,
+        log: tirada.log,
+        timestamp: timestamp,
+        mesPremio: mesPremio,
+        especial: !!sorteo.sorteoEspecial,
+        premioEspecial: sorteo.sorteoEspecial ? String(sorteo.premioEspecial || '').trim() : '',
+        rawLines: sorteo.rawLines || "",        // <- SE AÑADE LA LISTA ORIGINAL
+        rawBlacklist: sorteo.rawBlacklist || "" // <- SE AÑADE LA LISTA NEGRA ORIGINAL
+      };
+
+      // -------------------------------------------------------
+      // 9. GUARDAR RESULTADO EN sorteo_actual
+      // -------------------------------------------------------
+
+      const resultadoResponse = await fetch(sorteoUrl, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(resultadoFinal)
+      });
+
+      if (!resultadoResponse.ok) {
+        throw new Error(`No se pudo guardar el resultado. Firebase: ${resultadoResponse.status}`);
+      }
+
+      console.log("✅ RESULTADO GUARDADO EN FIREBASE.");
+
+      // -------------------------------------------------------
+      // 10. HACER BACKUP AUTOMÁTICO
+      // -------------------------------------------------------
+
+      console.log("💾 Creando backup automático...");
+      try {
+        await crearBackupAutomatico(env, "Backup automático después del sorteo");
+      } catch (backupError) {
+        console.error("⚠️ Fallo en el backup automático, pero el sorteo terminó con éxito:", backupError);
+      }
+
+      console.log("======================================");
+      console.log("🎉 SORTEO COMPLETADO CORRECTAMENTE");
+      console.log("Ganador:", ganadorEncontrado.user);
+      console.log("======================================");
+
+    } catch (error) {
+      console.error("❌ ERROR EJECUTANDO EL CRON:", error);
+    }
+  },
+
+
+  // =========================================================
+  // PETICIONES NORMALES DE LA WEB
+  // =========================================================
+
+  async fetch(request, env) {
+    const urlObj = new URL(request.url);
+
+    // =========================================================
+    // CORS
+    // =========================================================
+    const corsHeaders = {
+      "Access-Control-Allow-Origin": "https://kb-retro.github.io",
+      "Access-Control-Allow-Methods": "POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type",
+      "Vary": "Origin"
+    };
+
+    if (request.method === "OPTIONS") {
+      return new Response(null, { status: 204, headers: corsHeaders });
+    }
+
+    // =========================================================
+    // 1. ENDPOINT PARA GUARDAR BACKUPS EN GITHUB
+    // =========================================================
+
+    if (urlObj.pathname === "/backup") {
+      if (request.method !== "POST") {
+        return new Response("Método no permitido", { status: 405, headers: corsHeaders });
+      }
+      try {
+        // Los datos NO se toman de la petición: el Worker los lee él mismo
+        // de Firebase, así nadie puede subir un backup con datos inventados.
+        const resultado = await crearBackupAutomatico(env, "Backup manual desde la web");
+        return new Response(
+          JSON.stringify(resultado),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+
+      } catch (error) {
+        console.error("Error creando backup:", error);
+        return new Response(
+          JSON.stringify({ ok: false, error: "Error interno creando backup" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
+    // =========================================================
+    // 2. PROXY DE TELEGRAM
+    // =========================================================
+
+    const timestamp = Date.now();
+    const telegramUrl = `https://t.me/s/retrojuegodelmes?before=${timestamp}`;
+    const response = await fetch(telegramUrl, {
+        headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" }
+    });
+    const html = await response.text();
+
+    return new Response(html, {
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Content-Type": "text/html; charset=utf-8"
+      }
+    });
+  }
+};
+
+
+// =========================================================
+// TIRADA: ELEGIR GANADOR Y GRUPO ARCADE
+// =========================================================
+
+// Devuelve { ganador, arcadeGroup, log } o { error } si no hay ganador posible.
+function realizarTirada(rawLinesStr, rawBlacklistStr) {
+
+  // -------------------------------------------------------
+  // CREAR LISTA DE PARTICIPANTES
+  // -------------------------------------------------------
+
+  let participantesValidos = [];
+
+  rawLinesStr.split("\n").forEach(function(line) {
+    let lineaLimpia = line.trim();
+    if (!lineaLimpia) return;
+
+    // Solo caracteres válidos en usuarios de Telegram (igual que en la web)
+    const matchUser = lineaLimpia.match(/@\w+/);
+
+    if (matchUser) {
+      let boletoLimpio =
+        lineaLimpia
+          .replace(/PUNTO\s+EXTRA\s*/gi, "")
+          .trim();
+
+      participantesValidos.push({
+        ticket: boletoLimpio,
+        user: matchUser[0]
+      });
+    }
+  });
+
+  const total = participantesValidos.length;
+
+  console.log("Participantes encontrados:", total);
+
+  if (total === 0) {
+    return { error: "No se encontraron participantes válidos en la lista." };
+  }
+
+  // -------------------------------------------------------
+  // LISTA NEGRA
+  // -------------------------------------------------------
+
+  const blacklist = rawBlacklistStr.split("\n")
+      .map(function(u) { return u.trim().toLowerCase(); })
+      .filter(function(u) { return u.length > 0; });
+
+  // -------------------------------------------------------
+  // ELECCIÓN ALEATORIA CRIPTOGRÁFICAMENTE SEGURA
+  // -------------------------------------------------------
+
+  function obtenerIndiceCriptografico(max) {
+    if (max <= 0) return 0;
+    const maxUint32 = 0x100000000;
+    const limiteEquitativo = maxUint32 - (maxUint32 % max);
+    const array = new Uint32Array(1);
+    let valor;
+    do {
+      crypto.getRandomValues(array);
+      valor = array[0];
+    } while (valor >= limiteEquitativo);
+    return valor % max;
+  }
+
+  // -------------------------------------------------------
+  // BUSCAR GANADOR
+  // -------------------------------------------------------
+
+  let log = [];
+  let ganadorEncontrado = null;
+  let indexGanador = -1;
+  let listaCopia = participantesValidos.slice();
+
+  while (listaCopia.length > 0) {
+    const indexAleatorio = obtenerIndiceCriptografico(listaCopia.length);
+    const entrada = listaCopia[indexAleatorio];
+    const usuarioMinusculas = entrada.user.toLowerCase();
+
+    if (blacklist.indexOf(usuarioMinusculas) !== -1) {
+      log.push("❌ Descartado: " + entrada.ticket + " (" + entrada.user + " está en la Lista Negra)");
+      listaCopia.splice(indexAleatorio, 1);
+    } else {
+      ganadorEncontrado = entrada;
+      indexGanador = participantesValidos.findIndex(function(p) {
+          return (p.ticket === entrada.ticket);
+      });
+      log.push("✅ ¡TIRADA GANADORA!: " + entrada.ticket);
+      break;
+    }
+  }
+
+  if (!ganadorEncontrado) {
+    return { error: "Todos los participantes están en la Lista Negra." };
+  }
+
+  // -------------------------------------------------------
+  // BUSCAR 2 ANTERIORES + GANADOR + 2 POSTERIORES
+  // -------------------------------------------------------
+
+  let anteriores = [];
+  let posteriores = [];
+  let usuariosUsados = {};
+
+  usuariosUsados[ganadorEncontrado.user.toLowerCase()] = true;
+
+  // ANTERIORES
+  let curr = indexGanador - 1;
+  let cntAnt = 0;
+  while (anteriores.length < 2 && cntAnt < total) {
+    if (curr < 0) { curr = total - 1; }
+    const cand = participantesValidos[curr];
+    if (!usuariosUsados[cand.user.toLowerCase()]) {
+      anteriores.unshift(cand);
+      usuariosUsados[cand.user.toLowerCase()] = true;
+    }
+    curr--;
+    cntAnt++;
+  }
+
+  // POSTERIORES
+  curr = indexGanador + 1;
+  let cntPost = 0;
+  while (posteriores.length < 2 && cntPost < total) {
+    if (curr >= total) { curr = 0; }
+    const cand = participantesValidos[curr];
+    if (!usuariosUsados[cand.user.toLowerCase()]) {
+      posteriores.push(cand);
+      usuariosUsados[cand.user.toLowerCase()] = true;
+    }
+    curr++;
+    cntPost++;
+  }
+
+  return {
+    ganador: ganadorEncontrado,
+    arcadeGroup: anteriores.concat([ganadorEncontrado], posteriores),
+    log: log
+  };
+}
+
+
+// =========================================================
+// FUNCIÓN PARA CREAR BACKUP (LEE LOS DATOS DE FIREBASE)
+// =========================================================
+
+async function crearBackupAutomatico(env, tipoBackup) {
+  const resultados = await Promise.all([
+      fetch(firebaseUrl(env, "historial_ganadores")),
+      fetch(firebaseUrl(env, "sorteo_actual")),
+      fetch(firebaseUrl(env, "mes_sorteo")),
+      fetch(firebaseUrl(env, "regalos")),
+      fetch(firebaseUrl(env, "hall_of_fame_juegos"))
+  ]);
+
+  if (resultados.some(response => !response.ok)) {
+    throw new Error("No se pudieron leer todos los datos para crear el backup.");
+  }
+
+  const historial = await resultados[0].json();
+  const sorteoActual = await resultados[1].json();
+  const mesSorteo = await resultados[2].json();
+  const regalos = await resultados[3].json();
+  const hallOfFameJuegos = await resultados[4].json();
+
+  const backupData = {
+    historial_ganadores: historial || null,
+    sorteo_actual: sorteoActual || null,
+    mes_sorteo: mesSorteo || null,
+    regalos: regalos || null,
+    hall_of_fame_juegos: hallOfFameJuegos || null,
+    tipoBackup: tipoBackup
+  };
+
+  const resultado = await subirBackupGitHub(backupData, env);
+
+  if (!resultado.ok) {
+    throw new Error("No se pudo guardar el backup en GitHub.");
+  }
+
+  console.log("💾 BACKUP GUARDADO:", resultado.archivo);
+  return resultado;
+}
+
+
+// =========================================================
+// FUNCIÓN PARA SUBIR BACKUP A GITHUB
+// =========================================================
+
+async function subirBackupGitHub(backupData, env) {
+  const ahora = new Date();
+  const año = ahora.getUTCFullYear();
+  const mes = String(ahora.getUTCMonth() + 1).padStart(2, "0");
+  const dia = String(ahora.getUTCDate()).padStart(2, "0");
+  const hora = String(ahora.getUTCHours()).padStart(2, "0");
+  const minuto = String(ahora.getUTCMinutes()).padStart(2, "0");
+  const segundo = String(ahora.getUTCSeconds()).padStart(2, "0");
+
+  const nombreArchivo = `backup_${año}-${mes}-${dia}_${hora}-${minuto}-${segundo}.json`;
+  const rutaGithub = `backups/${año}/${mes}/${nombreArchivo}`;
+
+  const contenido = JSON.stringify({ fechaBackup: ahora.toISOString(), ...backupData }, null, 2);
+
+  const contenidoBase64 = btoa(unescape(encodeURIComponent(contenido)));
+  const githubUrl = `https://api.github.com/repos/KB-retro/Backups-Sorteo-HoF/contents/${rutaGithub}`;
+
+  const githubResponse = await fetch(githubUrl, {
+      method: "PUT",
+      headers: {
+        "Authorization": `Bearer ${env.GITHUB_TOKEN}`,
+        "Accept": "application/vnd.github+json",
+        "Content-Type": "application/json",
+        "User-Agent": "Sorteo-HoF-Patrulla-Retro"
+      },
+      body: JSON.stringify({
+        message: `Backup automático ${año}-${mes}-${dia} ${hora}:${minuto}:${segundo}`,
+        content: contenidoBase64
+      })
+  });
+
+  const githubResult = await githubResponse.text();
+
+  if (!githubResponse.ok) {
+    console.error("Error GitHub:", githubResult);
+    return { ok: false, error: "GitHub rechazó el backup" };
+  }
+
+  return { ok: true, archivo: rutaGithub };
+}
