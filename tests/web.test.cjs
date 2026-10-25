@@ -398,7 +398,8 @@ const check = (c, msg) => { console.log((c ? 'PASS ' : 'FAIL ') + msg); if (!c) 
   check(JSON.stringify(await visibles()) === '["hallOfFameCard"]' && await ev(() => document.querySelector('.tab-lista[data-tab="hof"]').getAttribute('aria-selected') === 'true'), 'móvil: pestaña Hall of Fame');
   await page.click('.tab-lista[data-tab="historial"]'); await page.waitForTimeout(150);
   check(JSON.stringify(await visibles()) === '["historyCard"]', 'móvil: pestaña Historial');
-  check(!(await page.isVisible('.titulo-extra')), 'móvil: título compacto');
+  check(await ev(() => { const h = document.getElementById('mainTitle'); return h.textContent === 'Hall of Fame Patrulla Retro' && h.getBoundingClientRect().height < 60 && h.scrollWidth <= h.clientWidth; }), 'móvil: título "Hall of Fame Patrulla Retro" en dos líneas como mucho');
+  check(await ev(async () => { await document.fonts.ready; return getComputedStyle(document.getElementById('mainTitle')).fontFamily.includes('Press Start 2P') && document.fonts.check("16px 'Press Start 2P'"); }), 'título con la fuente pixel art cargada');
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.waitForTimeout(200);
   check(!(await page.isVisible('.tabs-listas')) && (await visibles()).length === 3, 'PC: sin pestañas y con las tres listas');
@@ -413,7 +414,7 @@ const check = (c, msg) => { console.log((c ? 'PASS ' : 'FAIL ') + msg); if (!c) 
     return Math.abs(pa.left - l.left) < 2 && Math.abs(pa.width - l.width) < 2 && aj.left >= sec.right && Math.abs(aj.top - sec.top) < 2;
   });
   check(panelOk, 'PC: panel de admin del ancho de las dos columnas, con los ajustes a la derecha');
-  check(await page.isVisible('.titulo-extra'), 'PC: título completo');
+  check(await ev(() => { const h = document.getElementById('mainTitle'); return h.textContent === 'Hall of Fame Patrulla Retro' && h.getBoundingClientRect().height < 40; }), 'PC: título sin mes ni emojis, en una línea');
   await ev(() => seleccionarPestanaListas('ganadores'));
   // Grupo del Arcade sin repetir el nombre
   await ev(() => { window.__DB__.set('sorteo_actual', { ganador: { user: '@Arc', ticket: '12-@Arc' }, arcadeGroup: [{ user: '@Arc', ticket: '12-@Arc' }, { user: '@Otro', ticket: '13-@Otro' }], timestamp: Date.now() - 1000, mesPremio: 'Octubre 2026', rawLines: 'x' }); });
@@ -499,8 +500,19 @@ const check = (c, msg) => { console.log((c ? 'PASS ' : 'FAIL ') + msg); if (!c) 
   if (await ev(() => isAdminLoggedIn)) await ev(() => ocultarPanelAdmin());
   await ev(() => window.__DB__.set('sorteo_actual', { status: 'programado', targetTime: Date.now() + 2 * 86400000 + 5 * 3600000 + 1800000, rawLines: 'x' }));
   await page.waitForTimeout(1200);
+  const mesPrevio = await db('mes_sorteo');
+  await ev(() => window.__DB__.set('mes_sorteo', 'Noviembre'));
+  await page.waitForTimeout(1200);
   let estado = await page.textContent('#estadoSorteo');
-  check(await page.isVisible('#estadoSorteo') && estado.includes('Próximo sorteo') && estado.includes('faltan 2d 5h'), 'franja: próximo sorteo con cuenta atrás ' + JSON.stringify(estado));
+  check(await page.isVisible('#estadoSorteo') && estado.includes('Sorteo de Noviembre:') && estado.includes('faltan 2d 5h'), 'franja: sorteo del mes con cuenta atrás ' + JSON.stringify(estado));
+  check(await ev(() => { const e = document.getElementById('estadoSorteo'); return e.innerText.includes('Noviembre:') && !e.innerText.includes('Sorteo de') && e.getBoundingClientRect().height < 40; }), 'móvil: franja con el mes en una línea');
+  check(!(await page.textContent('#mainTitle')).includes('Noviembre'), 'el título no repite el mes');
+  await ev(() => window.__DB__.set('mes_sorteo', null));
+  await page.waitForTimeout(300);
+  estado = await page.textContent('#estadoSorteo');
+  check(estado.includes('Próximo sorteo') && estado.includes('faltan 2d 5h'), 'franja: sin mes guardado, "Próximo sorteo" ' + JSON.stringify(estado));
+  await ev((m) => window.__DB__.set('mes_sorteo', m), mesPrevio);
+  await page.waitForTimeout(300);
   await ev(() => window.__DB__.set('sorteo_actual', { status: 'programado', targetTime: Date.now() + 90000, rawLines: 'x' }));
   await page.waitForTimeout(1200);
   estado = await page.textContent('#estadoSorteo');
@@ -512,7 +524,8 @@ const check = (c, msg) => { console.log((c ? 'PASS ' : 'FAIL ') + msg); if (!c) 
   await page.waitForTimeout(800);
   estado = await page.textContent('#estadoSorteo');
   check(estado.includes('en directo') && !estado.includes('@Franja'), 'franja: no revela al ganador durante la cuenta atrás');
-  await page.waitForTimeout(2600);
+  // La franja se refresca cada segundo: esperar a que cambie en vez de un tiempo fijo
+  await page.waitForFunction(() => document.getElementById('estadoSorteo').textContent.includes('@Franja'), null, { timeout: 4000 }).catch(() => {});
   estado = await page.textContent('#estadoSorteo');
   check(estado.includes('Ganador de Octubre 2026') && estado.includes('@Franja'), 'franja: muestra al ganador tras la revelación');
   await page.click('#estadoSorteo .enlace-usuario'); await page.waitForTimeout(300);
