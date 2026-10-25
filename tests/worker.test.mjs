@@ -124,13 +124,18 @@ P(urls.filter(u => u.includes('firebasedatabase')).every(u => !u.includes('auth=
 
 // h. /backup ignora el cuerpo
 github = []; db = { historial_ganadores: { k: { user: '@Real' } }, mes_sorteo: 'Octubre' };
-const res = await worker.fetch(new Request('https://w/backup', { method: 'POST', body: JSON.stringify({ historial_ganadores: { x: { user: '@FALSO' } } }) }), env);
+const envAdmin = { GITHUB_TOKEN: 'x', ADMIN_UIDS: 'UID_ADMIN', FIREBASE_API_KEY: 'APIKEY' };
+const res = await worker.fetch(new Request('https://w/backup', { method: 'POST', headers: { Authorization: 'Bearer tok-admin' }, body: JSON.stringify({ historial_ganadores: { x: { user: '@FALSO' } } }) }), envAdmin);
 const jr = await res.json();
 P(res.status === 200 && jr.ok && jr.archivo.startsWith('backups/'), 'h: /backup responde ok y archivo');
 P(github.length === 1 && JSON.stringify(github[0]).includes('@Real') && !JSON.stringify(github[0]).includes('@FALSO'), 'h: backup con datos de Firebase, no del cuerpo');
 P(github[0].tipoBackup === 'Backup manual desde la web', 'h: tipo manual');
 const r405 = await worker.fetch(new Request('https://w/backup'), env);
 P(r405.status === 405, 'h: GET /backup → 405');
+github = [];
+const sinUids = await worker.fetch(new Request('https://w/backup', { method: 'POST', headers: { Authorization: 'Bearer tok-admin' }, body: '{}' }), env);
+const sinUidsVacio = await worker.fetch(new Request('https://w/backup', { method: 'POST', headers: { Authorization: 'Bearer tok-admin' }, body: '{}' }), { ...envAdmin, ADMIN_UIDS: ' ' });
+P(sinUids.status === 401 && sinUidsVacio.status === 401 && github.length === 0, 'h: sin ADMIN_UIDS (o vacío) nadie puede pedir copias → 401');
 
 
 // j. autorización de /backup con ADMIN_UIDS
@@ -194,6 +199,17 @@ db = { sorteo_actual: progNuevo() };
 await run();
 P(db.sorteo_actual.status === 'error', 'l: sin sorteo_privado → error, no sortea');
 
+// l2. Con dos líneas idénticas, el grupo Arcade sale alrededor de la línea premiada
+{
+  const original = crypto.getRandomValues.bind(crypto);
+  crypto.getRandomValues = arr => { arr[0] = 6; return arr; };   // posición 6: el segundo "3-@C"
+  db = { sorteo_actual: programado({ rawLines: '1-@A\n2-@B\n3-@C\n4-@D\n5-@E\n6-@F\n3-@C\n7-@G\n8-@H' }) };
+  await run();
+  crypto.getRandomValues = original;
+  const grupo = (db.sorteo_actual.arcadeGroup || []).map(p => p.user).join(',');
+  P(db.sorteo_actual.ganador.user === '@C' && grupo === '@E,@F,@C,@G,@H', 'l2: grupo Arcade alrededor de la línea repetida premiada ' + grupo);
+}
+
 // m. proxy de Telegram solo desde la web
 const tg = h => worker.fetch(new Request('https://w/?url=x', { headers: h }), env);
 P((await tg({})).status === 403, 'm: proxy sin Origin → 403');
@@ -207,10 +223,13 @@ const web = { Origin: 'https://kb-retro.github.io' };
 tmeCalls = 0;
 const c1 = await (await tgUrl('', web)).text(); const c2 = await (await tgUrl('', web)).text();
 P(tmeCalls === 0 && c1 === c2, 'm: las visitas seguidas usan la copia, sin descargar el canal otra vez');
-const c3 = await (await tgUrl('&fresco=1', web)).text();
-P(tmeCalls === 1 && c3.includes('telegram 1'), 'm: "fresco=1" descarga el canal de nuevo');
+const tgAdmin = (q, h) => worker.fetch(new Request('https://w/?url=x' + q, { headers: h }), envAuth);
+await tgAdmin('&fresco=1', web); await tgAdmin('&fresco=1', { ...web, Authorization: 'Bearer tok-otro' });
+P(tmeCalls === 0, 'm: "fresco=1" sin sesión de admin (o de otra cuenta) usa la copia');
+const c3 = await (await tgAdmin('&fresco=1', { ...web, Authorization: 'Bearer tok-admin' })).text();
+P(tmeCalls === 1 && c3.includes('telegram 1'), 'm: "fresco=1" de un admin descarga el canal de nuevo');
 tmeFalla = true;
-const rCaido = await tgUrl('&fresco=1', web);
+const rCaido = await tgAdmin('&fresco=1', { ...web, Authorization: 'Bearer tok-admin' });
 P(rCaido.status === 200 && (await rCaido.text()) === c3, 'm: si Telegram falla, se sirve la última copia');
 // Un Worker recién arrancado (sin copia) con Telegram caído responde 502 con CORS
 const copia2 = path.join(os.tmpdir(), `worker2-${process.pid}.mjs`);

@@ -30,13 +30,14 @@
   // Simula la persistencia LOCAL por defecto de Firebase usando localStorage
   let persistencia = 'local';
   const guardado = (() => { try { return JSON.parse(localStorage.getItem('fakeAuthUser')); } catch (e) { return null; } })();
-  const mkUser = email => ({ email, uid: 'UID_ADMIN', getIdToken: () => Promise.resolve('tok-admin') });
+  // admin@test.es usa un UID de administrador real; otro@test.es es una cuenta sin permisos
+  const mkUser = email => ({ email, uid: email === 'otro@test.es' ? 'UID_OTRO' : 'mowI2ZkiPTQoz7Kx4P43rfZjxpi1', getIdToken: () => Promise.resolve(email === 'otro@test.es' ? 'tok-otro' : 'tok-admin') });
   const fakeAuth = {
     currentUser: guardado ? mkUser(guardado.email) : null,
     setPersistence(p){ window.__persist = p; persistencia = p; if (p === 'none') localStorage.removeItem('fakeAuthUser'); return Promise.resolve(); },
     onAuthStateChanged(cb){ authListeners.push(cb); setTimeout(()=>cb(fakeAuth.currentUser),0); },
     signInWithEmailAndPassword(email, pass){
-      if (email === 'admin@test.es' && pass === 'buena') {
+      if ((email === 'admin@test.es' || email === 'otro@test.es') && pass === 'buena') {
         fakeAuth.currentUser = mkUser(email);
         if (persistencia === 'local') localStorage.setItem('fakeAuthUser', JSON.stringify({ email }));
         authListeners.forEach(cb => cb(fakeAuth.currentUser));

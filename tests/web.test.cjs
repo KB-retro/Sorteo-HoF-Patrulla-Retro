@@ -33,7 +33,7 @@ const check = (c, msg) => { console.log((c ? 'PASS ' : 'FAIL ') + msg); if (!c) 
     if (u.includes('workers.dev/backup')) { window_backupAuth = route.request().headers()['authorization']; backupCalls++;
       if (backupFail) return route.fulfill({ status: 500, body: JSON.stringify({ ok: false, error: 'GitHub caído' }), contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*' } });
       return route.fulfill({ status: 200, body: JSON.stringify({ ok: true, archivo: 'backups/x.json' }), contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*' } }); }
-    if (u.includes('workers.dev') && !u.includes('/backup')) workerUrls.push(u);
+    if (u.includes('workers.dev') && !u.includes('/backup')) workerUrls.push({ u, auth: route.request().headers()['authorization'] || '' });
     if (u.includes('firebase-database-compat')) return route.fulfill({ body: '', contentType: 'application/javascript' });
     if (u.includes('canvas-confetti')) return route.fulfill({ body: 'window.confetti=function(){}', contentType: 'application/javascript' });
     if (u.startsWith('file://')) return route.continue();
@@ -55,6 +55,11 @@ const check = (c, msg) => { console.log((c ? 'PASS ' : 'FAIL ') + msg); if (!c) 
   await page.fill('#loginEmail', 'admin@test.es'); await page.fill('#loginPassword', 'mala'); await page.click('#loginSubmit');
   await page.waitForTimeout(200);
   check((await page.textContent('#loginError')).includes('incorrectos') && !(await ev(() => isAdminLoggedIn)), 'contraseña mala: error y sin panel');
+  // Una cuenta que no es de administrador no abre el panel
+  await page.fill('#loginEmail', 'otro@test.es'); await page.fill('#loginPassword', 'buena'); await page.click('#loginSubmit');
+  await page.waitForTimeout(300);
+  check((await page.textContent('#loginError')).includes('no tiene permisos') && !(await ev(() => isAdminLoggedIn)) && !(await page.isVisible('#adminPanel')) && !(await ev(() => usuarioAdmin)), 'cuenta sin permisos: no abre el panel y cierra su sesión');
+  await page.fill('#loginEmail', 'admin@test.es');
   await page.fill('#loginPassword', 'buena'); await page.click('#loginSubmit');
   await page.waitForTimeout(500);
   check(await ev(() => isAdminLoggedIn) && await page.isVisible('#adminPanel') && !(await page.isVisible('#loginModal')), 'contraseña buena: panel abierto');
@@ -685,8 +690,27 @@ const check = (c, msg) => { console.log((c ? 'PASS ' : 'FAIL ') + msg); if (!c) 
   check(listaAntes !== '1-@Tecla' && (await db('sorteo_participantes_raw')) === '1-@Tecla', 'lista: se guarda medio segundo después de dejar de escribir');
   // 6. El admin pide la lista de Telegram sin la copia de 1 minuto
   workerUrls.length = 0;
-  await ev(() => importarDesdeTelegram(true)); await ev(() => importarDesdeTelegram(false));
-  check(workerUrls.length === 2 && workerUrls[0].includes('fresco=1') && !workerUrls[1].includes('fresco=1'), 'Telegram: el botón del admin pide datos frescos y las visitas no');
+  await ev(() => { window.__adminOrig = usuarioAdmin; usuarioAdmin = null; });
+  await ev(() => importarDesdeTelegram(true));
+  await ev(() => { usuarioAdmin = { uid: 'mowI2ZkiPTQoz7Kx4P43rfZjxpi1', getIdToken: () => Promise.resolve('tok-admin') }; return importarDesdeTelegram(true); });
+  await ev(() => importarDesdeTelegram(false));
+  await ev(() => importarDesdeTelegram(false, true));
+  const [visRev, admRev, autoRev, panelRev] = workerUrls;
+  check(workerUrls.length === 4 && !visRev.u.includes('fresco=1') && !visRev.auth, 'Telegram: sin sesión de admin no se piden datos frescos');
+  check(admRev.u.includes('fresco=1') && admRev.auth === 'Bearer tok-admin', 'Telegram: el botón del admin pide datos frescos con su sesión');
+  check(!autoRev.u.includes('fresco=1') && !autoRev.auth && panelRev.u.includes('fresco=1') && panelRev.auth === 'Bearer tok-admin', 'Telegram: la carga normal usa la copia; al entrar al panel, datos frescos');
+  await ev(() => { usuarioAdmin = window.__adminOrig; });
+  // Copias manuales con segundos en el nombre
+  await ev(() => { const antes = isAdminLoggedIn; isAdminLoggedIn = true; crearBackupManual(); isAdminLoggedIn = antes; }); await page.waitForTimeout(400);
+  const clavesRev = Object.keys(await db('backups') || {});
+  check(clavesRev.some(k => /^\d{4}-\d{2}-\d{2}_\d{6}$/.test(k)), 'copias: el nombre lleva hora, minutos y segundos ' + JSON.stringify(clavesRev));
+  // Dos líneas idénticas: el grupo Arcade sale alrededor de la premiada
+  await ev(() => { window.__cryptoOrig = window.crypto.getRandomValues.bind(window.crypto); window.crypto.getRandomValues = a => { a[0] = 6; return a; }; });
+  await ev(() => calcularYEjecutarTirada('1-@A\n2-@B\n3-@C\n4-@D\n5-@E\n6-@F\n3-@C\n7-@G\n8-@H', '', false, 'Octubre 2026', false, '', true));
+  await ev(() => { window.crypto.getRandomValues = window.__cryptoOrig; });
+  const grupoRev = ((await db('sorteo_prueba')).arcadeGroup || []).map(p => p.user).join(',');
+  check(grupoRev === '@E,@F,@C,@G,@H', 'web: grupo Arcade alrededor de la línea repetida premiada ' + grupoRev);
+  await ev(() => window.__DB__.set('sorteo_prueba', null));
   await ev((g) => { for (const [k, v] of [['sorteo_actual', g.sa], ['mes_sorteo', g.mes], ['hall_of_fame_juegos', g.hof], ['historial_ganadores', g.hist], ['sorteo_privado', g.sp]]) window.__DB__.set(k, v); }, guardadoRev);
   await page.waitForTimeout(400);
 

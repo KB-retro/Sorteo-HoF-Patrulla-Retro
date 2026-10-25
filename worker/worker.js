@@ -9,8 +9,8 @@ const MAX_PROCESANDO_MS = 300000;
 const REVEAL_MS = 30000;
 
 // El proxy de Telegram guarda la página del canal este tiempo, para no
-// descargarla en cada visita. La web pide "fresco=1" cuando el admin carga
-// la lista a mano.
+// descargarla en cada visita. Solo un admin (con su sesión) puede pedir
+// una descarga nueva con "fresco=1".
 const CACHE_TELEGRAM_MS = 60000;
 let cacheTelegram = { html: "", hora: 0 };
 
@@ -76,10 +76,9 @@ function firebaseUrl(env, ruta) {
 }
 
 // Comprueba que la petición viene de un administrador de la web.
-// Mientras no exista el secreto ADMIN_UIDS en Cloudflare, se permite todo
-// (como hasta ahora), para poder activarlo sin cortar el servicio.
+// Si falta el secreto ADMIN_UIDS en Cloudflare, no se permite a nadie.
 async function esPeticionDeAdmin(request, env) {
-  if (!env.ADMIN_UIDS) return true;
+  if (!env.ADMIN_UIDS || !env.ADMIN_UIDS.trim()) return false;
 
   const cabecera = request.headers.get("Authorization") || "";
   const idToken = cabecera.startsWith("Bearer ") ? cabecera.slice(7).trim() : "";
@@ -191,7 +190,14 @@ export default {
     }
 
     const proxyHeaders = { "Access-Control-Allow-Origin": ORIGEN_WEB, "Vary": "Origin" };
-    const fresco = urlObj.searchParams.get("fresco") === "1";
+    let fresco = false;
+    if (urlObj.searchParams.get("fresco") === "1") {
+      try {
+        fresco = await esPeticionDeAdmin(request, env);
+      } catch (error) {
+        fresco = false;   // si no se puede comprobar, se sirve la copia
+      }
+    }
     let html = cacheTelegram.html;
 
     if (fresco || !html || Date.now() - cacheTelegram.hora > CACHE_TELEGRAM_MS) {
@@ -619,11 +625,14 @@ function realizarTirada(rawLinesStr, rawBlacklistStr) {
   let log = [];
   let ganadorEncontrado = null;
   let indexGanador = -1;
-  let listaCopia = participantesValidos.slice();
+  // Se sortean posiciones de la lista: así el grupo Arcade sale alrededor de
+  // la línea premiada aunque haya dos líneas idénticas.
+  let listaCopia = participantesValidos.map(function(p, i) { return i; });
 
   while (listaCopia.length > 0) {
     const indexAleatorio = obtenerIndiceCriptografico(listaCopia.length);
-    const entrada = listaCopia[indexAleatorio];
+    const posicion = listaCopia[indexAleatorio];
+    const entrada = participantesValidos[posicion];
     const usuarioMinusculas = entrada.user.toLowerCase();
 
     if (blacklist.indexOf(usuarioMinusculas) !== -1) {
@@ -631,9 +640,7 @@ function realizarTirada(rawLinesStr, rawBlacklistStr) {
       listaCopia.splice(indexAleatorio, 1);
     } else {
       ganadorEncontrado = entrada;
-      indexGanador = participantesValidos.findIndex(function(p) {
-          return (p.ticket === entrada.ticket);
-      });
+      indexGanador = posicion;
       log.push("✅ ¡TIRADA GANADORA!: " + entrada.ticket);
       break;
     }
