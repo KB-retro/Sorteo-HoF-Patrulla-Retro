@@ -421,9 +421,14 @@ const check = (c, msg) => { console.log((c ? 'PASS ' : 'FAIL ') + msg); if (!c) 
   const arcadeTxt = await page.textContent('#arcadeList');
   check(arcadeTxt.includes('@Arc · Nº 12') && arcadeTxt.includes('@Otro · Nº 13') && !arcadeTxt.includes('12-@Arc'), 'Arcade: "@usuario · Nº" sin repetir el nombre');
   check(await ev(() => document.getElementById('instruccionesElegidos').open), 'instrucciones abiertas con un ganador reciente');
+  const tamPC = page.viewportSize();
+  await page.setViewportSize({ width: 390, height: 844 });
   await ev(() => window.__DB__.set('sorteo_actual', { ganador: { user: '@Viejo', ticket: '1-@Viejo' }, arcadeGroup: [], timestamp: Date.now() - 5 * 86400000, mesPremio: 'Septiembre 2026', rawLines: 'x' }));
   await page.waitForTimeout(500);
-  check(!(await ev(() => document.getElementById('instruccionesElegidos').open)), 'instrucciones plegadas con un ganador antiguo');
+  check(!(await ev(() => document.getElementById('instruccionesElegidos').open)), 'móvil: instrucciones plegadas con un ganador antiguo');
+  await page.setViewportSize(tamPC);
+  await page.waitForTimeout(200);
+  check(await ev(() => document.getElementById('instruccionesElegidos').open), 'PC: al volver a pantalla ancha las instrucciones se abren');
 
   // ===== Parte 1: buscador global, ficha de usuario y "¿Estoy en el sorteo?" =====
   await page.setViewportSize({ width: 390, height: 844 });
@@ -593,6 +598,35 @@ const check = (c, msg) => { console.log((c ? 'PASS ' : 'FAIL ') + msg); if (!c) 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.waitForTimeout(200);
   check(await ev(() => { const t = document.querySelector('.tarjeta-instrucciones').getBoundingClientRect(); return t.height < 600; }), 'móvil: la tarjeta del buscador no se estira');
+
+  // ===== PC: la recreativa en marcha ocupa el hueco de la tarjeta del ganador =====
+  const sorteoAntes = await db('sorteo_actual');
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await ev(() => window.__DB__.set('sorteo_actual', { ganador: { user: '@Hueco', ticket: '1-@Hueco' }, arcadeGroup: ['@a', '@b', '@c', '@d', '@e'].map((u, i) => ({ user: u, ticket: (i + 2) + '-' + u })), timestamp: Date.now(), mesPremio: 'Octubre 2026', rawLines: 'x' }));
+  await page.waitForTimeout(600);
+  const caja = id => ev((sel) => { const e = document.querySelector(sel).getBoundingClientRect(); const c = document.querySelector('.col-principal').getBoundingClientRect(); return { ancho: Math.round(e.width), alto: Math.round(e.height), col: Math.round(c.width), reel: Math.round(document.getElementById('slotReel1').getBoundingClientRect().height) }; }, id);
+  const ganadorPC = await caja('#winnerCard');
+  await ev(() => window.__DB__.set('sorteo_actual', { status: 'programado', targetTime: Date.now() + 86400000, rawLines: 'x' }));
+  await page.waitForTimeout(600);
+  const slotPC = await caja('#slotMachineCard');
+  check(slotPC.ancho === slotPC.col && slotPC.ancho === ganadorPC.ancho, 'PC: la recreativa ocupa todo el ancho, como el ganador ' + JSON.stringify({ slotPC, ganadorPC }));
+  check(Math.abs(slotPC.alto - ganadorPC.alto) <= 20 && slotPC.reel >= 150, 'PC: la recreativa tiene la altura del ganador y rodillos grandes ' + JSON.stringify({ slotPC, ganadorPC }));
+  check(await ev(() => document.documentElement.scrollWidth <= window.innerWidth), 'PC: la recreativa grande no desborda');
+  // Instrucciones siempre abiertas en PC, aunque el ganador sea antiguo
+  await ev(() => window.__DB__.set('sorteo_actual', { ganador: { user: '@Viejo', ticket: '1-@Viejo' }, arcadeGroup: [], timestamp: Date.now() - 40 * 86400000, mesPremio: 'Agosto 2026', rawLines: 'x' }));
+  await page.waitForTimeout(400);
+  check(await ev(() => document.getElementById('instruccionesElegidos').open), 'PC: instrucciones abiertas aunque el ganador sea antiguo');
+  await page.click('#instruccionesElegidos summary'); await page.waitForTimeout(150);
+  check(await ev(() => document.getElementById('instruccionesElegidos').open && getComputedStyle(document.querySelector('#instruccionesElegidos summary strong'), '::after').content === 'none'), 'PC: las instrucciones no se pueden plegar y no muestran flecha');
+  check(await ev(() => Math.abs(document.querySelector('.tarjeta-instrucciones').getBoundingClientRect().bottom - document.getElementById('historyCard').getBoundingClientRect().bottom) <= 1), 'PC: con las instrucciones abiertas las columnas siguen acabando igual');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.waitForTimeout(200);
+  const slotMovil = await caja('#slotMachineCard');
+  check(slotMovil.alto < 400 && slotMovil.reel < 90, 'móvil: la recreativa mantiene su tamaño ' + JSON.stringify(slotMovil));
+  await page.click('#instruccionesElegidos summary'); await page.waitForTimeout(150);
+  check(!(await ev(() => document.getElementById('instruccionesElegidos').open)), 'móvil: las instrucciones se siguen pudiendo plegar');
+  await ev((s) => window.__DB__.set('sorteo_actual', s), sorteoAntes);
+  await page.waitForTimeout(400);
 
   // Visitor doesn't write Telegram list
   check(!errors.some(x => !/Telegram|Sheets|Cloudflare|Failed to load|500|Error iniciando sesión|integrity|Error en la copia previa|Error añadiendo ganadores manuales|Error guardando la lista de participantes/.test(x)), 'sin errores JS inesperados: ' + JSON.stringify(errors.filter(x => !/Telegram|Sheets|Cloudflare|Failed to load|500|Error iniciando sesión|integrity|Error en la copia previa|Error añadiendo ganadores manuales|Error guardando la lista de participantes/.test(x))));

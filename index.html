@@ -997,6 +997,35 @@
             .layout.listas-recogidas .col-principal > .tarjeta-instrucciones:last-child,
             .layout.listas-recogidas .col-listas > #historyCard { flex: 1 1 auto; }
             .tabs-listas { display: none; }
+            /* Instrucciones siempre abiertas y algo más compactas */
+            .instrucciones summary { cursor: default; }
+            .instrucciones summary strong::after, .instrucciones[open] summary strong::after { content: none; }
+            .instrucciones[open] summary strong { margin-bottom: 4px; }
+            .instrucciones p { margin: 4px 0 !important; line-height: 1.4; }
+            /* La recreativa en marcha ocupa el mismo hueco que la tarjeta del
+               ganador: todo el ancho de la columna y su altura, con rodillos,
+               letrero y luces más grandes */
+            #slotMachineCard {
+                max-width: none;
+                min-height: 470px;
+                padding: 22px 22px 20px;
+                flex-direction: column;
+            }
+            #slotMachineCard.active { display: flex; }
+            #slotMachineCard .slot-marquee { font-size: 1.5rem; letter-spacing: 3px; margin-bottom: 18px; }
+            #slotMachineCard .slot-cabinet {
+                flex: 1 1 auto;
+                display: flex; flex-direction: column; justify-content: center;
+                padding: 26px 22px 22px;
+            }
+            #slotMachineCard .slot-display { gap: 16px; padding: 22px 18px; }
+            #slotMachineCard .slot-reel {
+                max-width: 160px; height: 170px;
+                font-size: 5.5rem; border-width: 5px;
+            }
+            #slotMachineCard .slot-lights { gap: 14px; margin-top: 20px; }
+            #slotMachineCard .slot-light { width: 14px; height: 14px; }
+            #slotMachineCard .slot-status { margin-top: 18px; font-size: 1.2rem; letter-spacing: 1px; text-wrap: balance; }
             /* Barra fija arriba */
             .barra-accesos {
                 position: sticky; top: 8px; width: 100%; max-width: 560px; margin: 0 auto;
@@ -3553,7 +3582,7 @@
             } else if (data && data.ganador) {
                 actualGanadorUser = data.ganador.user;
                 const instrucciones = document.getElementById('instruccionesElegidos');
-                if (instrucciones) instrucciones.open = (Date.now() - (Number(data.timestamp) || 0)) < 36 * 60 * 60 * 1000;
+                if (instrucciones) instrucciones.open = esPantallaAncha() || (Date.now() - (Number(data.timestamp) || 0)) < 36 * 60 * 60 * 1000;
                 if(waitingCard) waitingCard.classList.add('hidden');
                 const revealAt = Number(data.revealAt) || 0;
                 const restante = revealAt - Date.now();
@@ -4416,6 +4445,20 @@
         const btn = document.getElementById('instalarAppBtn');
         if (btn) btn.classList.add('hidden');
     }
+
+    // En PC las instrucciones para los elegidos están siempre abiertas
+    function esPantallaAncha() { return window.matchMedia('(min-width: 1024px)').matches; }
+    function abrirInstruccionesEnPC() {
+        const instrucciones = document.getElementById('instruccionesElegidos');
+        if (instrucciones && esPantallaAncha()) instrucciones.open = true;
+    }
+    (function () {
+        const instrucciones = document.getElementById('instruccionesElegidos');
+        if (!instrucciones) return;
+        instrucciones.querySelector('summary').addEventListener('click', e => { if (esPantallaAncha()) e.preventDefault(); });
+        window.matchMedia('(min-width: 1024px)').addEventListener('change', abrirInstruccionesEnPC);
+        abrirInstruccionesEnPC();
+    })();
 
     // Accesos rápidos de la barra
     function irASeccion(seccion) {
