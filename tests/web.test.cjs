@@ -398,7 +398,8 @@ const check = (c, msg) => { console.log((c ? 'PASS ' : 'FAIL ') + msg); if (!c) 
   check(JSON.stringify(await visibles()) === '["hallOfFameCard"]' && await ev(() => document.querySelector('.tab-lista[data-tab="hof"]').getAttribute('aria-selected') === 'true'), 'móvil: pestaña Hall of Fame');
   await page.click('.tab-lista[data-tab="historial"]'); await page.waitForTimeout(150);
   check(JSON.stringify(await visibles()) === '["historyCard"]', 'móvil: pestaña Historial');
-  check(await ev(() => { const h = document.getElementById('mainTitle'); return h.textContent === 'Hall of Fame Patrulla Retro' && h.getBoundingClientRect().height < 40; }), 'móvil: título "Hall of Fame Patrulla Retro" en una línea');
+  check(await ev(() => { const h = document.getElementById('mainTitle'); return h.textContent === 'Hall of Fame Patrulla Retro' && h.getBoundingClientRect().height < 60 && h.scrollWidth <= h.clientWidth; }), 'móvil: título "Hall of Fame Patrulla Retro" en dos líneas como mucho');
+  check(await ev(async () => { await document.fonts.ready; return getComputedStyle(document.getElementById('mainTitle')).fontFamily.includes('Press Start 2P') && document.fonts.check("16px 'Press Start 2P'"); }), 'título con la fuente pixel art cargada');
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.waitForTimeout(200);
   check(!(await page.isVisible('.tabs-listas')) && (await visibles()).length === 3, 'PC: sin pestañas y con las tres listas');
@@ -413,7 +414,7 @@ const check = (c, msg) => { console.log((c ? 'PASS ' : 'FAIL ') + msg); if (!c) 
     return Math.abs(pa.left - l.left) < 2 && Math.abs(pa.width - l.width) < 2 && aj.left >= sec.right && Math.abs(aj.top - sec.top) < 2;
   });
   check(panelOk, 'PC: panel de admin del ancho de las dos columnas, con los ajustes a la derecha');
-  check(await ev(() => document.getElementById('mainTitle').textContent === 'Hall of Fame Patrulla Retro'), 'PC: título sin mes ni emojis');
+  check(await ev(() => { const h = document.getElementById('mainTitle'); return h.textContent === 'Hall of Fame Patrulla Retro' && h.getBoundingClientRect().height < 40; }), 'PC: título sin mes ni emojis, en una línea');
   await ev(() => seleccionarPestanaListas('ganadores'));
   // Grupo del Arcade sin repetir el nombre
   await ev(() => { window.__DB__.set('sorteo_actual', { ganador: { user: '@Arc', ticket: '12-@Arc' }, arcadeGroup: [{ user: '@Arc', ticket: '12-@Arc' }, { user: '@Otro', ticket: '13-@Otro' }], timestamp: Date.now() - 1000, mesPremio: 'Octubre 2026', rawLines: 'x' }); });
@@ -523,7 +524,8 @@ const check = (c, msg) => { console.log((c ? 'PASS ' : 'FAIL ') + msg); if (!c) 
   await page.waitForTimeout(800);
   estado = await page.textContent('#estadoSorteo');
   check(estado.includes('en directo') && !estado.includes('@Franja'), 'franja: no revela al ganador durante la cuenta atrás');
-  await page.waitForTimeout(2600);
+  // La franja se refresca cada segundo: esperar a que cambie en vez de un tiempo fijo
+  await page.waitForFunction(() => document.getElementById('estadoSorteo').textContent.includes('@Franja'), null, { timeout: 4000 }).catch(() => {});
   estado = await page.textContent('#estadoSorteo');
   check(estado.includes('Ganador de Octubre 2026') && estado.includes('@Franja'), 'franja: muestra al ganador tras la revelación');
   await page.click('#estadoSorteo .enlace-usuario'); await page.waitForTimeout(300);

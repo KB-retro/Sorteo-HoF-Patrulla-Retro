@@ -58,6 +58,15 @@
             --telegram-hover: #0077b3;
         }
 
+        /* Tipografía pixel art del título (Press Start 2P, licencia OFL) */
+        @font-face {
+            font-family: 'Press Start 2P';
+            src: url('fuentes/press-start-2p.woff2') format('woff2');
+            font-weight: 400;
+            font-style: normal;
+            font-display: swap;
+        }
+
         * { box-sizing: border-box; }
 
         html, body {
@@ -121,6 +130,17 @@
         }
 
         h1 { font-size: 1.5rem; margin: 0 0 5px; text-align: center; line-height: 1.2; }
+        #mainTitle {
+            font-family: 'Press Start 2P', monospace;
+            font-weight: 400;
+            font-size: 1.35rem;
+            line-height: 1.5;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            text-wrap: balance;
+            text-shadow: 3px 3px 0 #312e81;
+            margin: 6px 0 10px;
+        }
         h2 { font-size: 1.2rem; margin: 0; text-align: center; }
         h3 { font-size: 1.05rem; margin: 0; text-align: center; }
         
@@ -972,6 +992,7 @@
             body { padding-top: 12px; padding-left: 10px; padding-right: 10px; }
             .header-logo { max-width: 96px; }
             h1 { font-size: 1.3rem; }
+            #mainTitle { font-size: .95rem; letter-spacing: 0; text-shadow: 2px 2px 0 #312e81; margin: 4px 0 8px; }
             .winner-title { font-size: 1rem; letter-spacing: .5px; }
             .winner-name { font-size: 1.7rem; }
             .estado-sorteo { font-size: .82rem; padding: 6px 12px; }
