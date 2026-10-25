@@ -714,6 +714,21 @@ const check = (c, msg) => { console.log((c ? 'PASS ' : 'FAIL ') + msg); if (!c) 
   await ev((g) => { for (const [k, v] of [['sorteo_actual', g.sa], ['mes_sorteo', g.mes], ['hall_of_fame_juegos', g.hof], ['historial_ganadores', g.hist], ['sorteo_privado', g.sp]]) window.__DB__.set(k, v); }, guardadoRev);
   await page.waitForTimeout(400);
 
+  // ===== Revisión 3: Escape, @Pepe/@pepe en participantes, buscador de juegos =====
+  await ev(() => { abrirProbabilidadesModal(); abrirCreditos(); });
+  await page.keyboard.press('Escape'); await page.waitForTimeout(150);
+  check(await ev(() => document.getElementById('probabilitiesModal').classList.contains('hidden') && document.getElementById('creditsModal').classList.contains('hidden')), 'Escape: cierra la lista de participantes y los créditos');
+  const boletosRev = await ev(() => contarBoletos('1-@Pepe\n2-@pepe\n3-@Ana'));
+  check(JSON.stringify(boletosRev.boletosPorUsuario) === JSON.stringify({ '@Pepe': ['1', '2'], '@Ana': ['3'] }) && boletosRev.totalBoletosValidos === 3, 'participantes: @Pepe y @pepe cuentan como la misma persona ' + JSON.stringify(boletosRev));
+  check(JSON.stringify(await ev(() => parseCSVLine('"The ""Best"" Game",Enero 2025\r'))) === JSON.stringify(['The "Best" Game', 'Enero 2025']), 'CSV: las comillas dentro de un título se conservan');
+  // Una búsqueda lenta no pisa a la más reciente
+  const juegosOrig = await ev(() => { window.__juegosOrig = obtenerJuegosDesdeSheets; let n = 0;
+    obtenerJuegosDesdeSheets = () => new Promise(r => setTimeout(() => r([{ titulo: 'Metal Slug', fecha: 'Marzo 2024' }]), ++n === 1 ? 600 : 10)); return true; });
+  await ev(() => { const i = document.getElementById('gameSearchInput'); i.value = 'Metal Slug'; comprobarJuegoEnSheets(); i.value = 'Zelda'; comprobarJuegoEnSheets(); });
+  await page.waitForTimeout(900);
+  check((await page.textContent('#searchResult')).includes('Zelda'), 'buscador de juegos: la respuesta lenta no pisa la búsqueda más reciente');
+  await ev(() => { obtenerJuegosDesdeSheets = window.__juegosOrig; document.getElementById('gameSearchInput').value = ''; comprobarJuegoEnSheets(); });
+
   // Visitor doesn't write Telegram list
   check(!errors.some(x => !/Telegram|Sheets|Cloudflare|Failed to load|500|Error iniciando sesión|integrity|Error en la copia previa|Error añadiendo ganadores manuales|Error guardando la lista de participantes/.test(x)), 'sin errores JS inesperados: ' + JSON.stringify(errors.filter(x => !/Telegram|Sheets|Cloudflare|Failed to load|500|Error iniciando sesión|integrity|Error en la copia previa|Error añadiendo ganadores manuales|Error guardando la lista de participantes/.test(x))));
   await browser.close();
