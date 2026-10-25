@@ -989,6 +989,13 @@
                 gap: 20px;
                 align-items: start;
             }
+            /* Con las listas recogidas, las dos columnas acaban a la misma
+               altura: se alargan la última tarjeta de cada lado (buscador de
+               juegos e Historial). Si se despliega una lista, cada una vuelve
+               a su tamaño. */
+            .layout.listas-recogidas { align-items: stretch; }
+            .layout.listas-recogidas .col-principal > .tarjeta-instrucciones:last-child,
+            .layout.listas-recogidas .col-listas > #historyCard { flex: 1 1 auto; }
             .tabs-listas { display: none; }
             /* Barra fija arriba */
             .barra-accesos {
@@ -1098,7 +1105,7 @@
         </div>
     </div>
 
-    <div class="card" style="position: relative; z-index: 50;">
+    <div class="card tarjeta-instrucciones" style="position: relative; z-index: 50;">
         <details class="retro-info-box instrucciones" id="instruccionesElegidos">
             <summary><strong>👾 Instrucciones para los elegidos</strong></summary>
             <p style="margin: 6px 0;">🎮 <b>Elección de Arcade:</b> Usa este buscador para verificar tu propuesta. Si el resultado se ilumina en <span class="highlight-green">verde</span>, comunícaselo a <a href="https://t.me/M_1_c_h_3_l" target="_blank" style="color: #60a5fa; text-decoration: none; font-weight: bold;">@M_1_c_h_3_l</a> por Telegram.</p>
@@ -1739,7 +1746,13 @@
         return historyToRender;
     }
 
+    function actualizarListasRecogidas() {
+        const layout = document.querySelector('.layout');
+        if (layout) layout.classList.toggle('listas-recogidas', !isWinnersExpanded && !isHoFExpanded && !isHistoryExpanded);
+    }
+
     function refrescarHistorialAntiSpoiler() {
+    actualizarListasRecogidas();
     try {
         let historyToRender = obtenerHistorialVisible();
         let hofToRender = rawHoFItems || [];
