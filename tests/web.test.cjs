@@ -576,6 +576,24 @@ const check = (c, msg) => { console.log((c ? 'PASS ' : 'FAIL ') + msg); if (!c) 
   await page.click('#instalarAppBtn'); await page.waitForTimeout(200);
   check(await ev(() => window.__instalado === true) && !(await page.isVisible('#instalarAppBtn')), 'app: al pulsarlo se abre la instalación y el botón desaparece');
 
+  // ===== PC: con las listas recogidas, las dos columnas acaban igual =====
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await ev(() => { isWinnersExpanded = false; isHoFExpanded = false; isHistoryExpanded = false; refrescarHistorialAntiSpoiler(); });
+  await page.waitForTimeout(400);
+  const alturas = () => ev(() => {
+    const b = id => document.querySelector(id).getBoundingClientRect();
+    return { buscador: Math.round(b('.tarjeta-instrucciones').bottom), historial: Math.round(b('#historyCard').bottom), altoBuscador: Math.round(b('.tarjeta-instrucciones').height) };
+  });
+  const recogido = await alturas();
+  check(Math.abs(recogido.buscador - recogido.historial) <= 1, 'PC: recogido, buscador e Historial acaban a la misma altura ' + JSON.stringify(recogido));
+  await ev(() => toggleHoFView()); await page.waitForTimeout(400);
+  const desplegado = await alturas();
+  check(desplegado.altoBuscador <= recogido.altoBuscador + 1 && desplegado.historial > desplegado.buscador, 'PC: al desplegar una lista el buscador vuelve a su tamaño ' + JSON.stringify(desplegado));
+  await ev(() => toggleHoFView()); await page.waitForTimeout(300);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.waitForTimeout(200);
+  check(await ev(() => { const t = document.querySelector('.tarjeta-instrucciones').getBoundingClientRect(); return t.height < 600; }), 'móvil: la tarjeta del buscador no se estira');
+
   // Visitor doesn't write Telegram list
   check(!errors.some(x => !/Telegram|Sheets|Cloudflare|Failed to load|500|Error iniciando sesión|integrity|Error en la copia previa|Error añadiendo ganadores manuales|Error guardando la lista de participantes/.test(x)), 'sin errores JS inesperados: ' + JSON.stringify(errors.filter(x => !/Telegram|Sheets|Cloudflare|Failed to load|500|Error iniciando sesión|integrity|Error en la copia previa|Error añadiendo ganadores manuales|Error guardando la lista de participantes/.test(x))));
   await browser.close();
