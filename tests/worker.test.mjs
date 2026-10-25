@@ -12,7 +12,7 @@ fs.copyFileSync(path.join(dir, '..', 'worker', 'worker.js'), copia);
 const { default: worker } = await import(pathToFileURL(copia).href);
 fs.unlinkSync(copia);
 
-let telegram = [], telegramFalla = false;
+let telegram = [], telegramFalla = false, tmeCalls = 0, tmeFalla = false;
 let db = {}, etagN = 0, github = [], urls = [], failPutResult = false;
 const clone = v => v === undefined ? null : JSON.parse(JSON.stringify(v));
 const parts = p => p.split('/').filter(Boolean);
@@ -28,7 +28,7 @@ globalThis.fetch = async (url, opt = {}) => {
     if (tok === 'tok-otro') return new Response(JSON.stringify({ users: [{ localId: 'UID_OTRO' }] }));
     return new Response('{"error":{}}', { status: 400 });
   }
-  if (url.startsWith('https://t.me/')) return new Response('<html>telegram</html>');
+  if (url.startsWith('https://t.me/')) { tmeCalls++; if (tmeFalla) return new Response('caído', { status: 500 }); return new Response('<html>telegram ' + tmeCalls + '</html>'); }
   if (url.startsWith('https://api.telegram.org/')) {
     if (telegramFalla) return new Response('{"ok":false}', { status: 500 });
     telegram.push({ url, ...JSON.parse(opt.body) });
@@ -201,6 +201,25 @@ P((await tg({ Origin: 'https://malo.com' })).status === 403, 'm: proxy desde otr
 const rOk = await tg({ Origin: 'https://kb-retro.github.io' });
 P(rOk.status === 200 && (await rOk.text()).includes('telegram') && rOk.headers.get('Access-Control-Allow-Origin') === 'https://kb-retro.github.io', 'm: proxy desde la web → 200');
 P((await tg({ Referer: 'https://kb-retro.github.io/Sorteo-HoF-Patrulla-Retro/' })).status === 200, 'm: proxy con Referer de la web → 200');
+// Copia de 1 minuto del canal
+const tgUrl = (q, h) => worker.fetch(new Request('https://w/?url=x' + q, { headers: h }), env);
+const web = { Origin: 'https://kb-retro.github.io' };
+tmeCalls = 0;
+const c1 = await (await tgUrl('', web)).text(); const c2 = await (await tgUrl('', web)).text();
+P(tmeCalls === 0 && c1 === c2, 'm: las visitas seguidas usan la copia, sin descargar el canal otra vez');
+const c3 = await (await tgUrl('&fresco=1', web)).text();
+P(tmeCalls === 1 && c3.includes('telegram 1'), 'm: "fresco=1" descarga el canal de nuevo');
+tmeFalla = true;
+const rCaido = await tgUrl('&fresco=1', web);
+P(rCaido.status === 200 && (await rCaido.text()) === c3, 'm: si Telegram falla, se sirve la última copia');
+// Un Worker recién arrancado (sin copia) con Telegram caído responde 502 con CORS
+const copia2 = path.join(os.tmpdir(), `worker2-${process.pid}.mjs`);
+fs.copyFileSync(path.join(dir, '..', 'worker', 'worker.js'), copia2);
+const { default: worker2 } = await import(pathToFileURL(copia2).href);
+fs.unlinkSync(copia2);
+const r502 = await worker2.fetch(new Request('https://w/?url=x', { headers: web }), env);
+P(r502.status === 502 && r502.headers.get('Access-Control-Allow-Origin') === 'https://kb-retro.github.io', 'm: sin copia y con Telegram caído → 502 con CORS');
+tmeFalla = false;
 
 // n. avisos de Telegram
 const realTimeout = globalThis.setTimeout;

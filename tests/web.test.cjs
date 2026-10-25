@@ -13,6 +13,7 @@ const REPO = path.join(__dirname, '..');
 const backup = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures', 'backup.json'), 'utf8'));
 const initial = { historial_ganadores: backup.historial_ganadores, hall_of_fame_juegos: backup.hall_of_fame_juegos, regalos: backup.regalos, mes_sorteo: 'Octubre' };
 let failures = 0;
+const workerUrls = [];
 const check = (c, msg) => { console.log((c ? 'PASS ' : 'FAIL ') + msg); if (!c) failures++; };
 (async () => {
   const browser = await chromium.launch();
@@ -32,6 +33,7 @@ const check = (c, msg) => { console.log((c ? 'PASS ' : 'FAIL ') + msg); if (!c) 
     if (u.includes('workers.dev/backup')) { window_backupAuth = route.request().headers()['authorization']; backupCalls++;
       if (backupFail) return route.fulfill({ status: 500, body: JSON.stringify({ ok: false, error: 'GitHub caído' }), contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*' } });
       return route.fulfill({ status: 200, body: JSON.stringify({ ok: true, archivo: 'backups/x.json' }), contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*' } }); }
+    if (u.includes('workers.dev') && !u.includes('/backup')) workerUrls.push(u);
     if (u.includes('firebase-database-compat')) return route.fulfill({ body: '', contentType: 'application/javascript' });
     if (u.includes('canvas-confetti')) return route.fulfill({ body: 'window.confetti=function(){}', contentType: 'application/javascript' });
     if (u.startsWith('file://')) return route.continue();
@@ -242,7 +244,7 @@ const check = (c, msg) => { console.log((c ? 'PASS ' : 'FAIL ') + msg); if (!c) 
   await ev(() => { const s = document.getElementById('backupSelect'); s.value = '2026-01-01_1200'; return restaurarBackupSeleccionado(); });
   await page.waitForTimeout(600);
   const confFb = await ev((n) => __confirms.slice(n).join('\n'), nconf);
-  check(confFb.includes('YA HA PASADO'), 'avisa de sorteo programado vencido en la copia');
+  check(confFb.includes('cuya hora ya ha pasado') && confFb.includes('no guardan la Lista Negra') && confFb.includes('volver a programarlo'), 'avisa de que el sorteo programado de la copia habrá que volver a programarlo');
   check(Object.keys(await db('historial_ganadores')).length === 1 && !(await db('hall_of_fame_juegos')), 'copia de Firebase: nodos ausentes quedan vacíos');
 
   // Borrar todo
@@ -632,13 +634,60 @@ const check = (c, msg) => { console.log((c ? 'PASS ' : 'FAIL ') + msg); if (!c) 
   await page.click('#instruccionesElegidos summary'); await page.waitForTimeout(150);
   check(await ev(() => document.getElementById('instruccionesElegidos').open && getComputedStyle(document.querySelector('#instruccionesElegidos summary strong'), '::after').content === 'none'), 'PC: las instrucciones no se pueden plegar y no muestran flecha');
   check(await ev(() => Math.abs(document.querySelector('.tarjeta-instrucciones').getBoundingClientRect().bottom - document.getElementById('historyCard').getBoundingClientRect().bottom) <= 1), 'PC: con las instrucciones abiertas las columnas siguen acabando igual');
+  await ev(() => window.__DB__.set('sorteo_actual', { status: 'programado', targetTime: Date.now() + 86400000, rawLines: 'x' }));
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.waitForTimeout(200);
+  await page.waitForTimeout(600);
   const slotMovil = await caja('#slotMachineCard');
-  check(slotMovil.alto < 400 && slotMovil.reel < 90, 'móvil: la recreativa mantiene su tamaño ' + JSON.stringify(slotMovil));
+  check(slotMovil.alto > 200 && slotMovil.alto < 400 && slotMovil.reel > 50 && slotMovil.reel < 90, 'móvil: la recreativa mantiene su tamaño ' + JSON.stringify(slotMovil));
   await page.click('#instruccionesElegidos summary'); await page.waitForTimeout(150);
   check(!(await ev(() => document.getElementById('instruccionesElegidos').open)), 'móvil: las instrucciones se siguen pudiendo plegar');
   await ev((s) => window.__DB__.set('sorteo_actual', s), sorteoAntes);
+  await page.waitForTimeout(400);
+
+  // ===== Revisión: cambio de mes, Hall of Fame, año del premio, hora del servidor... =====
+  const guardadoRev = { sa: await db('sorteo_actual'), mes: await db('mes_sorteo'), hof: await db('hall_of_fame_juegos'), hist: await db('historial_ganadores'), sp: await db('sorteo_privado') };
+  // 1. No se cambia el mes con un sorteo activo
+  for (const estadoRev of ['programado', 'procesando', 'error']) {
+    await ev((st) => window.__DB__.set('sorteo_actual', { status: st, targetTime: Date.now() + 86400000, processingAt: Date.now(), rawLines: '1-@a' }), estadoRev);
+    await ev(() => { document.getElementById('monthSelect').value = 'Diciembre'; return guardarMesSorteo(); });
+    check((await db('mes_sorteo')) === guardadoRev.mes && (await db('sorteo_actual')).status === estadoRev && /Bórralo|Espera/.test(await ev(() => __alerts.slice(-1)[0])), 'mes: con un sorteo ' + estadoRev + ' no se cambia el mes');
+  }
+  await ev(() => window.__DB__.set('sorteo_actual', { ganador: { user: '@Ya', ticket: '1-@Ya' }, arcadeGroup: [], timestamp: Date.now() - 86400000, mesPremio: 'Octubre 2026', rawLines: 'x' }));
+  await ev(() => { document.getElementById('monthSelect').value = 'Diciembre'; return guardarMesSorteo(); });
+  check((await db('mes_sorteo')) === 'Diciembre' && (await db('sorteo_actual')).status === 'inactivo', 'mes: sin sorteo activo el mes se cambia como antes');
+  // 2. "EXTRA" dentro del nombre no quita el juego
+  const cuentaRev = await ev(() => contarJuegosHoF('1-@ExtraLife\n2-@Bob\n3-@Bob PUNTO EXTRA\nEXTRA\n4-@Carl'));
+  check(cuentaRev['@extralife'] && cuentaRev['@extralife'].count === 1 && cuentaRev['@bob'].count === 1 && !cuentaRev['@carl'], 'HoF: @ExtraLife suma su juego y las líneas EXTRA siguen sin contar ' + JSON.stringify(cuentaRev));
+  // 4. Año del premio
+  const mesesRev = await ev(() => [obtenerMesPremioCompleto('Noviembre', new Date(2026, 9, 31)), obtenerMesPremioCompleto('Diciembre', new Date(2027, 0, 2)), obtenerMesPremioCompleto('Enero', new Date(2026, 11, 30)), obtenerMesPremioCompleto('Octubre', new Date(2026, 9, 2)), obtenerMesPremioCompleto('Septiembre', new Date(2026, 9, 2))]);
+  check(JSON.stringify(mesesRev) === JSON.stringify(['Noviembre 2026', 'Diciembre 2026', 'Enero 2027', 'Octubre 2026', 'Septiembre 2026']), 'año del premio: el más cercano a la fecha del sorteo ' + JSON.stringify(mesesRev));
+  // 8. Sorteo inmediato encima de uno programado: lo avisa
+  await ev(() => window.__DB__.set('sorteo_actual', { status: 'programado', targetTime: Date.now() + 86400000, rawLines: '1-@Viejo1\n2-@Viejo2' }));
+  await ev(() => { document.getElementById('pruebaCheckbox').checked = false; document.getElementById('drawTimeInput').value = ''; document.getElementById('listInput').value = '1-@Nuevo1\n2-@Nuevo2'; document.getElementById('blacklistInput').value = ''; programarOEjecutarSorteo(); });
+  await page.waitForTimeout(600);
+  check((await ev(() => __confirms.slice(-1)[0])).includes('se sustituirá por este sorteo inmediato') && (await db('sorteo_actual')).ganador, 'inmediato: avisa de que sustituye al sorteo programado');
+  await ev(() => { document.getElementById('drawTimeInput').value = '21:00'; });
+  // 5. La cuenta atrás usa la hora del servidor
+  await ev(() => window.__DB__.set('.info/serverTimeOffset', 3600000));
+  await ev(() => window.__DB__.set('sorteo_actual', { status: 'programado', targetTime: Date.now() + 3600000 + 30 * 60000, rawLines: 'x' }));
+  await page.waitForTimeout(1300);
+  const estadoRev = await page.textContent('#estadoSorteo');
+  check(/faltan (29:|30:00)/.test(estadoRev), 'hora del servidor: con el reloj 1 h atrasado faltan 30 min, no 1 h 30 min ' + JSON.stringify(estadoRev));
+  await ev(() => window.__DB__.set('.info/serverTimeOffset', 0));
+  // 9. El texto de Telegram no ejecuta su HTML
+  const textoRev = await ev(() => { const d = new DOMParser().parseFromString('<div class="m">1-@a<br>2-@b<img src="x" onerror="window.__xssRev=1"></div>', 'text/html'); return textoTelegram(d.querySelector('.m')); });
+  await page.waitForTimeout(300);
+  check(textoRev === '1-@a\n2-@b' && !(await ev(() => window.__xssRev)), 'Telegram: se lee solo el texto, sin ejecutar su HTML');
+  // 7. La lista se guarda al dejar de escribir
+  await ev(() => { const l = document.getElementById('listInput'); l.value = '1-@Tecla'; l.dispatchEvent(new Event('input')); });
+  const listaAntes = await db('sorteo_participantes_raw');
+  await page.waitForTimeout(800);
+  check(listaAntes !== '1-@Tecla' && (await db('sorteo_participantes_raw')) === '1-@Tecla', 'lista: se guarda medio segundo después de dejar de escribir');
+  // 6. El admin pide la lista de Telegram sin la copia de 1 minuto
+  workerUrls.length = 0;
+  await ev(() => importarDesdeTelegram(true)); await ev(() => importarDesdeTelegram(false));
+  check(workerUrls.length === 2 && workerUrls[0].includes('fresco=1') && !workerUrls[1].includes('fresco=1'), 'Telegram: el botón del admin pide datos frescos y las visitas no');
+  await ev((g) => { for (const [k, v] of [['sorteo_actual', g.sa], ['mes_sorteo', g.mes], ['hall_of_fame_juegos', g.hof], ['historial_ganadores', g.hist], ['sorteo_privado', g.sp]]) window.__DB__.set(k, v); }, guardadoRev);
   await page.waitForTimeout(400);
 
   // Visitor doesn't write Telegram list
