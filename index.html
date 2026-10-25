@@ -2188,19 +2188,27 @@
         if (event.key !== 'Escape') return;
         const res = document.getElementById('resultadosGlobal');
         if (res) res.classList.add('hidden');
+        // Escape cierra cualquier ventana abierta
         cerrarFichaUsuario();
+        cerrarProbabilidadesModal();
+        cerrarCreditos();
+        cerrarLoginModal();
     });
 
-    // Boletos de cada usuario en una lista de participantes.
+    // Boletos de cada usuario en una lista de participantes. @Pepe y @pepe son
+    // la misma persona (como en el sorteo): se muestra como aparece la primera vez.
     function contarBoletos(rawLinesStr) {
         let boletosPorUsuario = {};
+        let nombrePorClave = {};
         let totalBoletosValidos = 0;
         String(rawLinesStr || '').split('\n').forEach(function(line) {
             const lineaLimpia = line.trim();
             if (!lineaLimpia) return;
             const matchUser = lineaLimpia.match(/@\w+/);
             if (!matchUser) return;
-            const user = matchUser[0];
+            const clave = matchUser[0].toLowerCase();
+            if (!nombrePorClave[clave]) nombrePorClave[clave] = matchUser[0];
+            const user = nombrePorClave[clave];
             const numBoletoMatch = lineaLimpia.match(/^(\d+)/);
             const numeroBoleto = numBoletoMatch ? numBoletoMatch[1] : (boletosPorUsuario[user] ? (boletosPorUsuario[user].length + 1).toString() : "1");
             if (!boletosPorUsuario[user]) boletosPorUsuario[user] = [];
@@ -2336,7 +2344,9 @@
         let enComillas = false;
         for (let i = 0; i < linea.length; i++) {
             let char = linea[i];
-            if (char === '"') enComillas = !enComillas;
+            // Dentro de comillas, "" es una comilla del propio texto
+            if (char === '"' && enComillas && linea[i + 1] === '"') { celda += '"'; i++; }
+            else if (char === '"') enComillas = !enComillas;
             else if (char === ',' && !enComillas) {
                 resultado.push(celda.trim());
                 celda = '';
@@ -2361,8 +2371,9 @@
             let juegos = [];
             lineas.forEach(lineaRaw => {
                 const columnas = parseCSVLine(lineaRaw);
-                const titulo = columnas[0] ? columnas[0].replace(/^"+|"+$/g, '').trim() : '';
-                const fecha = columnas[1] ? columnas[1].replace(/^"+|"+$/g, '').trim() : '';
+                // parseCSVLine ya quita las comillas que envuelven cada celda
+                const titulo = columnas[0] ? columnas[0].trim() : '';
+                const fecha = columnas[1] ? columnas[1].trim() : '';
                 if (titulo) juegos.push({ titulo: titulo, fecha: fecha });
             });
             cacheJuegosSheets = juegos;
@@ -2374,7 +2385,10 @@
         }
     }
 
+    let busquedaJuegoId = 0;
+
     async function comprobarJuegoEnSheets() {
+        const id = ++busquedaJuegoId;
         const inputEl = document.getElementById('gameSearchInput');
         const dropdown = document.getElementById('customSuggestions');
         const resBox = document.getElementById('searchResult');
@@ -2387,6 +2401,7 @@
             return;
         }
         const listaJuegos = await obtenerJuegosDesdeSheets();
+        if (id !== busquedaJuegoId) return;   // ya hay una búsqueda más nueva
         let coincidenciaExacta = listaJuegos.find(j => normalizarTexto(j.titulo) === queryNorm);
         const juegosFiltrados = listaJuegos.filter(j => normalizarTexto(j.titulo).includes(queryNorm));
         dropdown.innerHTML = '';
