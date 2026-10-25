@@ -1576,6 +1576,12 @@
     const db = firebase.database();
     const auth = firebase.auth();
 
+    // Hora del servidor de Firebase: la cuenta atrás y la revelación del
+    // ganador no dependen de que el reloj del dispositivo esté en hora.
+    let desfaseServidor = 0;
+    db.ref('.info/serverTimeOffset').on('value', function(snap) { desfaseServidor = Number(snap.val()) || 0; });
+    function ahoraServidor() { return Date.now() + desfaseServidor; }
+
     // ============================================================
     //  VARIABLES GLOBALES
     // ============================================================
@@ -1768,7 +1774,7 @@
     // ocultan las entradas recientes para no destripar al ganador.
     function obtenerHistorialVisible() {
         let historyToRender = rawHistoryItems || [];
-        const ahora = Date.now();
+        const ahora = ahoraServidor();
         let enCongelacion = false;
         let freezeUntil = 0;
 
@@ -1944,10 +1950,13 @@
 
     const listInputEl = document.getElementById('listInput');
     listInputEl.addEventListener('focus', function() { isUserEditingList = true; });
-    listInputEl.addEventListener('blur', function() { isUserEditingList = false; guardarParticipantesFirebase(); });
+    // La lista se guarda medio segundo después de dejar de escribir, no con cada tecla.
+    let guardarListaTimer = null;
+    listInputEl.addEventListener('blur', function() { isUserEditingList = false; clearTimeout(guardarListaTimer); guardarParticipantesFirebase(); });
     listInputEl.addEventListener('input', function() {
         calcularYMostrarProbabilidades();
-        guardarParticipantesFirebase();
+        clearTimeout(guardarListaTimer);
+        guardarListaTimer = setTimeout(guardarParticipantesFirebase, 500);
     });
 
     window.addEventListener('DOMContentLoaded', function() {
@@ -2164,7 +2173,7 @@
         } else {
             htmlJuegos = '<div class="resultados-titulo">🎮 Juegos</div><div class="resultado-juego">✅ Ningún juego con ese nombre se ha elegido todavía.</div>';
         }
-        caja.innerHTML = caja.innerHTML.replace(pendiente, htmlJuegos);
+        caja.innerHTML = caja.innerHTML.replace(pendiente, () => htmlJuegos);
     }
 
     // Cerrar los resultados al pulsar fuera o con Escape
@@ -2609,9 +2618,10 @@
         const sorteoCopia = incluidos.includes('sorteo_actual') ? data.sorteo_actual : null;
         if (esObjeto(sorteoCopia) && (sorteoCopia.status === 'programado' || sorteoCopia.status === 'procesando')) {
             const hora = Number(sorteoCopia.targetTime) || 0;
-            aviso = hora && hora <= Date.now()
-                ? '\n\n⚠️ La copia tiene un sorteo programado cuya hora YA HA PASADO: el servidor lo realizará en cuanto se restaure.'
-                : '\n\n⚠️ La copia tiene un sorteo programado: se volverá a programar al restaurarla.';
+            // Las copias no guardan la Lista Negra (es privada), así que el servidor
+            // no realizará ese sorteo: lo marcará con error para volver a programarlo.
+            aviso = '\n\n⚠️ La copia tiene un sorteo programado' + (hora && hora <= Date.now() ? ' cuya hora ya ha pasado' : '') +
+                '. Las copias no guardan la Lista Negra, así que el servidor no lo realizará: aparecerá como sorteo con error y tendrás que volver a programarlo.';
         }
 
         return { errores, incluidos, resumen: resumen + aviso };
@@ -2759,7 +2769,8 @@
         
         const timestamp = Date.now();
         const targetUrl = `https://t.me/s/retrojuegodelmes?v=${timestamp}`;
-        const workerUrl = `${MI_CLOUDFLARE_WORKER}?url=${encodeURIComponent(targetUrl)}&nocache=${timestamp}`;
+        // El admin pide la lista recién descargada; las visitas usan la copia de 1 minuto del Worker.
+        const workerUrl = `${MI_CLOUDFLARE_WORKER}?url=${encodeURIComponent(targetUrl)}&nocache=${timestamp}` + (esManual ? '&fresco=1' : '');
         
         try {
             const response = await fetch(workerUrl, { cache: "no-store" });
@@ -2777,10 +2788,7 @@
             const regexPatronLista = /\d+[\s-]*@\w+/; 
             
             for (let i = messages.length - 1; i >= 0; i--) {
-                let htmlTemp = messages[i].innerHTML.replace(/<br\s*[\/]?>/gi, "\n");
-                let tempDiv = document.createElement("div");
-                tempDiv.innerHTML = htmlTemp;
-                let plainText = tempDiv.textContent || tempDiv.innerText || "";
+                let plainText = textoTelegram(messages[i]);
                 if (regexPatronLista.test(plainText)) {
                     const lineas = plainText.split('\n');
                     const lineasFiltradas = lineas.map(l => l.trim()).filter(l => regexPatronLista.test(l) || /EXTRA/i.test(l));
@@ -2820,10 +2828,12 @@
 
     let mesSorteoActivo = "";
 
+    // Texto de un mensaje de Telegram (los <br> pasan a saltos de línea). Se
+    // trabaja sobre una copia del documento de DOMParser, que no carga nada.
     function textoTelegram(el) {
-        const d = document.createElement("div");
-        d.innerHTML = (el.innerHTML || "").replace(/<br\s*[\/]?>/gi, "\n");
-        return (d.textContent || d.innerText || "").replace(/\u00a0/g, " ").replace(/\r/g, "").trim();
+        const copia = el.cloneNode(true);
+        copia.querySelectorAll("br").forEach(br => br.replaceWith("\n"));
+        return (copia.textContent || "").replace(/\u00a0/g, " ").replace(/\r/g, "").trim();
     }
 
     function escJuegos(s) {
@@ -2928,7 +2938,7 @@
     async function obtenerJuegosMesYArcade(mes) {
         const t = Date.now();
         const target = `https://t.me/s/retrojuegodelmes?v=${t}`;
-        const worker = `${MI_CLOUDFLARE_WORKER}?url=${encodeURIComponent(target)}&nocache=${t}`;
+        const worker = `${MI_CLOUDFLARE_WORKER}?url=${encodeURIComponent(target)}&nocache=${t}&fresco=1`;
         const r = await fetch(worker, {cache:"no-store"});
         if (!r.ok) throw new Error("Error Cloudflare: " + r.status);
 
@@ -3082,6 +3092,21 @@
         const mes = document.getElementById('monthSelect').value;
         if (!mes) return alert("Por favor, selecciona un mes del desplegable.");
 
+        // Con un sorteo activo no se cambia el mes: borraría la programación
+        // sin restar sus juegos del Hall of Fame.
+        try {
+            const actual = (await db.ref('sorteo_actual').once('value')).val();
+            const estado = actual && actual.status;
+            if (estado === 'programado' || estado === 'procesando' || estado === 'error') {
+                return alert(estado === 'procesando'
+                    ? "⏳ El servidor está realizando ahora mismo el sorteo. Espera a que termine para cambiar el mes."
+                    : "⚠️ Hay un sorteo " + (estado === 'error' ? "con error" : "programado") + ". Bórralo antes de cambiar el mes (botón \"↩️ Borrar último sorteo\").");
+            }
+        } catch (error) {
+            console.error("Error leyendo el sorteo actual:", error);
+            return alert("⚠️ No se pudo comprobar el sorteo actual. Inténtalo de nuevo.");
+        }
+
         if (confirm("¿Confirmas que deseas cambiar el título del sorteo al mes de " + mes + "?")) {
             try {
                 await Promise.all([
@@ -3113,8 +3138,9 @@
             let lineaLimpia = line.trim();
             if (!lineaLimpia) return;
             
-            let textoMayusculas = lineaLimpia.toUpperCase();
             const matchUser = lineaLimpia.match(/@\w+/);
+            // "EXTRA" se busca fuera de los nombres: @ExtraLife sí suma su juego
+            let textoMayusculas = lineaLimpia.replace(/@\w+/g, '').toUpperCase();
 
             if (!matchUser && textoMayusculas.includes('EXTRA')) {
                 bloqueExtraActivado = true;
@@ -3326,7 +3352,7 @@
     }
 
     function actualizarEstadoRecreativa(targetTime) {
-        const ahora = Date.now();
+        const ahora = ahoraServidor();
         const diff = targetTime - ahora;
         const slotStatus = document.getElementById('slotStatus');
         if(!slotStatus) return;
@@ -3361,7 +3387,7 @@
         if (timerInterval) clearInterval(timerInterval);
         actualizarEstadoRecreativa(targetTime);
         timerInterval = setInterval(() => {
-            const ahora = Date.now();
+            const ahora = ahoraServidor();
             if (ahora >= targetTime) {
                 clearInterval(timerInterval);
                 timerInterval = null;
@@ -3386,7 +3412,7 @@
         const slotStatus = document.getElementById('slotStatus');
         if (slotRevealInterval) clearInterval(slotRevealInterval);
         const actualizar = () => {
-            const restante = Math.max(0, Math.ceil((revealAt - Date.now()) / 1000));
+            const restante = Math.max(0, Math.ceil((revealAt - ahoraServidor()) / 1000));
             if (restante <= 0) {
                 clearInterval(slotRevealInterval);
                 slotRevealInterval = null;
@@ -3523,7 +3549,7 @@
         if (!el) return;
         const esPrueba = !!(isAdminLoggedIn && datosSorteoPrueba);
         const data = esPrueba ? datosSorteoPrueba : datosSorteoReal;
-        const ahora = Date.now();
+        const ahora = ahoraServidor();
         const prefijo = esPrueba ? '🧪 ' : '';
         let clase = '', html = '';
 
@@ -3601,7 +3627,7 @@
                 if (instrucciones) instrucciones.open = esPantallaAncha() || (Date.now() - (Number(data.timestamp) || 0)) < 36 * 60 * 60 * 1000;
                 if(waitingCard) waitingCard.classList.add('hidden');
                 const revealAt = Number(data.revealAt) || 0;
-                const restante = revealAt - Date.now();
+                const restante = revealAt - ahoraServidor();
 
                 if (restante > 0) {
                     if(winnerCard) winnerCard.style.display = 'none';
@@ -3815,7 +3841,7 @@
         };
 
         if (animarResultado) {
-            resultadoData.revealAt = Date.now() + SLOT_REVEAL_MS;
+            resultadoData.revealAt = ahoraServidor() + SLOT_REVEAL_MS;
         }
 
         // La tirada de prueba va a "sorteo_prueba", que solo leen los admins.
@@ -4713,8 +4739,11 @@
         if (!mesNombre) return `${nombresMeses[fecha.getMonth()]} ${fecha.getFullYear()}`;
         const indiceMes = nombresMeses.findIndex(m => m.toLowerCase() === String(mesNombre).toLowerCase());
         if (indiceMes < 0) return String(mesNombre);
+        // El año más cercano a la fecha del sorteo: "Noviembre" sorteado el
+        // 31 de octubre es de este año, y "Diciembre" sorteado en enero, del anterior.
         let year = fecha.getFullYear();
-        if (indiceMes > fecha.getMonth()) year--;
+        if (indiceMes - fecha.getMonth() > 6) year--;
+        if (fecha.getMonth() - indiceMes > 6) year++;
         return `${nombresMeses[indiceMes]} ${year}`;
     }
 
@@ -4757,9 +4786,12 @@
             const lineasProgramacionAnterior = habiaProgramacion ? (actual.rawLines || '') : '';
 
             if (!timeVal || timeVal === "--:--" || timeVal.trim() === "") {
+                const avisoSustituir = habiaProgramacion
+                    ? "\n\n⚠️ Hay un sorteo " + (actual.status === 'error' ? "con error" : "programado") + ": se sustituirá por este sorteo inmediato (sus juegos del Hall of Fame se ajustan solos)."
+                    : "";
                 if (!confirm(esPrueba
                     ? "🧪 No has elegido hora: la TIRADA DE PRUEBA se hará de inmediato (solo la veis los admins). ¿Continuar?"
-                    : "No has elegido hora: el sorteo se realizará de inmediato, ¿Continuar?")) return;
+                    : "No has elegido hora: el sorteo se realizará de inmediato, ¿Continuar?" + avisoSustituir)) return;
                 detenerTragaperras();
                 mostrarRecreativa(true);
                 const slotStatus = document.getElementById('slotStatus');

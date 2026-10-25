@@ -6,7 +6,8 @@
   function get(p){ let c=root; for(const k of parts(p)){ if(c==null||typeof c!=='object') return null; c=c[k]; } return c===undefined?null:c; }
   function clean(o){ if(o&&typeof o==='object'){ for(const k of Object.keys(o)){ o[k]=clean(o[k]); if(o[k]===null||(typeof o[k]==='object'&&!Array.isArray(o[k])&&!Object.keys(o[k]).length)) delete o[k]; } } return o; }
   function setAt(p,v){
-    for (const k of parts(p)) if (/[.#$\[\]]/.test(k)) throw new Error('Invalid key '+k);
+    // ".info/serverTimeOffset" la escribe Firebase, no la web: las pruebas la simulan con __DB__.set
+    if (!p.startsWith('.info/')) for (const k of parts(p)) if (/[.#$\[\]]/.test(k)) throw new Error('Invalid key '+k);
     (function chk(o){ if(o&&typeof o==='object') for(const k of Object.keys(o)){ if(/[.#$\[\]\/]/.test(k)) throw new Error('Invalid key '+k); chk(o[k]); } })(v);
     const ks=parts(p); if(!ks.length){ root=clone(v)||{}; } else { let c=root; for(const k of ks.slice(0,-1)){ if(c[k]==null||typeof c[k]!=='object') c[k]={}; c=c[k]; } c[ks[ks.length-1]]=clone(v); }
     clean(root); notify();

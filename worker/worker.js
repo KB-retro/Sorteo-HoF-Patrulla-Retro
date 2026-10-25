@@ -8,6 +8,12 @@ const MAX_PROCESANDO_MS = 300000;
 // Cuenta atrás de los rodillos antes de mostrar al ganador de un sorteo programado.
 const REVEAL_MS = 30000;
 
+// El proxy de Telegram guarda la página del canal este tiempo, para no
+// descargarla en cada visita. La web pide "fresco=1" cuando el admin carga
+// la lista a mano.
+const CACHE_TELEGRAM_MS = 60000;
+let cacheTelegram = { html: "", hora: 0 };
+
 // Única web desde la que se puede usar el Worker.
 const ORIGEN_WEB = "https://kb-retro.github.io";
 const URL_WEB_SORTEO = "https://kb-retro.github.io/Sorteo-HoF-Patrulla-Retro/";
@@ -184,12 +190,29 @@ export default {
       return new Response("Acceso no permitido", { status: 403 });
     }
 
-    const timestamp = Date.now();
-    const telegramUrl = `https://t.me/s/retrojuegodelmes?before=${timestamp}`;
-    const response = await fetch(telegramUrl, {
-        headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" }
-    });
-    const html = await response.text();
+    const proxyHeaders = { "Access-Control-Allow-Origin": ORIGEN_WEB, "Vary": "Origin" };
+    const fresco = urlObj.searchParams.get("fresco") === "1";
+    let html = cacheTelegram.html;
+
+    if (fresco || !html || Date.now() - cacheTelegram.hora > CACHE_TELEGRAM_MS) {
+      const timestamp = Date.now();
+      const telegramUrl = `https://t.me/s/retrojuegodelmes?before=${timestamp}`;
+      let response;
+      try {
+        response = await fetch(telegramUrl, {
+            headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" }
+        });
+      } catch (error) {
+        response = null;
+      }
+      if (!response || !response.ok) {
+        // Si Telegram falla, mejor la última copia que nada.
+        if (!html) return new Response("Telegram no responde", { status: 502, headers: proxyHeaders });
+      } else {
+        html = await response.text();
+        cacheTelegram = { html: html, hora: Date.now() };
+      }
+    }
 
     return new Response(html, {
       headers: {
