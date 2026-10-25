@@ -2482,7 +2482,8 @@
         }
 
         const ahora = new Date();
-        const horaTag = `${String(ahora.getHours()).padStart(2,'0')}${String(ahora.getMinutes()).padStart(2,'0')}`;
+        // Con segundos: dos copias en el mismo minuto no se pisan
+        const horaTag = `${String(ahora.getHours()).padStart(2,'0')}${String(ahora.getMinutes()).padStart(2,'0')}${String(ahora.getSeconds()).padStart(2,'0')}`;
         const clave = `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, '0')}-${String(ahora.getDate()).padStart(2, '0')}_${horaTag}`;
         realizarCopiaEnFirebase(clave, "Copia Manual", true);
     }
@@ -2758,7 +2759,14 @@
     // ============================================================
     //  IMPORTAR DESDE TELEGRAM
     // ============================================================
-    async function importarDesdeTelegram(esManual = true) {
+    // Cabecera con la sesión del admin: el Worker solo descarga Telegram de
+    // nuevo ("fresco=1") para un admin; a los demás les sirve su copia de 1 minuto.
+    async function cabeceraAdmin() {
+        if (!usuarioAdmin) return {};
+        try { return { Authorization: 'Bearer ' + await usuarioAdmin.getIdToken() }; } catch (e) { return {}; }
+    }
+
+    async function importarDesdeTelegram(esManual = true, fresco = esManual) {
         const btn = document.querySelector('.telegram-btn');
         let originalText = "";
         if (esManual && btn) {
@@ -2770,10 +2778,11 @@
         const timestamp = Date.now();
         const targetUrl = `https://t.me/s/retrojuegodelmes?v=${timestamp}`;
         // El admin pide la lista recién descargada; las visitas usan la copia de 1 minuto del Worker.
-        const workerUrl = `${MI_CLOUDFLARE_WORKER}?url=${encodeURIComponent(targetUrl)}&nocache=${timestamp}` + (esManual ? '&fresco=1' : '');
+        const pideFresco = fresco && !!usuarioAdmin;
+        const workerUrl = `${MI_CLOUDFLARE_WORKER}?url=${encodeURIComponent(targetUrl)}&nocache=${timestamp}` + (pideFresco ? '&fresco=1' : '');
         
         try {
-            const response = await fetch(workerUrl, { cache: "no-store" });
+            const response = await fetch(workerUrl, { cache: "no-store", headers: pideFresco ? await cabeceraAdmin() : {} });
             
             if (!response.ok) throw new Error(`Error Cloudflare: ${response.status}`);
             const htmlContent = await response.text();
@@ -2939,7 +2948,7 @@
         const t = Date.now();
         const target = `https://t.me/s/retrojuegodelmes?v=${t}`;
         const worker = `${MI_CLOUDFLARE_WORKER}?url=${encodeURIComponent(target)}&nocache=${t}&fresco=1`;
-        const r = await fetch(worker, {cache:"no-store"});
+        const r = await fetch(worker, { cache: "no-store", headers: await cabeceraAdmin() });
         if (!r.ok) throw new Error("Error Cloudflare: " + r.status);
 
         const contenido = await r.text();
@@ -3766,11 +3775,14 @@
         let log = [];
         let ganadorEncontrado = null;
         let indexGanador = -1;
-        let listaCopia = participantesValidos.slice();
+        // Se sortean posiciones de la lista: así el grupo Arcade sale alrededor
+        // de la línea premiada aunque haya dos líneas idénticas.
+        let listaCopia = participantesValidos.map((p, i) => i);
 
         while (listaCopia.length > 0) {
             const indexAleatorio = obtenerIndiceCriptografico(listaCopia.length);
-            const entrada = listaCopia[indexAleatorio];
+            const posicion = listaCopia[indexAleatorio];
+            const entrada = participantesValidos[posicion];
             const usuarioMinusculas = entrada.user.toLowerCase();
 
             if (blacklist.indexOf(usuarioMinusculas) !== -1) {
@@ -3778,7 +3790,7 @@
                 listaCopia.splice(indexAleatorio, 1);
             } else {
                 ganadorEncontrado = entrada;
-                indexGanador = participantesValidos.findIndex(p => p.ticket === entrada.ticket);
+                indexGanador = posicion;
                 log.push("✅ ¡TIRADA GANADORA!: " + entrada.ticket);
                 break;
             }
@@ -4421,6 +4433,11 @@
     // hubiera quedado guardada de versiones anteriores.
     let usuarioAdmin = null;
 
+    // Las mismas cuentas que pueden escribir según las reglas de Firebase
+    // (firebase/reglas-database.json). Otra cuenta no abre el panel.
+    const UIDS_ADMIN = ['mowI2ZkiPTQoz7Kx4P43rfZjxpi1', 'AlZIJROdtkgGLw48FwsJUchrSfO2'];
+    function esCuentaAdmin(user) { return !!(user && UIDS_ADMIN.includes(user.uid)); }
+
     const sesionPreparada = auth.setPersistence(firebase.auth.Auth.Persistence.NONE)
         .then(() => auth.signOut())
         .catch(function(error) {
@@ -4428,7 +4445,7 @@
         });
 
     auth.onAuthStateChanged(function(user) {
-        usuarioAdmin = user;
+        usuarioAdmin = esCuentaAdmin(user) ? user : null;
         if (!user && isAdminLoggedIn) ocultarPanelAdmin();
     });
 
@@ -4449,7 +4466,7 @@
         if(panel) panel.classList.remove('hidden');
         const emailEl = document.getElementById('adminUserEmail');
         if (emailEl) emailEl.textContent = usuarioAdmin ? (usuarioAdmin.email || '') : '';
-        importarDesdeTelegram(false);
+        importarDesdeTelegram(false, true);   // al entrar, la lista recién descargada
         lastRenderedHistoryState = "";
         refrescarHistorialAntiSpoiler();
         cargarListaBackups();
@@ -4593,6 +4610,12 @@
         try {
             await sesionPreparada;
             const cred = await auth.signInWithEmailAndPassword(email, password);
+            if (!esCuentaAdmin(cred.user)) {
+                usuarioAdmin = null;
+                await auth.signOut();
+                mostrarErrorLogin('Esta cuenta no tiene permisos de administrador.');
+                return;
+            }
             usuarioAdmin = cred.user;
             cerrarLoginModal();
             abrirPanelAdmin();
