@@ -729,6 +729,22 @@ const check = (c, msg) => { console.log((c ? 'PASS ' : 'FAIL ') + msg); if (!c) 
   check((await page.textContent('#searchResult')).includes('Zelda'), 'buscador de juegos: la respuesta lenta no pisa la búsqueda más reciente');
   await ev(() => { obtenerJuegosDesdeSheets = window.__juegosOrig; document.getElementById('gameSearchInput').value = ''; comprobarJuegoEnSheets(); });
 
+  // ===== Buscador del Historial =====
+  const buscarHist = async q => { await page.fill('#historySearchInput', q); await page.waitForTimeout(250); return ev(() => [...document.querySelectorAll('#historyList li.custom-item')].map(li => li.innerText.replace(/\s+/g, ' '))); };
+  await ev(() => seleccionarPestanaListas('historial'));
+  // Usuario y mes de una entrada que existe ahora mismo en el historial
+  const muestraHist = await ev(() => { const it = obtenerHistorialVisible().find(i => i.user && i.fecha); return it ? { user: it.user, fecha: it.fecha } : null; });
+  let filasHist = await buscarHist(muestraHist.user.slice(0, 5).toUpperCase());
+  check(filasHist.length >= 1 && filasHist.every(f => f.toLowerCase().includes(muestraHist.user.slice(0, 5).toLowerCase())), 'historial: busca por usuario sin distinguir mayúsculas ' + JSON.stringify(filasHist.slice(0, 3)));
+  filasHist = await buscarHist(muestraHist.fecha.toLowerCase());
+  check(filasHist.length >= 1 && filasHist.every(f => f.includes(muestraHist.fecha)), 'historial: busca por mes y año ' + JSON.stringify(muestraHist.fecha));
+  check(!(await page.isVisible('#btnToggleHistory')), 'historial: buscando se oculta el botón "Ver todo"');
+  filasHist = await buscarHist('zzzz');
+  check(filasHist.length === 0 && (await page.textContent('#historyList')).includes('No se encontró ningún sorteo'), 'historial: sin resultados lo avisa');
+  filasHist = await buscarHist('');
+  check(filasHist.length === 3 && await page.isVisible('#btnToggleHistory'), 'historial: al borrar la búsqueda vuelven los 3 últimos');
+  check(await ev(() => { const a = document.getElementById('historySearchInput').getBoundingClientRect(), b = document.getElementById('hofSearchInput'); return a.height > 0 && getComputedStyle(b).fontSize === getComputedStyle(document.getElementById('historySearchInput')).fontSize; }), 'historial: buscador con el mismo estilo que el del Hall of Fame');
+
   // Visitor doesn't write Telegram list
   check(!errors.some(x => !/Telegram|Sheets|Cloudflare|Failed to load|500|Error iniciando sesión|integrity|Error en la copia previa|Error añadiendo ganadores manuales|Error guardando la lista de participantes/.test(x)), 'sin errores JS inesperados: ' + JSON.stringify(errors.filter(x => !/Telegram|Sheets|Cloudflare|Failed to load|500|Error iniciando sesión|integrity|Error en la copia previa|Error añadiendo ganadores manuales|Error guardando la lista de participantes/.test(x))));
   await browser.close();
