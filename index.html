@@ -1223,6 +1223,9 @@
 
     <div id="historyCard" class="card">
         <h3>📜 Historial de Ganadores 📜</h3>
+        <div style="margin-top: 10px; margin-bottom: 10px;">
+            <input type="text" id="historySearchInput" placeholder="🔍 Buscar usuario o mes..." oninput="buscarEnHistorial()" autocomplete="off" style="font-size: 0.85rem; padding: 8px 12px;">
+        </div>
         <ul id="historyList" class="custom-list">
             <li class="esqueleto"></li><li class="esqueleto"></li><li class="esqueleto"></li>
         </ul>
@@ -1595,6 +1598,7 @@
     
     let hofSearchQuery = "";
     let winnersSearchQuery = "";
+    let historySearchQuery = "";
     
     let rawHistoryItems = [];
     let rawHoFItems = [];
@@ -1825,7 +1829,7 @@
         let winnersCountToRender = Object.values(mapaConteo).sort((a, b) => b.total - a.total);
 
         const newStateWinners = JSON.stringify({ exp: isWinnersExpanded, list: winnersCountToRender, query: winnersSearchQuery });
-        const newStateHistory = JSON.stringify({ exp: isHistoryExpanded, list: historyToRender });
+        const newStateHistory = JSON.stringify({ exp: isHistoryExpanded, list: historyToRender, query: historySearchQuery });
         const newStateHoF = JSON.stringify({ exp: isHoFExpanded, list: hofToRender, query: hofSearchQuery });
 
         if (historialCargado && lastRenderedWinnersState !== newStateWinners) {
@@ -1877,6 +1881,12 @@
     function buscarEnWinners() {
         const input = document.getElementById('winnersSearchInput');
         winnersSearchQuery = input ? input.value.trim().toLowerCase() : "";
+        refrescarHistorialAntiSpoiler();
+    }
+
+    function buscarEnHistorial() {
+        const input = document.getElementById('historySearchInput');
+        historySearchQuery = input ? normalizarTexto(input.value) : "";
         refrescarHistorialAntiSpoiler();
     }
 
@@ -4405,7 +4415,16 @@
             if(btn) btn.classList.add('hidden');
             return;
         }
-        const visibleItems = isHistoryExpanded ? list : list.slice(0, 3);
+        // Con búsqueda se muestran todas las coincidencias (por usuario, mes o premio)
+        const isSearching = historySearchQuery.length > 0;
+        const visibleItems = isSearching
+            ? list.filter(item => normalizarTexto([item.user, item.fecha, item.premioEspecial].join(' ')).includes(historySearchQuery))
+            : (isHistoryExpanded ? list : list.slice(0, 3));
+        if (isSearching && visibleItems.length === 0) {
+            listEl.innerHTML = '<li style="text-align: center; color: var(--muted); padding: 6px;">No se encontró ningún sorteo con ese usuario o mes.</li>';
+            if (btn) btn.classList.add('hidden');
+            return;
+        }
         visibleItems.forEach(function(item) {
             const li = document.createElement('li');
             li.className = 'custom-item';
@@ -4426,7 +4445,7 @@
             }
             listEl.appendChild(li);
         });
-        if (list.length > 3) {
+        if (list.length > 3 && !isSearching) {
             if(btn) {
                 btn.classList.remove('hidden');
                 btn.innerText = isHistoryExpanded ? '⬆️ Mostrar solo los últimos 3 sorteos' : '⬇️ Ver todo el historial (' + list.length + ')';
