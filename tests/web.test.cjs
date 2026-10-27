@@ -745,6 +745,27 @@ const check = (c, msg) => { console.log((c ? 'PASS ' : 'FAIL ') + msg); if (!c) 
   check(filasHist.length === 3 && await page.isVisible('#btnToggleHistory'), 'historial: al borrar la búsqueda vuelven los 3 últimos');
   check(await ev(() => { const a = document.getElementById('historySearchInput').getBoundingClientRect(), b = document.getElementById('hofSearchInput'); return a.height > 0 && getComputedStyle(b).fontSize === getComputedStyle(document.getElementById('historySearchInput')).fontSize; }), 'historial: buscador con el mismo estilo que el del Hall of Fame');
 
+  // ===== Cambio de mes automático: la web busca los juegos del mes nuevo =====
+  const guardadoJuegos = { mes: await db('mes_sorteo'), jp: await db('juegos_proximo_sorteo'), sa: await db('sorteo_actual') };
+  await ev(() => { window.__juegosMesOrig = obtenerJuegosMesYArcade; window.__pedidosJuegos = [];
+    obtenerJuegosMesYArcade = mes => { window.__pedidosJuegos.push(mes); return Promise.resolve({ juegosMes: [{ titulo: 'Juego de ' + mes, plataformas: '' }], juegosArcade: ['Arcade de ' + mes] }); }; });
+  await ev(() => { window.__DB__.set('juegos_proximo_sorteo', { mes: 'Octubre', juegosMes: [{ titulo: 'Juego viejo' }], juegosArcade: [], timestamp: 1 }); window.__DB__.set('sorteo_actual', { status: 'inactivo' }); window.__DB__.set('mes_sorteo', 'Noviembre'); });
+  await page.waitForTimeout(500);
+  const listaJuegosTxt = await page.textContent('#juegosMesLista');
+  check(listaJuegosTxt.includes('Juego de Noviembre') && !listaJuegosTxt.includes('Juego viejo') && (await page.textContent('#juegosArcadeLista')).includes('Arcade de Noviembre'), 'mes nuevo: se muestran los juegos del mes nuevo buscados en Telegram');
+  const guardadosAdmin = await db('juegos_proximo_sorteo');
+  const esAdminAhora = await ev(() => !!usuarioAdmin);
+  check(esAdminAhora ? guardadosAdmin.mes === 'Noviembre' : guardadosAdmin.mes === 'Octubre', 'mes nuevo: solo un admin guarda los juegos en Firebase (admin: ' + esAdminAhora + ')');
+  await ev(() => window.__DB__.set('juegos_proximo_sorteo', { mes: 'Noviembre', juegosMes: [{ titulo: 'Guardado de Noviembre' }], juegosArcade: [], timestamp: 2 }));
+  await page.waitForTimeout(300);
+  check((await page.textContent('#juegosMesLista')).includes('Guardado de Noviembre') && (await ev(() => window.__pedidosJuegos.length)) === 1, 'mes nuevo: con los juegos guardados no se vuelve a pedir a Telegram');
+  await ev(() => { window.__adminJuegos = usuarioAdmin; usuarioAdmin = { uid: 'mowI2ZkiPTQoz7Kx4P43rfZjxpi1', getIdToken: () => Promise.resolve('tok-admin') }; window.__DB__.set('mes_sorteo', 'Diciembre'); });
+  await page.waitForTimeout(500);
+  check((await db('juegos_proximo_sorteo')).mes === 'Diciembre' && (await db('juegos_proximo_sorteo')).juegosMes[0].titulo === 'Juego de Diciembre', 'mes nuevo: con sesión de admin los juegos se guardan para todos');
+  await ev(() => { usuarioAdmin = window.__adminJuegos; });
+  await ev((g) => { obtenerJuegosMesYArcade = window.__juegosMesOrig; window.__DB__.set('juegos_proximo_sorteo', g.jp); window.__DB__.set('mes_sorteo', g.mes); window.__DB__.set('sorteo_actual', g.sa); }, guardadoJuegos);
+  await page.waitForTimeout(400);
+
   // Visitor doesn't write Telegram list
   check(!errors.some(x => !/Telegram|Sheets|Cloudflare|Failed to load|500|Error iniciando sesión|integrity|Error en la copia previa|Error añadiendo ganadores manuales|Error guardando la lista de participantes/.test(x)), 'sin errores JS inesperados: ' + JSON.stringify(errors.filter(x => !/Telegram|Sheets|Cloudflare|Failed to load|500|Error iniciando sesión|integrity|Error en la copia previa|Error añadiendo ganadores manuales|Error guardando la lista de participantes/.test(x))));
   await browser.close();

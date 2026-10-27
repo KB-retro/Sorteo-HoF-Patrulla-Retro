@@ -12,7 +12,7 @@ fs.copyFileSync(path.join(dir, '..', 'worker', 'worker.js'), copia);
 const { default: worker } = await import(pathToFileURL(copia).href);
 fs.unlinkSync(copia);
 
-let telegram = [], telegramFalla = false, tmeCalls = 0, tmeFalla = false;
+let telegram = [], telegramFalla = false, tmeCalls = 0, tmeFalla = false, alLeer = null, conflictos = 0;
 let db = {}, etagN = 0, github = [], urls = [], failPutResult = false;
 const clone = v => v === undefined ? null : JSON.parse(JSON.stringify(v));
 const parts = p => p.split('/').filter(Boolean);
@@ -41,10 +41,10 @@ globalThis.fetch = async (url, opt = {}) => {
   }
   const u = new URL(url); const p = u.pathname.replace(/\.json$/, '');
   const method = opt.method || 'GET';
-  if (method === 'GET') return new Response(JSON.stringify(get(p)), { headers: { ETag: etagOf(p) } });
+  if (method === 'GET') { const r = new Response(JSON.stringify(get(p)), { headers: { ETag: etagOf(p) } }); if (alLeer && alLeer(p)) alLeer = null; return r; }
   if (method === 'PUT') {
     const im = opt.headers && opt.headers['If-Match'];
-    if (im && im !== '*' && im !== etagOf(p)) return new Response('conflict', { status: 412 });
+    if (im && im !== '*' && im !== etagOf(p)) { conflictos++; return new Response('conflict', { status: 412 }); }
     const v = JSON.parse(opt.body);
     if (failPutResult && p === '/sorteo_actual' && v.ganador) return new Response('boom', { status: 500 });
     setp(p, v); return new Response(opt.body);
@@ -208,6 +208,42 @@ P(db.sorteo_actual.status === 'error', 'l: sin sorteo_privado → error, no sort
   crypto.getRandomValues = original;
   const grupo = (db.sorteo_actual.arcadeGroup || []).map(p => p.user).join(',');
   P(db.sorteo_actual.ganador.user === '@C' && grupo === '@E,@F,@C,@G,@H', 'l2: grupo Arcade alrededor de la línea repetida premiada ' + grupo);
+}
+
+// p. cambio de mes automático 25 h después de un sorteo programado
+{
+  db = { sorteo_actual: programado(), mes_sorteo: 'Octubre' };
+  const antes = Date.now(); await run();
+  const espera = db.sorteo_actual.cambioMesAt - antes;
+  P(db.sorteo_actual.ganador && espera >= 25 * 3600000 && espera < 25 * 3600000 + 60000 && db.mes_sorteo === 'Octubre', 'p: el sorteo programado guarda la hora del cambio de mes (25 h) sin cambiarlo aún');
+  db = { sorteo_prueba: programado(), mes_sorteo: 'Octubre' }; await run();
+  P(db.sorteo_prueba.ganador && !('cambioMesAt' in db.sorteo_prueba), 'p: la tirada de prueba no programa cambio de mes');
+
+  const conGanador = (extra = {}) => ({ ganador: { user: '@A', ticket: '1-@A' }, arcadeGroup: [], timestamp: 1, mesPremio: 'Octubre 2026', rawLines: 'x', ...extra });
+  db = { sorteo_actual: conGanador({ cambioMesAt: Date.now() + 60000 }), mes_sorteo: 'Octubre' }; await run();
+  P(db.mes_sorteo === 'Octubre' && db.sorteo_actual.ganador, 'p: antes de las 25 h no cambia nada');
+  db = { sorteo_actual: conGanador(), mes_sorteo: 'Octubre' }; await run();
+  P(db.mes_sorteo === 'Octubre' && db.sorteo_actual.ganador, 'p: un sorteo sin hora de cambio (inmediato o antiguo) no cambia el mes');
+
+  db = { sorteo_actual: conGanador({ cambioMesAt: Date.now() - 1000 }), mes_sorteo: 'Octubre' }; await run();
+  P(db.mes_sorteo === 'Noviembre' && JSON.stringify(db.sorteo_actual) === '{"status":"inactivo"}', 'p: pasadas las 25 h, Octubre → Noviembre y el sorteo queda inactivo');
+  await run();
+  P(db.mes_sorteo === 'Noviembre', 'p: el mes no avanza dos veces');
+  db = { sorteo_actual: conGanador({ cambioMesAt: Date.now() - 1000 }), mes_sorteo: 'Diciembre' }; await run();
+  P(db.mes_sorteo === 'Enero', 'p: Diciembre → Enero');
+  db = { sorteo_actual: conGanador({ cambioMesAt: Date.now() - 1000, mesPremio: 'Marzo 2027' }) }; await run();
+  P(db.mes_sorteo === 'Abril', 'p: sin mes guardado usa el del premio (Marzo → Abril)');
+  db = { sorteo_actual: conGanador({ cambioMesAt: Date.now() - 1000, especial: true, premioEspecial: 'Bolsa' }), mes_sorteo: 'Octubre' }; await run();
+  P(db.mes_sorteo === 'Noviembre', 'p: también tras un Sorteo Especial programado');
+
+  // Un admin programa otro sorteo justo entre la lectura y la escritura: no se pisa
+  db = { sorteo_actual: conGanador({ cambioMesAt: Date.now() - 1000 }), mes_sorteo: 'Octubre' };
+  // La 1ª lectura de sorteo_actual es la del sorteo; la 2ª, la del cambio de mes
+  let lecturas = 0; conflictos = 0;
+  alLeer = ruta => { if (ruta !== '/sorteo_actual' || ++lecturas < 2) return false; db.sorteo_actual = { status: 'programado', targetTime: Date.now() + 86400000, rawLines: 'y' }; return true; };
+  await run();
+  P(lecturas === 2 && conflictos === 1 && db.sorteo_actual.status === 'programado' && db.mes_sorteo === 'Octubre', 'p: si el sorteo cambia mientras tanto, no se pisa ni se cambia el mes');
+  alLeer = null;
 }
 
 // m. proxy de Telegram solo desde la web

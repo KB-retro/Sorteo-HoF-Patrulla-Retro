@@ -3101,13 +3101,37 @@
         }
     }
 
+    // Juegos del mes: los guardados en Firebase si son del mes actual. Si el mes
+    // ha cambiado (por ejemplo, solo, 25 h después del sorteo) se buscan en
+    // Telegram; un admin además los guarda para todos.
+    let datosJuegosGuardados = null;
+    let mesCargado = false;
+    let juegosBuscadosMes = "";
+
+    function actualizarJuegosDelMes() {
+        const d = datosJuegosGuardados;
+        if (d && (!mesSorteoActivo || !d.mes || d.mes === mesSorteoActivo)) {
+            mostrarJuegosMesYArcade({ juegosMes: d.juegosMes || [], juegosArcade: d.juegosArcade || [] }, d.mes || mesSorteoActivo);
+            return;
+        }
+        if (!mesCargado || !mesSorteoActivo || juegosBuscadosMes === mesSorteoActivo) return;
+        const mes = mesSorteoActivo;
+        juegosBuscadosMes = mes;
+        obtenerJuegosMesYArcade(mes).then(function(datos) {
+            if (mes !== mesSorteoActivo) return;
+            mostrarJuegosMesYArcade(datos, mes);
+            if (usuarioAdmin) {
+                db.ref("juegos_proximo_sorteo").set({ mes: mes, juegosMes: datos.juegosMes, juegosArcade: datos.juegosArcade, timestamp: Date.now() })
+                    .catch(error => console.error("Error guardando los juegos del mes:", error));
+            }
+        }).catch(function(error) {
+            console.error("Error cargando los juegos del mes desde Telegram:", error);
+        });
+    }
+
     db.ref("juegos_proximo_sorteo").on("value", function(snap) {
-        const d = snap.val();
-        if (!d || (mesSorteoActivo && d.mes && d.mes !== mesSorteoActivo)) return;
-        mostrarJuegosMesYArcade({
-            juegosMes: d.juegosMes || [],
-            juegosArcade: d.juegosArcade || []
-        }, d.mes || mesSorteoActivo);
+        datosJuegosGuardados = snap.val();
+        actualizarJuegosDelMes();
     });
 
     // ============================================================
@@ -3120,6 +3144,8 @@
         // El mes se muestra en la franja de estado, no en el título
         const monthSelect = document.getElementById('monthSelect');
         if (mes && monthSelect) monthSelect.value = mes;
+        mesCargado = true;
+        actualizarJuegosDelMes();
     });
 
     async function guardarMesSorteo() {
