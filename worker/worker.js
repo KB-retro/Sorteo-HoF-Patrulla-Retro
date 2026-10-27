@@ -8,6 +8,14 @@ const MAX_PROCESANDO_MS = 300000;
 // Cuenta atrás de los rodillos antes de mostrar al ganador de un sorteo programado.
 const REVEAL_MS = 30000;
 
+// Tras un sorteo programado, el mes del sorteo pasa solo al siguiente
+// pasado este tiempo (25 horas), igual que con el botón "cambiar mes".
+const CAMBIO_MES_MS = 25 * 60 * 60 * 1000;
+const NOMBRES_MESES = [
+  "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+  "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+];
+
 // El proxy de Telegram guarda la página del canal este tiempo, para no
 // descargarla en cada visita. Solo un admin (con su sesión) puede pedir
 // una descarga nueva con "fresco=1".
@@ -117,7 +125,8 @@ export default {
     // espera en uno no afecta al otro.
     await Promise.all([
       procesarSorteo(env, false).catch(error => console.error("❌ ERROR EJECUTANDO EL CRON:", error)),
-      procesarSorteo(env, true).catch(error => console.error("❌ ERROR EN LA TIRADA DE PRUEBA:", error))
+      procesarSorteo(env, true).catch(error => console.error("❌ ERROR EN LA TIRADA DE PRUEBA:", error)),
+      cambiarMesSiToca(env).catch(error => console.error("❌ ERROR EN EL CAMBIO DE MES AUTOMÁTICO:", error))
     ]);
   },
 
@@ -492,6 +501,9 @@ async function procesarSorteo(env, prueba) {
     rawLines: sorteo.rawLines || ""         // <- SE AÑADE LA LISTA ORIGINAL
   };
 
+  // Hora a la que el mes del sorteo pasará solo al siguiente (no en las pruebas).
+  if (!prueba) resultadoFinal.cambioMesAt = Date.now() + CAMBIO_MES_MS;
+
   // La tirada de prueba es privada: conserva su lista negra y su registro.
   if (prueba) {
     resultadoFinal.prueba = true;
@@ -549,6 +561,58 @@ async function procesarSorteo(env, prueba) {
   console.log("Ganador:", ganadorEncontrado.user);
   console.log("======================================");
 
+}
+
+
+// =========================================================
+// CAMBIO DE MES AUTOMÁTICO
+// =========================================================
+
+// Mes siguiente a un nombre de mes ("Octubre" → "Noviembre"); null si no es un mes.
+function mesSiguiente(nombre) {
+  const indice = NOMBRES_MESES.findIndex(m => m.toLowerCase() === String(nombre || "").trim().toLowerCase());
+  return indice < 0 ? null : NOMBRES_MESES[(indice + 1) % 12];
+}
+
+// 25 horas después de un sorteo programado hace lo mismo que el botón
+// "cambiar mes" de la web: pasa al mes siguiente y deja el sorteo inactivo.
+async function cambiarMesSiToca(env) {
+  const sorteoUrl = firebaseUrl(env, "sorteo_actual");
+  const lectura = await fetch(sorteoUrl, { headers: { "X-Firebase-ETag": "true" } });
+  if (!lectura.ok) throw new Error(`Firebase respondió ${lectura.status} al leer sorteo_actual`);
+  const sorteo = await lectura.json();
+  const etag = lectura.headers.get("ETag");
+  if (!sorteo || !sorteo.ganador || !sorteo.cambioMesAt || Date.now() < Number(sorteo.cambioMesAt)) return;
+
+  const lecturaMes = await fetch(firebaseUrl(env, "mes_sorteo"));
+  if (!lecturaMes.ok) throw new Error(`Firebase respondió ${lecturaMes.status} al leer mes_sorteo`);
+  const mesActual = await lecturaMes.json();
+  // Si no hay mes guardado, se toma el del premio ("Octubre 2026" → "Octubre").
+  const mesNuevo = mesSiguiente(mesActual) || mesSiguiente(String(sorteo.mesPremio || "").split(" ")[0]);
+  if (!mesNuevo) {
+    console.error("⚠️ No se pudo calcular el mes siguiente a:", mesActual, sorteo.mesPremio);
+    return;
+  }
+
+  // Primero el sorteo, solo si nadie lo ha tocado desde que se leyó (If-Match):
+  // así no se pisa un sorteo que un admin acabe de programar. Al quedar
+  // inactivo ya no tiene "cambioMesAt", y el mes nunca avanza dos veces.
+  const inactivo = await fetch(sorteoUrl, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", "If-Match": etag || "*" },
+    body: JSON.stringify({ status: "inactivo" })
+  });
+  if (!inactivo.ok) {
+    console.log("📅 El sorteo ha cambiado mientras tanto: no se cambia el mes.");
+    return;
+  }
+  const cambio = await fetch(firebaseUrl(env, "mes_sorteo"), {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(mesNuevo)
+  });
+  if (!cambio.ok) throw new Error(`Firebase respondió ${cambio.status} al guardar el mes ${mesNuevo}: cámbialo a mano en el panel`);
+  console.log(`📅 MES CAMBIADO AUTOMÁTICAMENTE: ${mesActual || "—"} → ${mesNuevo}`);
 }
 
 
