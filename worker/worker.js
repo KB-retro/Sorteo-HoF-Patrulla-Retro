@@ -60,10 +60,10 @@ function textoResultadoTelegram(ganador, mesPremio, especial, premioEspecial, ar
   ];
   if (especial && premioEspecial) lineas.push(`🎁 Premio: ${premioEspecial}`);
 
-  // Los mismos 5 usuarios que la web muestra en "Eligen el Arcade del Mes".
-  // En los Sorteos Especiales no se elige Arcade.
+  // Los mismos 5 usuarios que la web muestra en "Eligen el Arcade del Mes",
+  // también en los Sorteos Especiales.
   const grupo = Array.isArray(arcadeGroup) ? arcadeGroup.filter(p => p && p.user) : [];
-  if (!especial && grupo.length) {
+  if (grupo.length) {
     lineas.push("", `🕹️ Eligen el Arcade del Mes (${grupo.length} usuarios):`);
     grupo.forEach(p => {
       const esGanador = p.user.toLowerCase() === String(ganador.user).toLowerCase();
