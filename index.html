@@ -2095,9 +2095,25 @@
             return mismo(item && typeof item === 'object' && item.user ? item.user : k);
         });
         const participacion = participacionDeUsuario(user);
+
+        // Estadísticas de los sorteos que guardan participantes y grupo Arcade
+        // (los anteriores a noviembre de 2026 no los tienen).
+        const conDatos = obtenerHistorialVisible().filter(item => item && Array.isArray(item.participantes))
+            .sort((a, b) => (Number(a.timestamp) || 0) - (Number(b.timestamp) || 0));
+        let estadisticas = null;
+        if (conDatos.length) {
+            let sorteos = 0, boletos = 0, arcade = 0;
+            conDatos.forEach(item => {
+                const yo = item.participantes.find(p => p && mismo(p.user));
+                if (yo) { sorteos++; boletos += Number(yo.boletos) || 0; }
+                if (Array.isArray(item.arcade) && item.arcade.some(mismo)) arcade++;
+            });
+            estadisticas = { desde: conDatos[0].fecha || 'el primer sorteo con datos', total: conDatos.length, sorteos, boletos, arcade };
+        }
+
         const nombre = (historial[0] && historial[0].user) || (posHoF >= 0 && hofOrdenado[posHoF].user) || (participacion && participacion.user) || user;
         return {
-            nombre, victorias, especiales, regalo, participacion,
+            nombre, victorias, especiales, regalo, participacion, estadisticas,
             hof: posHoF >= 0 ? { total: Number(hofOrdenado[posHoF].total) || 0, posicion: posHoF + 1 } : null
         };
     }
@@ -2119,7 +2135,14 @@
             html += '<div class="ficha-seccion"><b>🎁 Sorteos especiales:</b><br>' + d.especiales.map(v => escapeHtmlSimple((v.fecha || 'Sin mes') + (v.premioEspecial ? ' (' + v.premioEspecial + ')' : ''))).join(' · ') + '</div>';
         }
         if (d.regalo) html += '<div class="ficha-seccion">🎁 Ha recibido una camiseta por cesión.</div>';
-        if (!d.victorias.length && !d.especiales.length && !d.hof && !d.participacion && !d.regalo) {
+        const e = d.estadisticas;
+        if (e && e.sorteos) {
+            html += '<div class="ficha-seccion ficha-estadisticas"><b>📊 Desde ' + escapeHtmlSimple(e.desde) + ':</b><br>' +
+                '🎰 Ha participado en <b>' + e.sorteos + '</b> de ' + e.total + (e.total === 1 ? ' sorteo' : ' sorteos') +
+                ' · 🎟️ <b>' + e.boletos + '</b> ' + (e.boletos === 1 ? 'boleto' : 'boletos') + ' en total' +
+                ' · 🕹️ <b>' + e.arcade + '</b> ' + (e.arcade === 1 ? 'vez' : 'veces') + ' en el grupo Arcade</div>';
+        }
+        if (!d.victorias.length && !d.especiales.length && !d.hof && !d.participacion && !d.regalo && !(e && e.sorteos)) {
             html += '<div class="ficha-seccion" style="color:var(--muted); text-align:center;">Todavía no hay datos de este usuario.</div>';
         }
         document.getElementById('fichaUsuarioContenido').innerHTML = html;
@@ -2241,6 +2264,13 @@
             totalBoletosValidos++;
         });
         return { boletosPorUsuario, totalBoletosValidos };
+    }
+
+    // Resumen de una lista para guardarlo en el historial: [{ user, boletos }].
+    // Igual que resumenParticipantes() del Worker.
+    function resumenParticipantes(rawLinesStr) {
+        const { boletosPorUsuario } = contarBoletos(rawLinesStr);
+        return Object.keys(boletosPorUsuario).map(user => ({ user: user, boletos: boletosPorUsuario[user].length }));
     }
 
     // Participación de un usuario en la lista actual (sin distinguir mayúsculas).
@@ -3980,7 +4010,10 @@
             mesPremio: mesPremio,
             timestamp: Date.now() + Math.random(),
             especial: !!sorteoEspecial,
-            premioEspecial: sorteoEspecial ? String(premioEspecial || '').trim() : ''
+            premioEspecial: sorteoEspecial ? String(premioEspecial || '').trim() : '',
+            // Para las estadísticas de la ficha de usuario
+            arcade: arcadeGroup.map(p => p.user),
+            participantes: resumenParticipantes(rawLinesStr)
         });
 
         const resultadoData = {

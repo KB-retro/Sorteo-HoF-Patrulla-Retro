@@ -72,6 +72,10 @@ P(h.length === 2 && h.some(([k]) => k.startsWith('sorteo_')), 'a: una entrada nu
 P(db.sorteo_actual.arcadeGroup.every(x => x.user !== '@Beta.') && db.sorteo_actual.arcadeGroup.some(x => x.user === '@Beta'), 'a: @Beta. se registra como usuario @Beta');
 P(github.length === 1 && github[0].tipoBackup === 'Backup automático después del sorteo' && Object.keys(github[0].historial_ganadores).length === 2, 'a: backup automático con datos de Firebase');
 P(!db.sorteo_actual.tiradaPendiente, 'a: resultado final sin campos temporales');
+{
+  const nueva = Object.entries(db.historial_ganadores).find(([k]) => k.startsWith('sorteo_'))[1];
+  P(JSON.stringify(nueva.participantes) === '[{"user":"@Alfa","boletos":1},{"user":"@Beta","boletos":1},{"user":"@Gamma","boletos":1},{"user":"@Delta","boletos":1},{"user":"@Eps","boletos":1}]' && nueva.arcade.length === 5 && nueva.arcade.includes(nueva.user), 'a: el historial guarda participantes y grupo Arcade (para la ficha)');
+}
 P(db.sorteo_actual.arcadeGroup.length === 5, 'a: grupo arcade de 5');
 // e. ya hecho: no repite
 await run();

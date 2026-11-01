@@ -493,7 +493,10 @@ async function procesarSorteo(env, prueba) {
         mesPremio: mesPremio,
         timestamp: timestamp,
         especial: !!sorteo.sorteoEspecial,
-        premioEspecial: sorteo.sorteoEspecial ? String(sorteo.premioEspecial || '').trim() : ''
+        premioEspecial: sorteo.sorteoEspecial ? String(sorteo.premioEspecial || '').trim() : '',
+        // Para las estadísticas de la ficha de usuario en la web
+        arcade: (tirada.arcadeGroup || []).map(p => p.user),
+        participantes: resumenParticipantes(sorteo.rawLines || "")
       })
   });
 
@@ -721,6 +724,20 @@ async function cambiarMesSiToca(env) {
 // =========================================================
 // TIRADA: ELEGIR GANADOR Y GRUPO ARCADE
 // =========================================================
+
+// Boletos de cada persona en la lista: [{ user, boletos }]. @Pepe y @pepe son la
+// misma persona (se guarda como aparece la primera vez). Igual que en la web.
+function resumenParticipantes(rawLinesStr) {
+  const porClave = new Map();
+  String(rawLinesStr || "").split("\n").forEach(linea => {
+    const usuario = linea.trim().match(/@\w+/);
+    if (!usuario) return;
+    const clave = usuario[0].toLowerCase();
+    if (!porClave.has(clave)) porClave.set(clave, { user: usuario[0], boletos: 0 });
+    porClave.get(clave).boletos++;
+  });
+  return [...porClave.values()];
+}
 
 // Devuelve { ganador, arcadeGroup, log } o { error } si no hay ganador posible.
 function realizarTirada(rawLinesStr, rawBlacklistStr) {

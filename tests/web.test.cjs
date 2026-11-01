@@ -837,6 +837,32 @@ const check = (c, msg) => { console.log((c ? 'PASS ' : 'FAIL ') + msg); if (!c) 
     await page.waitForTimeout(300);
   }
 
+  // ===== Ficha: estadísticas de participación =====
+  {
+    const g = { hist: await db('historial_ganadores'), sa: await db('sorteo_actual'), hof: await db('hall_of_fame_juegos'), priv: await db('sorteo_privado') };
+    await ev(() => window.__DB__.set('historial_ganadores', {
+      v1: { user: '@Viejo', fecha: 'Agosto 2026', timestamp: 1000 },
+      n1: { user: '@Ana', fecha: 'Noviembre 2026', timestamp: 2000, arcade: ['@x', '@STATS', '@Ana', '@y', '@z'], participantes: [{ user: '@Stats', boletos: 3 }, { user: '@Ana', boletos: 1 }] },
+      n2: { user: '@Stats', fecha: 'Diciembre 2026', timestamp: 3000, especial: true, premioEspecial: 'Mando', arcade: ['@Stats'], participantes: [{ user: '@stats', boletos: 2 }] },
+      n3: { user: '@Ana', fecha: 'Enero 2027', timestamp: 4000, arcade: ['@Ana'], participantes: [{ user: '@Ana', boletos: 5 }] }
+    }));
+    await page.waitForTimeout(300);
+    const fichaStats = await ev(() => { abrirFichaUsuario('@stats'); const t = document.getElementById('fichaUsuarioContenido').textContent; cerrarFichaUsuario(); return t; });
+    check(fichaStats.includes('Desde Noviembre 2026') && fichaStats.includes('Ha participado en 2 de 3 sorteos') && fichaStats.includes('5 boletos en total') && fichaStats.includes('2 veces en el grupo Arcade'), 'ficha: estadísticas de participación sin distinguir mayúsculas ' + JSON.stringify(fichaStats));
+    const fichaViejo = await ev(() => { abrirFichaUsuario('@Viejo'); const t = document.getElementById('fichaUsuarioContenido').textContent; cerrarFichaUsuario(); return t; });
+    check(!fichaViejo.includes('Ha participado'), 'ficha: quien no aparece en los sorteos con datos no muestra estadísticas');
+    // El sorteo inmediato guarda los datos para las estadísticas
+    await ev(() => { window.__DB__.set('historial_ganadores', {}); window.__DB__.set('sorteo_actual', { status: 'inactivo' });
+      document.getElementById('pruebaCheckbox').checked = false; document.getElementById('specialDrawCheckbox').checked = false;
+      document.getElementById('drawTimeInput').value = ''; document.getElementById('blacklistInput').value = '';
+      document.getElementById('listInput').value = '1-@Pepe\n2-@pepe\n3-@Luis'; programarOEjecutarSorteo(); });
+    await page.waitForTimeout(1500);
+    const entrada = Object.values(await db('historial_ganadores') || {})[0] || {};
+    check(JSON.stringify(entrada.participantes) === '[{"user":"@Pepe","boletos":2},{"user":"@Luis","boletos":1}]' && Array.isArray(entrada.arcade) && entrada.arcade.length === 2, 'ficha: el sorteo inmediato guarda participantes y grupo Arcade en el historial ' + JSON.stringify(entrada));
+    await ev(g => { window.__DB__.set('historial_ganadores', g.hist); window.__DB__.set('sorteo_actual', g.sa); window.__DB__.set('hall_of_fame_juegos', g.hof); window.__DB__.set('sorteo_privado', g.priv); }, g);
+    await page.waitForTimeout(400);
+  }
+
   // Visitor doesn't write Telegram list
   check(!errors.some(x => !/Telegram|Sheets|Cloudflare|Failed to load|500|Error iniciando sesión|integrity|Error en la copia previa|Error añadiendo ganadores manuales|Error guardando la lista de participantes/.test(x)), 'sin errores JS inesperados: ' + JSON.stringify(errors.filter(x => !/Telegram|Sheets|Cloudflare|Failed to load|500|Error iniciando sesión|integrity|Error en la copia previa|Error añadiendo ganadores manuales|Error guardando la lista de participantes/.test(x))));
   await browser.close();
