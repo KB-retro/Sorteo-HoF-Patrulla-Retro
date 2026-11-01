@@ -12,7 +12,7 @@ fs.copyFileSync(path.join(dir, '..', 'worker', 'worker.js'), copia);
 const { default: worker } = await import(pathToFileURL(copia).href);
 fs.unlinkSync(copia);
 
-let telegram = [], telegramFalla = false, telegramFallaChat = null, githubFalla = false, failPutRuta = null, tmeCalls = 0, tmeFalla = false, alLeer = null, conflictos = 0;
+let webhookActual = '', tgMsgId = 500, telegram = [], telegramFalla = false, telegramFallaChat = null, githubFalla = false, failPutRuta = null, tmeCalls = 0, tmeFalla = false, alLeer = null, conflictos = 0;
 let db = {}, etagN = 0, github = [], urls = [], failPutResult = false;
 const clone = v => v === undefined ? null : JSON.parse(JSON.stringify(v));
 const parts = p => p.split('/').filter(Boolean);
@@ -32,7 +32,10 @@ globalThis.fetch = async (url, opt = {}) => {
   if (url.startsWith('https://api.telegram.org/')) {
     const cuerpo = JSON.parse(opt.body);
     if (telegramFalla || (telegramFallaChat && cuerpo.chat_id === telegramFallaChat)) return new Response('{"ok":false}', { status: 500 });
-    telegram.push({ url, ...cuerpo });
+    telegram.push({ ...cuerpo, url });
+    if (url.endsWith('/getWebhookInfo')) return new Response(JSON.stringify({ ok: true, result: { url: webhookActual } }));
+    if (url.endsWith('/setWebhook')) { webhookActual = cuerpo.url; return new Response('{"ok":true,"result":true}'); }
+    if (url.endsWith('/forwardMessage')) return new Response(JSON.stringify({ ok: true, result: { message_id: ++tgMsgId } }));
     return new Response('{"ok":true}');
   }
   if (url.startsWith('https://api.github.com')) {
@@ -435,6 +438,86 @@ P(db.sorteo_actual.ganador && db.sorteo_actual.ganador.user === '@Real', 'o: un 
   globalThis.fetch = async (url, opt = {}) => { if (url.includes('estado_bot') && (opt.method || 'GET') === 'PUT') { db.estado_bot = { recordatorio: 999 }; } return realF2(url, opt); };
   await run(envR); globalThis.fetch = realF2;
   P(telegram.length === 0, 'r: si otra ejecución lo apunta a la vez, no se envía dos veces');
+}
+
+// s. avisos de menciones con foto
+{
+  const envM = { GITHUB_TOKEN: 'x', TELEGRAM_BOT_TOKEN: 'BOT123', TELEGRAM_CHAT_ID: '@canal_sorteo', TELEGRAM_MENCIONES_CHAT_ID: '777' };
+  const metodo = t => t.url.split('/').pop();
+  // Conexión automática del bot con el Worker (desde el cron)
+  telegram = []; webhookActual = ''; db = {};
+  await run(envM);
+  const set = telegram.find(t => metodo(t) === 'setWebhook');
+  P(set && webhookActual === 'https://dawn-band-8bc8.microbiops.workers.dev/telegram' && set.secret_token.length >= 32 && JSON.stringify(set.allowed_updates) === '["message","callback_query"]', 'm2: el cron conecta el bot con el Worker (solo mensajes y botones)');
+  const clave = set.secret_token;
+  telegram = []; await run(envM);
+  P(!telegram.some(t => metodo(t) === 'setWebhook'), 'm2: no lo vuelve a conectar en cada minuto');
+  // Sin el secreto no hace nada
+  const copia3 = path.join(os.tmpdir(), `worker3-${process.pid}.mjs`);
+  fs.copyFileSync(path.join(dir, '..', 'worker', 'worker.js'), copia3);
+  const { default: worker3 } = await import(pathToFileURL(copia3).href);
+  fs.unlinkSync(copia3);
+  telegram = []; webhookActual = '';
+  await worker3.scheduled({}, envTg, {});
+  P(!telegram.some(t => ['getWebhookInfo', 'setWebhook'].includes(metodo(t))), 'm2: sin TELEGRAM_MENCIONES_CHAT_ID no se toca el bot');
+  // Si el bot ya envía a otro sitio, no se cambia
+  webhookActual = 'https://otro.programa/hook'; telegram = [];
+  await worker3.scheduled({}, envM, {});
+  P(webhookActual === 'https://otro.programa/hook' && !telegram.some(t => metodo(t) === 'setWebhook'), 'm2: si el bot ya se usa en otro sitio, no se toca');
+
+  const enviar = (update, cabecera = clave, e = envM) => worker.fetch(new Request('https://w/telegram', { method: 'POST', headers: { 'X-Telegram-Bot-Api-Secret-Token': cabecera, 'Content-Type': 'application/json' }, body: JSON.stringify(update) }), e);
+  const grupo = { id: -1001234567890, type: 'supergroup', title: 'Patrulla' };
+  const foto = (extra = {}) => ({ message: { message_id: 42, date: 1793563200, chat: grupo, from: { id: 5, username: 'Pepito' }, photo: [{ file_id: 'a' }], caption: 'Mi juego terminado @M_1_c_h_3_l', caption_entities: [{ type: 'mention', offset: 19, length: 12 }], ...extra } });
+
+  telegram = [];
+  P((await enviar(foto(), 'mala')).status === 401 && telegram.length === 0, 'm2: un envío sin la clave de Telegram se rechaza');
+  P((await enviar(foto(), clave, { GITHUB_TOKEN: 'x' })).status === 404, 'm2: sin los secretos la ruta no existe');
+  const r = await enviar(foto());
+  const fw = telegram.find(t => metodo(t) === 'forwardMessage'), av = telegram.find(t => metodo(t) === 'sendMessage');
+  P(r.status === 200 && fw && fw.chat_id === '777' && fw.from_chat_id === grupo.id && fw.message_id === 42, 'm2: foto con mención → se reenvía por privado');
+  P(av && av.chat_id === '777' && av.text.includes('@Pepito te ha mencionado con una foto') && av.text.includes('01/11 a las 21:00') && av.text.includes('Mi juego terminado') && av.text.includes('https://t.me/c/1234567890/42') && av.reply_markup.inline_keyboard[0][0].callback_data === 'apuntado' && av.reply_parameters.message_id === tgMsgId, 'm2: aviso con autor, texto, enlace y botón para marcar ' + JSON.stringify(av && av.text));
+
+  telegram = [];
+  await enviar(foto({ caption: 'hola @m_1_C_h_3_L!', caption_entities: [] }));
+  P(telegram.filter(t => metodo(t) === 'sendMessage').length === 1, 'm2: la mención funciona sin distinguir mayúsculas');
+  telegram = [];
+  await enviar(foto({ caption: 'mira esto', caption_entities: [{ type: 'text_mention', offset: 5, length: 4, user: { id: 777 } }] }));
+  P(telegram.filter(t => metodo(t) === 'sendMessage').length === 1, 'm2: también al tocar su nombre (mención sin @)');
+  telegram = [];
+  await enviar(foto({ caption: 'varias', caption_entities: [], media_group_id: 'g1' }));
+  await enviar(foto({ caption: '@M_1_c_h_3_l álbum', caption_entities: [], media_group_id: 'g1' }));
+  await enviar(foto({ caption: undefined, caption_entities: undefined, media_group_id: 'g1' }));
+  const avisosAlbum = telegram.filter(t => metodo(t) === 'sendMessage');
+  P(avisosAlbum.length === 1 && avisosAlbum[0].text.includes('varias fotos'), 'm2: un álbum de varias fotos da un solo aviso');
+  telegram = [];
+  await enviar(foto({ document: { mime_type: 'image/png' }, photo: undefined }));
+  P(telegram.filter(t => metodo(t) === 'sendMessage').length === 1, 'm2: también si la imagen se envía como archivo');
+
+  telegram = [];
+  await enviar(foto({ photo: undefined, text: 'hola @M_1_c_h_3_l', caption: undefined }));
+  await enviar(foto({ caption: 'hola @Otro', caption_entities: [] }));
+  await enviar(foto({ caption: 'hola @M_1_c_h_3_lx', caption_entities: [] }));
+  await enviar(foto({ chat: { id: 9, type: 'private' } }));
+  await enviar(foto({ from: { id: 777, username: 'M_1_c_h_3_l' } }));
+  await enviar(foto({ document: { mime_type: 'application/pdf' }, photo: undefined }));
+  P(telegram.length === 0, 'm2: sin foto, sin mención, otro usuario, chat privado o él mismo → nada');
+
+  // Botón de apuntado
+  const textoAviso = av.text;
+  const pulsar = (data, chatId = 777) => enviar({ callback_query: { id: 'cb1', data, message: { message_id: 600, chat: { id: chatId, type: 'private' }, text: textoAviso } } });
+  telegram = [];
+  await pulsar('apuntado');
+  const ed = telegram.find(t => metodo(t) === 'editMessageText');
+  P(ed && ed.text.startsWith(textoAviso) && ed.text.includes('✅ Apuntado el ') && ed.reply_markup.inline_keyboard[0][0].callback_data === 'desmarcar' && telegram.some(t => metodo(t) === 'answerCallbackQuery'), 'm2: al pulsar el botón el aviso queda marcado como apuntado');
+  telegram = [];
+  await enviar({ callback_query: { id: 'cb2', data: 'desmarcar', message: { message_id: 600, chat: { id: 777, type: 'private' }, text: ed.text } } });
+  const ed2 = telegram.find(t => metodo(t) === 'editMessageText');
+  P(ed2 && ed2.text === textoAviso && ed2.reply_markup.inline_keyboard[0][0].callback_data === 'apuntado', 'm2: se puede desmarcar');
+  telegram = [];
+  await pulsar('apuntado', 12345);
+  P(!telegram.some(t => metodo(t) === 'editMessageText') && telegram.some(t => metodo(t) === 'answerCallbackQuery'), 'm2: un botón fuera de su chat no cambia nada');
+  telegram = [];
+  P((await enviar('basura')).status === 200 && telegram.length === 0, 'm2: un envío raro se ignora sin errores');
 }
 
 globalThis.setTimeout = realTimeout;
