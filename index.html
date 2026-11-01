@@ -21,8 +21,7 @@
     <meta name="twitter:description" content="Entra para ver la cuenta atrás en directo y el resultado del sorteo de la Patrulla Retro.">
     <meta name="twitter:image" content="https://kb-retro.github.io/Sorteo-HoF-Patrulla-Retro/logo.png?v=2">
 
-    <link rel="icon" type="image/png" sizes="32x32" href="logo.png?v=2">
-    <link rel="icon" type="image/png" sizes="16x16" href="logo.png?v=2">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
     <link rel="apple-touch-icon" sizes="180x180" href="icono-180.png">
 
     <!-- Instalable como app en el móvil -->
@@ -94,6 +93,8 @@
             width: 100vw;
             height: 100vh;
             background-image: url('fondo.png');
+            /* Versión ligera (WebP, ~75 KB) para los navegadores que la entienden */
+            background-image: image-set(url('fondo.webp') type('image/webp'), url('fondo.png') type('image/png'));
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
@@ -362,6 +363,18 @@
             line-height: 1.4;
             text-align: center;
         }
+
+        button.btn-compartir {
+            display: block;
+            width: auto;
+            margin: 14px auto 0;
+            padding: 9px 18px;
+            background: transparent;
+            border: 1px solid var(--gold);
+            color: var(--gold);
+            border-radius: 999px;
+        }
+        button.btn-compartir:hover { background: rgba(245, 158, 11, 0.15); }
 
         .arcade-box {
             background: rgba(15, 23, 42, 0.8);
@@ -1027,7 +1040,7 @@
                letrero y luces más grandes */
             #slotMachineCard {
                 max-width: none;
-                min-height: 470px;
+                min-height: 516px;   /* incluye el botón "Compartir resultado" */
                 padding: 22px 22px 20px;
                 flex-direction: column;
             }
@@ -1073,7 +1086,7 @@
 
 <div class="container">
     <header class="cabecera">
-        <img src="logo.png?v=2" alt="Logo Patrulla Retro" class="header-logo" onclick="contarClicksAdmin()">
+        <img src="logo.webp" width="320" height="320" alt="Logo Patrulla Retro" class="header-logo" onclick="contarClicksAdmin()">
         <h1 id="mainTitle">Hall of Fame Patrulla Retro</h1>
 
         <div id="estadoSorteo" class="estado-sorteo hidden" aria-live="polite"></div>
@@ -1136,6 +1149,8 @@
             <div class="arcade-title">🕹️ Eligen el Arcade del Mes (5 Usuarios):</div>
             <ul id="arcadeList" class="custom-list"></ul>
         </div>
+
+        <button type="button" id="compartirGanadorBtn" class="btn-compartir" onclick="compartirGanador()">📤 Compartir resultado</button>
     </div>
 
     <div id="waitingCard" class="card hidden" style="text-align: center;">
@@ -2080,9 +2095,25 @@
             return mismo(item && typeof item === 'object' && item.user ? item.user : k);
         });
         const participacion = participacionDeUsuario(user);
+
+        // Estadísticas de los sorteos que guardan participantes y grupo Arcade
+        // (los anteriores a noviembre de 2026 no los tienen).
+        const conDatos = obtenerHistorialVisible().filter(item => item && Array.isArray(item.participantes))
+            .sort((a, b) => (Number(a.timestamp) || 0) - (Number(b.timestamp) || 0));
+        let estadisticas = null;
+        if (conDatos.length) {
+            let sorteos = 0, boletos = 0, arcade = 0;
+            conDatos.forEach(item => {
+                const yo = item.participantes.find(p => p && mismo(p.user));
+                if (yo) { sorteos++; boletos += Number(yo.boletos) || 0; }
+                if (Array.isArray(item.arcade) && item.arcade.some(mismo)) arcade++;
+            });
+            estadisticas = { desde: conDatos[0].fecha || 'el primer sorteo con datos', total: conDatos.length, sorteos, boletos, arcade };
+        }
+
         const nombre = (historial[0] && historial[0].user) || (posHoF >= 0 && hofOrdenado[posHoF].user) || (participacion && participacion.user) || user;
         return {
-            nombre, victorias, especiales, regalo, participacion,
+            nombre, victorias, especiales, regalo, participacion, estadisticas,
             hof: posHoF >= 0 ? { total: Number(hofOrdenado[posHoF].total) || 0, posicion: posHoF + 1 } : null
         };
     }
@@ -2104,7 +2135,14 @@
             html += '<div class="ficha-seccion"><b>🎁 Sorteos especiales:</b><br>' + d.especiales.map(v => escapeHtmlSimple((v.fecha || 'Sin mes') + (v.premioEspecial ? ' (' + v.premioEspecial + ')' : ''))).join(' · ') + '</div>';
         }
         if (d.regalo) html += '<div class="ficha-seccion">🎁 Ha recibido una camiseta por cesión.</div>';
-        if (!d.victorias.length && !d.especiales.length && !d.hof && !d.participacion && !d.regalo) {
+        const e = d.estadisticas;
+        if (e && e.sorteos) {
+            html += '<div class="ficha-seccion ficha-estadisticas"><b>📊 Desde ' + escapeHtmlSimple(e.desde) + ':</b><br>' +
+                '🎰 Ha participado en <b>' + e.sorteos + '</b> de ' + e.total + (e.total === 1 ? ' sorteo' : ' sorteos') +
+                ' · 🎟️ <b>' + e.boletos + '</b> ' + (e.boletos === 1 ? 'boleto' : 'boletos') + ' en total' +
+                ' · 🕹️ <b>' + e.arcade + '</b> ' + (e.arcade === 1 ? 'vez' : 'veces') + ' en el grupo Arcade</div>';
+        }
+        if (!d.victorias.length && !d.especiales.length && !d.hof && !d.participacion && !d.regalo && !(e && e.sorteos)) {
             html += '<div class="ficha-seccion" style="color:var(--muted); text-align:center;">Todavía no hay datos de este usuario.</div>';
         }
         document.getElementById('fichaUsuarioContenido').innerHTML = html;
@@ -2226,6 +2264,13 @@
             totalBoletosValidos++;
         });
         return { boletosPorUsuario, totalBoletosValidos };
+    }
+
+    // Resumen de una lista para guardarlo en el historial: [{ user, boletos }].
+    // Igual que resumenParticipantes() del Worker.
+    function resumenParticipantes(rawLinesStr) {
+        const { boletosPorUsuario } = contarBoletos(rawLinesStr);
+        return Object.keys(boletosPorUsuario).map(user => ({ user: user, boletos: boletosPorUsuario[user].length }));
     }
 
     // Participación de un usuario en la lista actual (sin distinguir mayúsculas).
@@ -2530,7 +2575,11 @@
     }
 
     // Nodos que forman parte de una copia de seguridad.
-    const NODOS_BACKUP = ['historial_ganadores', 'sorteo_actual', 'mes_sorteo', 'hall_of_fame_juegos', 'regalos'];
+    // Los tres últimos (casilla del Sorteo Especial, juegos del mes y lista de
+    // participantes) no vienen en las copias antiguas: al restaurar una de
+    // esas, se mantiene lo que haya ahora.
+    const NODOS_BACKUP = ['historial_ganadores', 'sorteo_actual', 'mes_sorteo', 'hall_of_fame_juegos', 'regalos',
+        'config_sorteo_especial', 'juegos_proximo_sorteo', 'sorteo_participantes_raw'];
 
     function leerDatosParaBackup() {
         return Promise.all(NODOS_BACKUP.map(nodo => db.ref(nodo).once('value'))).then(function(snaps) {
@@ -2624,10 +2673,16 @@
         if ('regalos' in data && data.regalos !== null && !esObjeto(data.regalos)) errores.push('"regalos" no tiene el formato correcto.');
         if ('mes_sorteo' in data && data.mes_sorteo !== null && typeof data.mes_sorteo !== 'string') errores.push('"mes_sorteo" no tiene el formato correcto.');
         if ('sorteo_actual' in data && data.sorteo_actual !== null && !esObjeto(data.sorteo_actual)) errores.push('"sorteo_actual" no tiene el formato correcto.');
+        if ('config_sorteo_especial' in data && data.config_sorteo_especial !== null && !esObjeto(data.config_sorteo_especial)) errores.push('"config_sorteo_especial" no tiene el formato correcto.');
+        if ('juegos_proximo_sorteo' in data && data.juegos_proximo_sorteo !== null && !esObjeto(data.juegos_proximo_sorteo)) errores.push('"juegos_proximo_sorteo" no tiene el formato correcto.');
+        if ('sorteo_participantes_raw' in data && data.sorteo_participantes_raw !== null && typeof data.sorteo_participantes_raw !== 'string') errores.push('"sorteo_participantes_raw" no tiene el formato correcto.');
 
         const contar = v => esObjeto(v) ? Object.keys(v).length : 0;
         const juegos = v => esObjeto(v) ? Object.values(v).reduce((t, x) => t + (Number(x && x.total) || 0), 0) : 0;
         const estado = v => !v ? 'vacío' : (v.ganador ? 'ganador ' + v.ganador.user : (v.status || 'sin estado'));
+        const especial = v => esObjeto(v) && v.activo ? 'marcada' + (v.premio ? ' (' + v.premio + ')' : '') : 'sin marcar';
+        const juegosMes = v => esObjeto(v) ? (v.mes || 'sin mes') + ' (' + ((v.juegosMes || []).length + (v.juegosArcade || []).length) + ' juegos)' : '—';
+        const lineas = v => typeof v === 'string' && v.trim() ? v.split('\n').filter(l => l.trim()).length + ' líneas' : 'vacía';
         const linea = (nodo, texto, ahora, copia) => incluidos.includes(nodo)
             ? `• ${texto}: ${ahora} → ${copia}`
             : `• ${texto}: ${ahora} (no viene en la copia, se mantiene)`;
@@ -2637,7 +2692,10 @@
             linea('hall_of_fame_juegos', 'Hall of Fame', `${contar(actual.hall_of_fame_juegos)} usuarios / ${juegos(actual.hall_of_fame_juegos)} juegos`, `${contar(data.hall_of_fame_juegos)} usuarios / ${juegos(data.hall_of_fame_juegos)} juegos`),
             linea('regalos', 'Regalos', contar(actual.regalos), contar(data.regalos)),
             linea('mes_sorteo', 'Mes del sorteo', actual.mes_sorteo || '—', data.mes_sorteo || '—'),
-            linea('sorteo_actual', 'Sorteo actual', estado(actual.sorteo_actual), estado(data.sorteo_actual))
+            linea('sorteo_actual', 'Sorteo actual', estado(actual.sorteo_actual), estado(data.sorteo_actual)),
+            linea('config_sorteo_especial', 'Casilla Sorteo Especial', especial(actual.config_sorteo_especial), especial(data.config_sorteo_especial)),
+            linea('juegos_proximo_sorteo', 'Juegos del mes', juegosMes(actual.juegos_proximo_sorteo), juegosMes(data.juegos_proximo_sorteo)),
+            linea('sorteo_participantes_raw', 'Lista de participantes', lineas(actual.sorteo_participantes_raw), lineas(data.sorteo_participantes_raw))
         ].join('\n');
 
         let aviso = '';
@@ -2777,7 +2835,8 @@
     const logoImg = document.querySelector('.header-logo');
     if (logoImg) {
         logoImg.onerror = function() {
-            if (this.src.includes('logo.png')) this.src = 'logo.jpg?v=2';
+            // Si el navegador no puede con la versión ligera, se usa la original.
+            if (!this.src.includes('logo.png')) this.src = 'logo.png?v=2';
         };
     }
 
@@ -3728,6 +3787,11 @@
                 }
                 const repeatNotice = document.getElementById('repeatNotice');
                 if (repeatNotice && (data.especial || data.prueba)) repeatNotice.classList.add('hidden');
+
+                // Las tiradas de prueba no se comparten.
+                datosGanadorCompartir = data.prueba ? null : data;
+                const compartirBtn = document.getElementById('compartirGanadorBtn');
+                if (compartirBtn) compartirBtn.classList.toggle('hidden', !!data.prueba);
                 
                 let numeroBoleto = data.ganador.ticket;
                 const matchNum = String(data.ganador.ticket || '').match(/^(\d+)/);
@@ -3768,6 +3832,63 @@
         } catch (e) {
             console.error("Error al mostrar el sorteo:", e);
         }
+    }
+
+    // ============================================================
+    //  COMPARTIR EL RESULTADO
+    // ============================================================
+    var datosGanadorCompartir = null;   // var: se usa desde el listener de Firebase
+
+    function textoCompartirGanador(data) {
+        const boleto = String(data.ganador.ticket || '').match(/^(\d+)/);
+        const lineas = [
+            (data.especial ? '🎁 Ganador del Sorteo Especial' : '🏆 Ganador del Sorteo HoF') + (data.mesPremio ? ' de ' + data.mesPremio : '') + ': ' +
+                data.ganador.user + (boleto ? ' (boleto Nº ' + boleto[1] + ')' : '')
+        ];
+        if (data.especial && data.premioEspecial) lineas.push('🎁 Premio: ' + data.premioEspecial);
+        const grupo = (data.arcadeGroup || []).filter(p => p && p.user).map(p => p.user);
+        if (grupo.length) lineas.push('🕹️ Eligen el Arcade del Mes: ' + grupo.join(', '));
+        return lineas.join('\n');
+    }
+
+    // En el móvil abre el menú normal de compartir (Telegram, WhatsApp…); si el
+    // navegador no lo tiene, copia el texto para pegarlo donde se quiera.
+    async function compartirGanador() {
+        const data = datosGanadorCompartir;
+        const btn = document.getElementById('compartirGanadorBtn');
+        if (!data || !data.ganador) return;
+        const texto = textoCompartirGanador(data);
+        const url = location.origin + location.pathname;
+
+        if (navigator.share) {
+            try {
+                await navigator.share({ title: 'Sorteo HoF Patrulla Retro', text: texto, url: url });
+                return;
+            } catch (error) {
+                if (error && error.name === 'AbortError') return;   // lo ha cerrado la persona
+            }
+        }
+
+        const completo = texto + '\n\n🌐 ' + url;
+        let copiado = false;
+        try {
+            await navigator.clipboard.writeText(completo);
+            copiado = true;
+        } catch (error) {
+            const area = document.createElement('textarea');
+            area.value = completo;
+            area.setAttribute('readonly', '');
+            area.style.position = 'fixed';
+            area.style.opacity = '0';
+            document.body.appendChild(area);
+            area.select();
+            try { copiado = document.execCommand('copy'); } catch (e) { copiado = false; }
+            area.remove();
+        }
+        if (!btn) return;
+        btn.textContent = copiado ? '✅ Copiado: pégalo donde quieras' : '❌ No se pudo copiar';
+        clearTimeout(btn._restaurar);
+        btn._restaurar = setTimeout(() => { btn.textContent = '📤 Compartir resultado'; }, 2500);
     }
 
     function mostrarGanador(data) {
@@ -3889,7 +4010,10 @@
             mesPremio: mesPremio,
             timestamp: Date.now() + Math.random(),
             especial: !!sorteoEspecial,
-            premioEspecial: sorteoEspecial ? String(premioEspecial || '').trim() : ''
+            premioEspecial: sorteoEspecial ? String(premioEspecial || '').trim() : '',
+            // Para las estadísticas de la ficha de usuario
+            arcade: arcadeGroup.map(p => p.user),
+            participantes: resumenParticipantes(rawLinesStr)
         });
 
         const resultadoData = {
@@ -4854,6 +4978,11 @@
 
         if (!rawLines) return alert("Pega o importa la lista de participantes.");
         if (sorteoEspecial && !premioEspecial) return alert("Indica qué premio se sortea en el Sorteo Especial.");
+        // La casilla se queda marcada entre sorteos: se avisa siempre para que
+        // un sorteo normal no salga como Especial por despiste.
+        const avisoEspecial = sorteoEspecial
+            ? "🎁 ATENCIÓN: será un SORTEO ESPECIAL (premio: " + premioEspecial + ").\nSi debe ser un sorteo normal, cancela y desmarca la casilla «🎁 Sorteo Especial»."
+            : "";
 
         // Primero leemos el sorteo actual: si ya había uno programado, sus juegos
         // ya se sumaron al Hall of Fame y hay que restarlos para no duplicarlos.
@@ -4874,7 +5003,7 @@
                     : "";
                 if (!confirm(esPrueba
                     ? "🧪 No has elegido hora: la TIRADA DE PRUEBA se hará de inmediato (solo la veis los admins). ¿Continuar?"
-                    : "No has elegido hora: el sorteo se realizará de inmediato, ¿Continuar?" + avisoSustituir)) return;
+                    : "No has elegido hora: el sorteo se realizará de inmediato, ¿Continuar?" + avisoSustituir + (avisoEspecial ? "\n\n" + avisoEspecial : ""))) return;
                 detenerTragaperras();
                 mostrarRecreativa(true);
                 const slotStatus = document.getElementById('slotStatus');
@@ -4925,7 +5054,9 @@
                     prueba: true
                 }).then(() => alert("🧪 Tirada de prueba programada para el " + textoFecha + ". Solo la veréis los admins."));
             }
-            if (actual && actual.status === 'programado' && !confirm('Ya hay un sorteo programado. ¿Sustituirlo por uno nuevo el ' + textoFecha + '?')) return;
+            if (actual && actual.status === 'programado') {
+                if (!confirm('Ya hay un sorteo programado. ¿Sustituirlo por uno nuevo el ' + textoFecha + '?' + (avisoEspecial ? '\n\n' + avisoEspecial : ''))) return;
+            } else if (avisoEspecial && !confirm(avisoEspecial + '\n\n¿Programarlo para el ' + textoFecha + '?')) return;
 
             // La lista negra va en "sorteo_privado" (solo admins y Worker), con el
             // targetTime para que el Worker sepa que es la de este sorteo.

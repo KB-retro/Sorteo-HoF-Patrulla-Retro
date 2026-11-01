@@ -373,6 +373,7 @@ const check = (c, msg) => { console.log((c ? 'PASS ' : 'FAIL ') + msg); if (!c) 
   check((await page.$$eval('.slot-reel', els => els.map(e => e.textContent).join(''))) === '853' && !(await page.isVisible('#winnerCard')), 'prueba: rodillos con cuenta atrás para el admin');
   await page.waitForTimeout(2200);
   check(await page.isVisible('#winnerCard') && (await page.textContent('#winnerName')).includes('@Tres'), 'prueba: tras la cuenta atrás se muestra el ganador de prueba');
+  check(!(await page.isVisible('#compartirGanadorBtn')), 'compartir: la tirada de prueba no tiene botón de compartir');
   // Error en la prueba
   await ev(() => window.__DB__.set('sorteo_prueba', { status: 'error', error: 'Sin participantes', prueba: true, targetTime: 1 }));
   await page.waitForTimeout(400);
@@ -765,6 +766,102 @@ const check = (c, msg) => { console.log((c ? 'PASS ' : 'FAIL ') + msg); if (!c) 
   await ev(() => { usuarioAdmin = window.__adminJuegos; });
   await ev((g) => { obtenerJuegosMesYArcade = window.__juegosMesOrig; window.__DB__.set('juegos_proximo_sorteo', g.jp); window.__DB__.set('mes_sorteo', g.mes); window.__DB__.set('sorteo_actual', g.sa); }, guardadoJuegos);
   await page.waitForTimeout(400);
+
+  // ===== Imágenes ligeras =====
+  const logoInfo = await ev(() => { const i = document.querySelector('.header-logo'); return { src: i.getAttribute('src'), w: i.naturalWidth }; });
+  check(logoInfo.src === 'logo.webp' && logoInfo.w === 320, 'imágenes: el logo usa la versión ligera WebP y carga ' + JSON.stringify(logoInfo));
+  check(await ev(() => [...document.querySelectorAll('link[rel="icon"]')].every(l => !l.href.includes('logo.png'))), 'imágenes: el icono de la pestaña no descarga el logo grande');
+  check(await ev(() => getComputedStyle(document.body, '::before').backgroundImage.includes('fondo.webp')), 'imágenes: el fondo usa la versión ligera WebP');
+  check(fs.statSync(path.join(REPO, 'logo.webp')).size < 60000 && fs.statSync(path.join(REPO, 'fondo.webp')).size < 150000, 'imágenes: logo.webp y fondo.webp pesan poco');
+  check(!(await page.content()).includes('logo.jpg'), 'imágenes: ya no se intenta cargar logo.jpg (no existe)');
+
+  // ===== Copias más completas =====
+  const datosCopia = await ev(() => leerDatosParaBackup());
+  check(['config_sorteo_especial', 'juegos_proximo_sorteo', 'sorteo_participantes_raw'].every(n => n in datosCopia), 'copias: incluyen casilla especial, juegos del mes y lista de participantes');
+  const anaVieja = await ev(b => analizarDatosBackup(b, { sorteo_participantes_raw: '1-@a\n2-@b' }), backup);
+  check(!anaVieja.errores.length && !anaVieja.incluidos.includes('sorteo_participantes_raw') && anaVieja.resumen.includes('Lista de participantes: 2 líneas (no viene en la copia, se mantiene)'), 'copias: una copia antigua mantiene los datos nuevos que no lleva');
+  const anaNueva = await ev(() => analizarDatosBackup({ config_sorteo_especial: { activo: true, premio: 'Mando' }, juegos_proximo_sorteo: { mes: 'Mayo', juegosMes: [{ titulo: 'X' }], juegosArcade: ['Y'] }, sorteo_participantes_raw: '1-@a' }, {}));
+  check(!anaNueva.errores.length && anaNueva.incluidos.length === 3 && anaNueva.resumen.includes('marcada (Mando)') && anaNueva.resumen.includes('Mayo (2 juegos)') && anaNueva.resumen.includes('→ 1 líneas'), 'copias: una copia nueva restaura los tres datos y los resume');
+  const anaMala = await ev(() => analizarDatosBackup({ config_sorteo_especial: 'si', juegos_proximo_sorteo: [], sorteo_participantes_raw: 5 }, {}));
+  check(anaMala.errores.length === 3, 'copias: rechaza esos datos con formato incorrecto ' + JSON.stringify(anaMala.errores));
+
+  // ===== Aviso de Sorteo Especial al programar =====
+  {
+    const saAntes = await db('sorteo_actual'); const privAntes = await db('sorteo_privado'); const hofAntes = await db('hall_of_fame_juegos');
+    const intentar = (o) => ev(async (o) => {
+      window.__confirms = []; const okOrig = window.confirm; window.confirm = m => { window.__confirms.push(m); return false; };
+      document.getElementById('pruebaCheckbox').checked = false;
+      document.getElementById('specialDrawCheckbox').checked = o.especial;
+      document.getElementById('specialPrizeInput').value = o.especial ? 'Mando retro' : '';
+      document.getElementById('listInput').value = '1-@Esp1\n2-@Esp2';
+      document.getElementById('drawDateInput').value = '';
+      document.getElementById('drawTimeInput').value = o.hora;
+      programarOEjecutarSorteo();
+      await new Promise(r => setTimeout(r, 300));
+      window.confirm = okOrig;
+      document.getElementById('specialDrawCheckbox').checked = false;
+      document.getElementById('specialPrizeInput').value = '';
+      return window.__confirms;
+    }, o);
+    await ev(() => window.__DB__.set('sorteo_actual', { status: 'inactivo' }));
+    let conf = await intentar({ especial: true, hora: '21:00' });
+    check(conf.length === 1 && conf[0].includes('SORTEO ESPECIAL') && conf[0].includes('Mando retro') && conf[0].includes('desmarca'), 'especial: al programar un Sorteo Especial se pide confirmación con el premio ' + JSON.stringify(conf));
+    check((await db('sorteo_actual')).status === 'inactivo', 'especial: si se cancela, no se programa nada');
+    conf = await intentar({ especial: false, hora: '21:00' });
+    check(conf.length === 0 && (await db('sorteo_actual')).status === 'programado', 'especial: un sorteo normal se programa sin pregunta extra');
+    conf = await intentar({ especial: true, hora: '22:00' });
+    check(conf.length === 1 && conf[0].includes('Ya hay un sorteo programado') && conf[0].includes('SORTEO ESPECIAL'), 'especial: al sustituir un sorteo también avisa de que será Especial');
+    conf = await intentar({ especial: true, hora: '' });
+    check(conf.length === 1 && conf[0].includes('de inmediato') && conf[0].includes('SORTEO ESPECIAL'), 'especial: el sorteo inmediato también avisa de que será Especial');
+    await ev(g => { window.__DB__.set('sorteo_actual', g.sa); window.__DB__.set('sorteo_privado', g.priv); window.__DB__.set('hall_of_fame_juegos', g.hof); }, { sa: saAntes, priv: privAntes, hof: hofAntes });
+    await page.waitForTimeout(300);
+  }
+
+  // ===== Compartir el resultado =====
+  {
+    const saAntes = await db('sorteo_actual');
+    await ev(() => window.__DB__.set('sorteo_actual', { ganador: { user: '@Afortunado', ticket: '42-@Afortunado' }, arcadeGroup: [{ user: '@Uno', ticket: '40-@Uno' }, { user: '@Dos', ticket: '41-@Dos' }, { user: '@Afortunado', ticket: '42-@Afortunado' }], timestamp: Date.now() - 5000, revealAt: Date.now() - 4000, mesPremio: 'Noviembre 2026', especial: true, premioEspecial: 'Mando retro', rawLines: 'x' }));
+    await page.waitForTimeout(400);
+    check(await page.isVisible('#compartirGanadorBtn'), 'compartir: la tarjeta del ganador tiene botón "Compartir resultado"');
+    const compartido = await ev(async () => { let d = null; navigator.share = async x => { d = x; }; await compartirGanador(); delete navigator.share; return d; });
+    check(compartido && compartido.text.includes('Sorteo Especial de Noviembre 2026: @Afortunado (boleto Nº 42)') && compartido.text.includes('Premio: Mando retro') && compartido.text.includes('@Uno, @Dos, @Afortunado') && /index\.html$/.test(compartido.url), 'compartir: en el móvil abre el menú de compartir con ganador, premio y Arcade ' + JSON.stringify(compartido));
+    const copiado = await ev(async () => { const orig = navigator.share; navigator.share = undefined; let t = null;
+      Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async x => { t = x; } } });
+      await compartirGanador(); navigator.share = orig; return { t, boton: document.getElementById('compartirGanadorBtn').textContent }; });
+    check(copiado.t && copiado.t.includes('@Afortunado') && copiado.t.includes('🌐 ') && copiado.boton.includes('Copiado'), 'compartir: sin menú de compartir, copia el texto con el enlace y lo indica ' + JSON.stringify(copiado));
+    const cerrado = await ev(async () => { let copias = 0; navigator.share = async () => { const e = new Error('x'); e.name = 'AbortError'; throw e; };
+      Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async () => { copias++; } } });
+      await compartirGanador(); delete navigator.share; return copias; });
+    check(cerrado === 0, 'compartir: si se cierra el menú, no copia nada');
+    await ev(g => window.__DB__.set('sorteo_actual', g), saAntes);
+    await page.waitForTimeout(300);
+  }
+
+  // ===== Ficha: estadísticas de participación =====
+  {
+    const g = { hist: await db('historial_ganadores'), sa: await db('sorteo_actual'), hof: await db('hall_of_fame_juegos'), priv: await db('sorteo_privado') };
+    await ev(() => window.__DB__.set('historial_ganadores', {
+      v1: { user: '@Viejo', fecha: 'Agosto 2026', timestamp: 1000 },
+      n1: { user: '@Ana', fecha: 'Noviembre 2026', timestamp: 2000, arcade: ['@x', '@STATS', '@Ana', '@y', '@z'], participantes: [{ user: '@Stats', boletos: 3 }, { user: '@Ana', boletos: 1 }] },
+      n2: { user: '@Stats', fecha: 'Diciembre 2026', timestamp: 3000, especial: true, premioEspecial: 'Mando', arcade: ['@Stats'], participantes: [{ user: '@stats', boletos: 2 }] },
+      n3: { user: '@Ana', fecha: 'Enero 2027', timestamp: 4000, arcade: ['@Ana'], participantes: [{ user: '@Ana', boletos: 5 }] }
+    }));
+    await page.waitForTimeout(300);
+    const fichaStats = await ev(() => { abrirFichaUsuario('@stats'); const t = document.getElementById('fichaUsuarioContenido').textContent; cerrarFichaUsuario(); return t; });
+    check(fichaStats.includes('Desde Noviembre 2026') && fichaStats.includes('Ha participado en 2 de 3 sorteos') && fichaStats.includes('5 boletos en total') && fichaStats.includes('2 veces en el grupo Arcade'), 'ficha: estadísticas de participación sin distinguir mayúsculas ' + JSON.stringify(fichaStats));
+    const fichaViejo = await ev(() => { abrirFichaUsuario('@Viejo'); const t = document.getElementById('fichaUsuarioContenido').textContent; cerrarFichaUsuario(); return t; });
+    check(!fichaViejo.includes('Ha participado'), 'ficha: quien no aparece en los sorteos con datos no muestra estadísticas');
+    // El sorteo inmediato guarda los datos para las estadísticas
+    await ev(() => { window.__DB__.set('historial_ganadores', {}); window.__DB__.set('sorteo_actual', { status: 'inactivo' });
+      document.getElementById('pruebaCheckbox').checked = false; document.getElementById('specialDrawCheckbox').checked = false;
+      document.getElementById('drawTimeInput').value = ''; document.getElementById('blacklistInput').value = '';
+      document.getElementById('listInput').value = '1-@Pepe\n2-@pepe\n3-@Luis'; programarOEjecutarSorteo(); });
+    await page.waitForTimeout(1500);
+    const entrada = Object.values(await db('historial_ganadores') || {})[0] || {};
+    check(JSON.stringify(entrada.participantes) === '[{"user":"@Pepe","boletos":2},{"user":"@Luis","boletos":1}]' && Array.isArray(entrada.arcade) && entrada.arcade.length === 2, 'ficha: el sorteo inmediato guarda participantes y grupo Arcade en el historial ' + JSON.stringify(entrada));
+    await ev(g => { window.__DB__.set('historial_ganadores', g.hist); window.__DB__.set('sorteo_actual', g.sa); window.__DB__.set('hall_of_fame_juegos', g.hof); window.__DB__.set('sorteo_privado', g.priv); }, g);
+    await page.waitForTimeout(400);
+  }
 
   // Visitor doesn't write Telegram list
   check(!errors.some(x => !/Telegram|Sheets|Cloudflare|Failed to load|500|Error iniciando sesión|integrity|Error en la copia previa|Error añadiendo ganadores manuales|Error guardando la lista de participantes/.test(x)), 'sin errores JS inesperados: ' + JSON.stringify(errors.filter(x => !/Telegram|Sheets|Cloudflare|Failed to load|500|Error iniciando sesión|integrity|Error en la copia previa|Error añadiendo ganadores manuales|Error guardando la lista de participantes/.test(x))));

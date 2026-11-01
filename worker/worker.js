@@ -16,6 +16,12 @@ const NOMBRES_MESES = [
   "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
 ];
 
+// Recordatorio en el canal de Telegram antes de un sorteo programado: se envía
+// una vez cuando faltan 3 horas o menos (o al programarlo, si ya falta menos).
+// Si faltan menos de 10 minutos no se envía, porque el resultado llega enseguida.
+const RECORDATORIO_MS = 3 * 60 * 60 * 1000;
+const RECORDATORIO_MIN_MS = 10 * 60 * 1000;
+
 // El proxy de Telegram guarda la página del canal este tiempo, para no
 // descargarla en cada visita. Solo un admin (con su sesión) puede pedir
 // una descarga nueva con "fresco=1".
@@ -28,8 +34,9 @@ const URL_WEB_SORTEO = "https://kb-retro.github.io/Sorteo-HoF-Patrulla-Retro/";
 
 // Envía un mensaje de texto con el bot de Telegram. Si faltan el token o el
 // chat, no hace nada. Un fallo de Telegram nunca interrumpe el sorteo.
+// Devuelve true si Telegram aceptó el mensaje.
 async function enviarTelegram(env, chatId, texto) {
-  if (!env.TELEGRAM_BOT_TOKEN || !chatId) return;
+  if (!env.TELEGRAM_BOT_TOKEN || !chatId) return false;
   try {
     const respuesta = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
       method: "POST",
@@ -38,10 +45,19 @@ async function enviarTelegram(env, chatId, texto) {
     });
     if (!respuesta.ok) {
       console.error("⚠️ Telegram rechazó el mensaje:", respuesta.status, await respuesta.text());
+      return false;
     }
+    return true;
   } catch (error) {
     console.error("⚠️ No se pudo enviar el mensaje de Telegram:", error);
+    return false;
   }
+}
+
+// Aviso al chat privado de los admins (solo si TELEGRAM_ADMIN_CHAT_ID existe).
+// Nunca se usa con las tiradas de prueba.
+function avisarAdmins(env, texto) {
+  return enviarTelegram(env, env.TELEGRAM_ADMIN_CHAT_ID, `⚠️ ${texto}\n\n🌐 ${URL_WEB_SORTEO}`);
 }
 
 function numeroBoleto(ticket) {
@@ -126,7 +142,8 @@ export default {
     await Promise.all([
       procesarSorteo(env, false).catch(error => console.error("❌ ERROR EJECUTANDO EL CRON:", error)),
       procesarSorteo(env, true).catch(error => console.error("❌ ERROR EN LA TIRADA DE PRUEBA:", error)),
-      cambiarMesSiToca(env).catch(error => console.error("❌ ERROR EN EL CAMBIO DE MES AUTOMÁTICO:", error))
+      cambiarMesSiToca(env).catch(error => console.error("❌ ERROR EN EL CAMBIO DE MES AUTOMÁTICO:", error)),
+      recordatorioSiToca(env).catch(error => console.error("❌ ERROR EN EL RECORDATORIO DE TELEGRAM:", error))
     ]);
   },
 
@@ -476,11 +493,15 @@ async function procesarSorteo(env, prueba) {
         mesPremio: mesPremio,
         timestamp: timestamp,
         especial: !!sorteo.sorteoEspecial,
-        premioEspecial: sorteo.sorteoEspecial ? String(sorteo.premioEspecial || '').trim() : ''
+        premioEspecial: sorteo.sorteoEspecial ? String(sorteo.premioEspecial || '').trim() : '',
+        // Para las estadísticas de la ficha de usuario en la web
+        arcade: (tirada.arcadeGroup || []).map(p => p.user),
+        participantes: resumenParticipantes(sorteo.rawLines || "")
       })
   });
 
   if (!historialResponse.ok) {
+    await avisarAdmins(env, `El sorteo programado se ha quedado a medias: no se pudo guardar el ganador en el historial (Firebase: ${historialResponse.status}).\n\nSe reintentará solo dentro de 5 minutos con el MISMO ganador.`);
     throw new Error(`No se pudo guardar el historial. Firebase: ${historialResponse.status}`);
   }
 
@@ -522,6 +543,9 @@ async function procesarSorteo(env, prueba) {
   });
 
   if (!resultadoResponse.ok) {
+    if (!prueba) {
+      await avisarAdmins(env, `El sorteo programado se ha quedado a medias: no se pudo guardar el resultado (Firebase: ${resultadoResponse.status}).\n\nSe reintentará solo dentro de 5 minutos con el MISMO ganador.`);
+    }
     throw new Error(`No se pudo guardar el resultado. Firebase: ${resultadoResponse.status}`);
   }
 
@@ -541,6 +565,7 @@ async function procesarSorteo(env, prueba) {
     await crearBackupAutomatico(env, "Backup automático después del sorteo");
   } catch (backupError) {
     console.error("⚠️ Fallo en el backup automático, pero el sorteo terminó con éxito:", backupError);
+    await avisarAdmins(env, `El sorteo terminó bien (ganador: ${ganadorEncontrado.user}), pero falló la copia automática en GitHub.\n\nMotivo: ${backupError && backupError.message ? backupError.message : "desconocido"}\n\nHaz una copia manual desde el panel (Copias de Seguridad).`);
   }
 
   // -------------------------------------------------------
@@ -552,8 +577,11 @@ async function procesarSorteo(env, prueba) {
   if (env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHAT_ID) {
     const espera = resultadoFinal.revealAt - Date.now();
     if (espera > 0) await new Promise(resolve => setTimeout(resolve, espera));
-    await enviarTelegram(env, env.TELEGRAM_CHAT_ID,
+    const anunciado = await enviarTelegram(env, env.TELEGRAM_CHAT_ID,
       textoResultadoTelegram(ganadorEncontrado, mesPremio, resultadoFinal.especial, resultadoFinal.premioEspecial, resultadoFinal.arcadeGroup));
+    if (!anunciado) {
+      await avisarAdmins(env, `El sorteo terminó bien (ganador: ${ganadorEncontrado.user}), pero el bot no pudo anunciarlo en el canal. Publícalo a mano.`);
+    }
   }
 
   console.log("======================================");
@@ -561,6 +589,80 @@ async function procesarSorteo(env, prueba) {
   console.log("Ganador:", ganadorEncontrado.user);
   console.log("======================================");
 
+}
+
+
+// =========================================================
+// RECORDATORIO EN TELEGRAM ANTES DEL SORTEO
+// =========================================================
+
+// Fecha (AAAA-MM-DD) y hora (HH:MM) de un instante en la hora de España.
+function fechaHoraEspaña(ms) {
+  const fecha = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid", year: "numeric", month: "2-digit", day: "2-digit" }).format(ms);
+  const hora = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(ms);
+  return { fecha, hora };
+}
+
+function textoRecordatorioTelegram(sorteo, ahora) {
+  const objetivo = Number(sorteo.targetTime);
+  const cuando = fechaHoraEspaña(objetivo);
+  const hoy = fechaHoraEspaña(ahora).fecha;
+  const mañana = fechaHoraEspaña(ahora + 24 * 60 * 60 * 1000).fecha;
+  const dia = cuando.fecha === hoy ? "Hoy"
+    : cuando.fecha === mañana ? "Mañana"
+    : new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", weekday: "long", day: "numeric", month: "long" }).format(objetivo);
+
+  // Boletos (líneas con @usuario) y personas distintas, igual que en la tirada.
+  const usuarios = String(sorteo.rawLines || "").split("\n").map(l => (l.match(/@\w+/) || [""])[0].toLowerCase()).filter(Boolean);
+  const personas = new Set(usuarios).size;
+
+  const mes = sorteo.mesPremio ? ` de ${sorteo.mesPremio}` : "";
+  const premio = String(sorteo.premioEspecial || "").trim();
+  const lineas = [
+    `⏰ ¡${dia === "Hoy" ? "Hoy hay sorteo" : dia === "Mañana" ? "Mañana hay sorteo" : "Se acerca el sorteo"}!`,
+    "",
+    sorteo.sorteoEspecial ? `🎁 Sorteo Especial${mes}` : `🏆 Sorteo HoF${mes}`
+  ];
+  if (sorteo.sorteoEspecial && premio) lineas.push(`🎁 Premio: ${premio}`);
+  lineas.push(`🕘 ${dia.charAt(0).toUpperCase() + dia.slice(1)} a las ${cuando.hora} (hora peninsular)`);
+  if (usuarios.length) {
+    lineas.push(`🎟️ ${usuarios.length} ${usuarios.length === 1 ? "boleto" : "boletos"} de ${personas} ${personas === 1 ? "participante" : "participantes"}`);
+  }
+  lineas.push("", `🌐 Síguelo en directo: ${URL_WEB_SORTEO}`);
+  return lineas.join("\n");
+}
+
+// Envía el recordatorio una sola vez por sorteo. Para no repetirlo, guarda la
+// hora del sorteo ya recordado en "estado_bot/recordatorio" (nodo privado que
+// solo usa el Worker). Si se vuelve a programar a otra hora, hay recordatorio nuevo.
+async function recordatorioSiToca(env) {
+  if (!env.TELEGRAM_BOT_TOKEN || !env.TELEGRAM_CHAT_ID) return;
+
+  const lectura = await fetch(firebaseUrl(env, "sorteo_actual"));
+  if (!lectura.ok) throw new Error(`Firebase respondió ${lectura.status} al leer sorteo_actual`);
+  const sorteo = await lectura.json();
+  if (!sorteo || sorteo.status !== "programado" || !sorteo.targetTime) return;
+
+  const objetivo = Number(sorteo.targetTime);
+  const falta = objetivo - Date.now();
+  if (falta > RECORDATORIO_MS || falta < RECORDATORIO_MIN_MS) return;
+
+  const marcaUrl = firebaseUrl(env, "estado_bot/recordatorio");
+  const lecturaMarca = await fetch(marcaUrl, { headers: { "X-Firebase-ETag": "true" } });
+  if (!lecturaMarca.ok) throw new Error(`Firebase respondió ${lecturaMarca.status} al leer estado_bot`);
+  if (Number(await lecturaMarca.json()) === objetivo) return;
+
+  // Primero se marca (escritura condicional) y luego se envía: así nunca
+  // se manda dos veces, aunque coincidan dos ejecuciones del cron.
+  const marca = await fetch(marcaUrl, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", "If-Match": lecturaMarca.headers.get("ETag") || "*" },
+    body: JSON.stringify(objetivo)
+  });
+  if (!marca.ok) return;
+
+  await enviarTelegram(env, env.TELEGRAM_CHAT_ID, textoRecordatorioTelegram(sorteo, Date.now()));
+  console.log("⏰ RECORDATORIO ENVIADO para el sorteo de", new Date(objetivo).toISOString());
 }
 
 
@@ -611,7 +713,10 @@ async function cambiarMesSiToca(env) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(mesNuevo)
   });
-  if (!cambio.ok) throw new Error(`Firebase respondió ${cambio.status} al guardar el mes ${mesNuevo}: cámbialo a mano en el panel`);
+  if (!cambio.ok) {
+    await avisarAdmins(env, `No se pudo cambiar el mes automáticamente a ${mesNuevo} (Firebase: ${cambio.status}).\n\nCámbialo a mano en el panel (paso 1 «Mes del sorteo»).`);
+    throw new Error(`Firebase respondió ${cambio.status} al guardar el mes ${mesNuevo}: cámbialo a mano en el panel`);
+  }
   console.log(`📅 MES CAMBIADO AUTOMÁTICAMENTE: ${mesActual || "—"} → ${mesNuevo}`);
 }
 
@@ -619,6 +724,20 @@ async function cambiarMesSiToca(env) {
 // =========================================================
 // TIRADA: ELEGIR GANADOR Y GRUPO ARCADE
 // =========================================================
+
+// Boletos de cada persona en la lista: [{ user, boletos }]. @Pepe y @pepe son la
+// misma persona (se guarda como aparece la primera vez). Igual que en la web.
+function resumenParticipantes(rawLinesStr) {
+  const porClave = new Map();
+  String(rawLinesStr || "").split("\n").forEach(linea => {
+    const usuario = linea.trim().match(/@\w+/);
+    if (!usuario) return;
+    const clave = usuario[0].toLowerCase();
+    if (!porClave.has(clave)) porClave.set(clave, { user: usuario[0], boletos: 0 });
+    porClave.get(clave).boletos++;
+  });
+  return [...porClave.values()];
+}
 
 // Devuelve { ganador, arcadeGroup, log } o { error } si no hay ganador posible.
 function realizarTirada(rawLinesStr, rawBlacklistStr) {
@@ -765,13 +884,12 @@ function realizarTirada(rawLinesStr, rawBlacklistStr) {
 // =========================================================
 
 async function crearBackupAutomatico(env, tipoBackup) {
-  const resultados = await Promise.all([
-      fetch(firebaseUrl(env, "historial_ganadores")),
-      fetch(firebaseUrl(env, "sorteo_actual")),
-      fetch(firebaseUrl(env, "mes_sorteo")),
-      fetch(firebaseUrl(env, "regalos")),
-      fetch(firebaseUrl(env, "hall_of_fame_juegos"))
-  ]);
+  // Los mismos datos que guarda la web en sus copias (NODOS_BACKUP en index.html).
+  const nodos = [
+    "historial_ganadores", "sorteo_actual", "mes_sorteo", "regalos", "hall_of_fame_juegos",
+    "config_sorteo_especial", "juegos_proximo_sorteo", "sorteo_participantes_raw"
+  ];
+  const resultados = await Promise.all(nodos.map(nodo => fetch(firebaseUrl(env, nodo))));
 
   const fallida = resultados.find(response => !response.ok);
   if (fallida) {
@@ -780,20 +898,11 @@ async function crearBackupAutomatico(env, tipoBackup) {
       (fallida.status === 401 ? " (revisa el secreto FIREBASE_SECRET)." : "."));
   }
 
-  const historial = await resultados[0].json();
-  const sorteoActual = await resultados[1].json();
-  const mesSorteo = await resultados[2].json();
-  const regalos = await resultados[3].json();
-  const hallOfFameJuegos = await resultados[4].json();
-
-  const backupData = {
-    historial_ganadores: historial || null,
-    sorteo_actual: sorteoActual || null,
-    mes_sorteo: mesSorteo || null,
-    regalos: regalos || null,
-    hall_of_fame_juegos: hallOfFameJuegos || null,
-    tipoBackup: tipoBackup
-  };
+  const backupData = {};
+  for (let i = 0; i < nodos.length; i++) {
+    backupData[nodos[i]] = (await resultados[i].json()) || null;
+  }
+  backupData.tipoBackup = tipoBackup;
 
   const resultado = await subirBackupGitHub(backupData, env);
 
