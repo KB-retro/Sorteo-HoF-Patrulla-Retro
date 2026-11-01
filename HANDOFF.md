@@ -3,7 +3,7 @@
 Documento de traspaso: qué es el proyecto, cómo funciona, cómo se trabaja en él
 y qué decisiones ha tomado el dueño. Pensado para quien continúe el trabajo
 (una persona u otra sesión de Claude). Estado a 1 de noviembre de 2026
-(`main` = PR #21 fusionado).
+(`main` = PR #21 fusionado; PR #22 en curso).
 
 ## 1. Qué es
 
@@ -30,8 +30,10 @@ Navegador (index.html) ──lee──> Firebase (lectura pública de los nodos 
         └──> Google Sheets CSV   lista de juegos ya elegidos (buscador)
 
 Worker (cron) ──> realiza sorteos programados (real y de prueba)
+              ──> recordatorio en Telegram 3 h antes del sorteo
               ──> copia automática en GitHub tras cada sorteo real
               ──> anuncia el resultado en Telegram (bot)
+              ──> avisa al chat de admins si algo falla
               ──> cambia el mes solo 25 h después de un sorteo programado
 ```
 
@@ -52,7 +54,7 @@ Worker (cron) ──> realiza sorteos programados (real y de prueba)
 | Nodo | Lectura | Contenido |
 |---|---|---|
 | `sorteo_actual` | pública | Estado del sorteo: `programado`/`procesando`/`error`/`inactivo`, o el resultado (`ganador`, `arcadeGroup`, `revealAt`, `cambioMesAt`, `mesPremio`, `especial`, `premioEspecial`, `rawLines`). |
-| `historial_ganadores` | pública | Un registro por ganador (`user`, `ticket`, `fecha`, `timestamp`, `especial`…). |
+| `historial_ganadores` | pública | Un registro por ganador (`user`, `ticket`, `fecha`, `timestamp`, `especial`…). Desde noviembre de 2026 también `arcade` (los 5 usuarios) y `participantes` (`[{ user, boletos }]`) para las estadísticas de la ficha. |
 | `hall_of_fame_juegos` | pública | `{ "@usuario": { user, total } }` (clave en minúsculas). |
 | `regalos` | pública | Usuarios que recibieron camiseta por cesión. |
 | `mes_sorteo` | pública | Mes actual ("Noviembre"). Se muestra en la franja de estado. |
@@ -62,6 +64,7 @@ Worker (cron) ──> realiza sorteos programados (real y de prueba)
 | `sorteo_privado` | solo admins | Lista negra y registro de descartes del sorteo real. |
 | `sorteo_prueba` | solo admins | Tirada de prueba (no toca nada real). |
 | `backups` | solo admins | Copias manuales en Firebase. |
+| `estado_bot` | nadie (solo el Worker) | `recordatorio`: hora del último sorteo ya recordado en Telegram. |
 
 Escritura: solo los 2 UID de admin (en las reglas y en `UIDS_ADMIN` de la web;
 deben coincidir). El registro de cuentas nuevas está desactivado en Firebase Auth.
@@ -79,6 +82,8 @@ Si falta `ADMIN_UIDS`, `/backup` deniega a todos.
    panel), elige fecha y hora (21:00 por defecto) y pulsa "Guardar y programar".
    Los juegos de la lista se suman al Hall of Fame **al programar** (al
    sustituir o borrar un sorteo se restan los anteriores).
+   Cuando faltan 3 h o menos (y al menos 10 min), el bot publica un
+   recordatorio en el canal (una sola vez por sorteo; lo apunta en `estado_bot`).
 2. A la hora, el cron del Worker bloquea el sorteo con ETag/If-Match
    (`procesando` + `tiradaPendiente`), elige ganador con `crypto.getRandomValues`
    (sin sesgo), guarda historial con clave fija `sorteo_<targetTime>_<timestamp>`
@@ -89,6 +94,8 @@ Si falta `ADMIN_UIDS`, `/backup` deniega a todos.
    ganador hasta entonces.
 4. Copia automática en GitHub y, tras la revelación, mensaje del bot en
    Telegram con ganador, boleto, premio especial (si lo hay) y los 5 del Arcade.
+   Si falla el historial, el resultado, la copia, el anuncio o el cambio de
+   mes, el bot avisa a `TELEGRAM_ADMIN_CHAT_ID`.
 5. 25 h después (`cambioMesAt`), el Worker pasa al mes siguiente y deja el
    sorteo `inactivo` (escritura condicional: no pisa un sorteo recién
    programado y nunca avanza el mes dos veces). La web carga sola los juegos
@@ -151,6 +158,7 @@ npm test        # web.test.cjs (Chromium + Firebase simulado) y worker.test.mjs
 | #19 | Buscador en el Historial. |
 | #20 | Cambio de mes automático 25 h después de un sorteo programado. |
 | #21 | El bot anuncia también a los del Arcade en los Sorteos Especiales. |
+| #22 | Imágenes WebP, copias más completas, avisos de error al chat de admins, recordatorio en Telegram, aviso de Sorteo Especial al programar, botón Compartir y estadísticas en la ficha. |
 
 ## 8. Decisiones del dueño (no volver a proponer sin motivo)
 
@@ -175,8 +183,7 @@ npm test        # web.test.cjs (Chromium + Firebase simulado) y worker.test.mjs
   **Sorteo Especial**. Si debía ser normal, corregir a mano en Firebase
   `especial: false` y `premioEspecial: ""` en su entrada de `historial_ganadores`
   y en `sorteo_actual`.
-- Riesgo de uso: la casilla "Sorteo Especial" se queda marcada entre sorteos
-  (`config_sorteo_especial`). Se propuso desmarcarla sola o avisar en la
-  confirmación; el dueño no ha respondido todavía.
-- Mejora opcional ya comentada: las copias de seguridad no incluyen
-  `config_sorteo_especial`, `juegos_proximo_sorteo` ni `sorteo_participantes_raw`.
+- La casilla "Sorteo Especial" sigue marcada entre sorteos, pero desde el
+  PR #22 la confirmación avisa claramente de que será Especial.
+- Opcional: rellenar las estadísticas de la ficha con los sorteos anteriores
+  (agosto, septiembre y octubre de 2026) a partir de las copias de GitHub.
