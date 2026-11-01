@@ -784,6 +784,38 @@ const check = (c, msg) => { console.log((c ? 'PASS ' : 'FAIL ') + msg); if (!c) 
   const anaMala = await ev(() => analizarDatosBackup({ config_sorteo_especial: 'si', juegos_proximo_sorteo: [], sorteo_participantes_raw: 5 }, {}));
   check(anaMala.errores.length === 3, 'copias: rechaza esos datos con formato incorrecto ' + JSON.stringify(anaMala.errores));
 
+  // ===== Aviso de Sorteo Especial al programar =====
+  {
+    const saAntes = await db('sorteo_actual'); const privAntes = await db('sorteo_privado'); const hofAntes = await db('hall_of_fame_juegos');
+    const intentar = (o) => ev(async (o) => {
+      window.__confirms = []; const okOrig = window.confirm; window.confirm = m => { window.__confirms.push(m); return false; };
+      document.getElementById('pruebaCheckbox').checked = false;
+      document.getElementById('specialDrawCheckbox').checked = o.especial;
+      document.getElementById('specialPrizeInput').value = o.especial ? 'Mando retro' : '';
+      document.getElementById('listInput').value = '1-@Esp1\n2-@Esp2';
+      document.getElementById('drawDateInput').value = '';
+      document.getElementById('drawTimeInput').value = o.hora;
+      programarOEjecutarSorteo();
+      await new Promise(r => setTimeout(r, 300));
+      window.confirm = okOrig;
+      document.getElementById('specialDrawCheckbox').checked = false;
+      document.getElementById('specialPrizeInput').value = '';
+      return window.__confirms;
+    }, o);
+    await ev(() => window.__DB__.set('sorteo_actual', { status: 'inactivo' }));
+    let conf = await intentar({ especial: true, hora: '21:00' });
+    check(conf.length === 1 && conf[0].includes('SORTEO ESPECIAL') && conf[0].includes('Mando retro') && conf[0].includes('desmarca'), 'especial: al programar un Sorteo Especial se pide confirmación con el premio ' + JSON.stringify(conf));
+    check((await db('sorteo_actual')).status === 'inactivo', 'especial: si se cancela, no se programa nada');
+    conf = await intentar({ especial: false, hora: '21:00' });
+    check(conf.length === 0 && (await db('sorteo_actual')).status === 'programado', 'especial: un sorteo normal se programa sin pregunta extra');
+    conf = await intentar({ especial: true, hora: '22:00' });
+    check(conf.length === 1 && conf[0].includes('Ya hay un sorteo programado') && conf[0].includes('SORTEO ESPECIAL'), 'especial: al sustituir un sorteo también avisa de que será Especial');
+    conf = await intentar({ especial: true, hora: '' });
+    check(conf.length === 1 && conf[0].includes('de inmediato') && conf[0].includes('SORTEO ESPECIAL'), 'especial: el sorteo inmediato también avisa de que será Especial');
+    await ev(g => { window.__DB__.set('sorteo_actual', g.sa); window.__DB__.set('sorteo_privado', g.priv); window.__DB__.set('hall_of_fame_juegos', g.hof); }, { sa: saAntes, priv: privAntes, hof: hofAntes });
+    await page.waitForTimeout(300);
+  }
+
   // Visitor doesn't write Telegram list
   check(!errors.some(x => !/Telegram|Sheets|Cloudflare|Failed to load|500|Error iniciando sesión|integrity|Error en la copia previa|Error añadiendo ganadores manuales|Error guardando la lista de participantes/.test(x)), 'sin errores JS inesperados: ' + JSON.stringify(errors.filter(x => !/Telegram|Sheets|Cloudflare|Failed to load|500|Error iniciando sesión|integrity|Error en la copia previa|Error añadiendo ganadores manuales|Error guardando la lista de participantes/.test(x))));
   await browser.close();

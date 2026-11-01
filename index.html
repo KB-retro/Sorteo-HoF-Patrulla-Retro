@@ -4869,6 +4869,11 @@
 
         if (!rawLines) return alert("Pega o importa la lista de participantes.");
         if (sorteoEspecial && !premioEspecial) return alert("Indica qué premio se sortea en el Sorteo Especial.");
+        // La casilla se queda marcada entre sorteos: se avisa siempre para que
+        // un sorteo normal no salga como Especial por despiste.
+        const avisoEspecial = sorteoEspecial
+            ? "🎁 ATENCIÓN: será un SORTEO ESPECIAL (premio: " + premioEspecial + ").\nSi debe ser un sorteo normal, cancela y desmarca la casilla «🎁 Sorteo Especial»."
+            : "";
 
         // Primero leemos el sorteo actual: si ya había uno programado, sus juegos
         // ya se sumaron al Hall of Fame y hay que restarlos para no duplicarlos.
@@ -4889,7 +4894,7 @@
                     : "";
                 if (!confirm(esPrueba
                     ? "🧪 No has elegido hora: la TIRADA DE PRUEBA se hará de inmediato (solo la veis los admins). ¿Continuar?"
-                    : "No has elegido hora: el sorteo se realizará de inmediato, ¿Continuar?" + avisoSustituir)) return;
+                    : "No has elegido hora: el sorteo se realizará de inmediato, ¿Continuar?" + avisoSustituir + (avisoEspecial ? "\n\n" + avisoEspecial : ""))) return;
                 detenerTragaperras();
                 mostrarRecreativa(true);
                 const slotStatus = document.getElementById('slotStatus');
@@ -4940,7 +4945,9 @@
                     prueba: true
                 }).then(() => alert("🧪 Tirada de prueba programada para el " + textoFecha + ". Solo la veréis los admins."));
             }
-            if (actual && actual.status === 'programado' && !confirm('Ya hay un sorteo programado. ¿Sustituirlo por uno nuevo el ' + textoFecha + '?')) return;
+            if (actual && actual.status === 'programado') {
+                if (!confirm('Ya hay un sorteo programado. ¿Sustituirlo por uno nuevo el ' + textoFecha + '?' + (avisoEspecial ? '\n\n' + avisoEspecial : ''))) return;
+            } else if (avisoEspecial && !confirm(avisoEspecial + '\n\n¿Programarlo para el ' + textoFecha + '?')) return;
 
             // La lista negra va en "sorteo_privado" (solo admins y Worker), con el
             // targetTime para que el Worker sepa que es la de este sorteo.
