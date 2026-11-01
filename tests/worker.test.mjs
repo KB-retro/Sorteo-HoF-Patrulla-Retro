@@ -12,7 +12,7 @@ fs.copyFileSync(path.join(dir, '..', 'worker', 'worker.js'), copia);
 const { default: worker } = await import(pathToFileURL(copia).href);
 fs.unlinkSync(copia);
 
-let telegram = [], telegramFalla = false, tmeCalls = 0, tmeFalla = false, alLeer = null, conflictos = 0;
+let telegram = [], telegramFalla = false, telegramFallaChat = null, githubFalla = false, failPutRuta = null, tmeCalls = 0, tmeFalla = false, alLeer = null, conflictos = 0;
 let db = {}, etagN = 0, github = [], urls = [], failPutResult = false;
 const clone = v => v === undefined ? null : JSON.parse(JSON.stringify(v));
 const parts = p => p.split('/').filter(Boolean);
@@ -30,12 +30,14 @@ globalThis.fetch = async (url, opt = {}) => {
   }
   if (url.startsWith('https://t.me/')) { tmeCalls++; if (tmeFalla) return new Response('caído', { status: 500 }); return new Response('<html>telegram ' + tmeCalls + '</html>'); }
   if (url.startsWith('https://api.telegram.org/')) {
-    if (telegramFalla) return new Response('{"ok":false}', { status: 500 });
-    telegram.push({ url, ...JSON.parse(opt.body) });
+    const cuerpo = JSON.parse(opt.body);
+    if (telegramFalla || (telegramFallaChat && cuerpo.chat_id === telegramFallaChat)) return new Response('{"ok":false}', { status: 500 });
+    telegram.push({ url, ...cuerpo });
     return new Response('{"ok":true}');
   }
   if (url.startsWith('https://api.github.com')) {
     const body = JSON.parse(opt.body);
+    if (githubFalla) return new Response('{"message":"Bad credentials"}', { status: 401 });
     github.push(JSON.parse(Buffer.from(body.content, 'base64').toString('utf8')));
     return new Response('{}', { status: 201 });
   }
@@ -47,6 +49,7 @@ globalThis.fetch = async (url, opt = {}) => {
     if (im && im !== '*' && im !== etagOf(p)) { conflictos++; return new Response('conflict', { status: 412 }); }
     const v = JSON.parse(opt.body);
     if (failPutResult && p === '/sorteo_actual' && v.ganador) return new Response('boom', { status: 500 });
+    if (failPutRuta && p.startsWith(failPutRuta)) return new Response('boom', { status: 500 });
     setp(p, v); return new Response(opt.body);
   }
   throw new Error('método ' + method);
@@ -346,6 +349,52 @@ P(Object.values(db.historial_ganadores).map(h => h.user).join() === '@Real' && g
 db = { sorteo_actual: programado({ rawLines: '9-@Real' }), sorteo_prueba: { status: 'procesando', targetTime: 1, processingAt: Date.now() - 600000, tiradaPendiente: { ganador: null } } };
 await run(envTodo);
 P(db.sorteo_actual.ganador && db.sorteo_actual.ganador.user === '@Real', 'o: un problema en la prueba no impide el sorteo real');
+
+// q. avisos de error al chat de los admins
+{
+  const envAv = { GITHUB_TOKEN: 'x', TELEGRAM_BOT_TOKEN: 'BOT123', TELEGRAM_CHAT_ID: '@canal_sorteo', TELEGRAM_ADMIN_CHAT_ID: '-100999' };
+  const aAdmins = () => telegram.filter(t => t.chat_id === '-100999');
+  telegram = [];
+  db = { sorteo_actual: programado() };
+  await run(envAv);
+  P(aAdmins().length === 0, 'q: un sorteo sin problemas no avisa a los admins');
+
+  telegram = []; failPutRuta = '/historial_ganadores';
+  db = { sorteo_actual: programado() };
+  await run(envAv); failPutRuta = null;
+  P(aAdmins().length === 1 && aAdmins()[0].text.includes('historial') && aAdmins()[0].text.includes('5 minutos') && !telegram.some(t => t.chat_id === '@canal_sorteo'), 'q: si no se guarda el historial, aviso a los admins (nada en el canal)');
+
+  telegram = []; failPutResult = true;
+  db = { sorteo_actual: programado() };
+  await run(envAv); failPutResult = false;
+  P(aAdmins().length === 1 && aAdmins()[0].text.includes('resultado'), 'q: si no se guarda el resultado, aviso a los admins');
+
+  telegram = []; githubFalla = true;
+  db = { sorteo_actual: programado({ rawLines: '3-@Suerte' }) };
+  await run(envAv); githubFalla = false;
+  P(db.sorteo_actual.ganador && aAdmins().length === 1 && aAdmins()[0].text.includes('copia automática') && aAdmins()[0].text.includes('@Suerte'), 'q: si falla la copia en GitHub, aviso a los admins con el ganador');
+  P(telegram.some(t => t.chat_id === '@canal_sorteo'), 'q: aunque falle la copia, se anuncia el ganador en el canal');
+
+  telegram = []; telegramFallaChat = '@canal_sorteo';
+  db = { sorteo_actual: programado({ rawLines: '3-@Suerte' }) };
+  await run(envAv); telegramFallaChat = null;
+  P(aAdmins().length === 1 && aAdmins()[0].text.includes('no pudo anunciarlo'), 'q: si el canal rechaza el anuncio, aviso a los admins');
+
+  telegram = []; failPutRuta = '/mes_sorteo';
+  db = { sorteo_actual: { ganador: { user: '@A', ticket: '1-@A' }, arcadeGroup: [], timestamp: 1, mesPremio: 'Octubre 2026', cambioMesAt: Date.now() - 1000 }, mes_sorteo: 'Octubre' };
+  await run(envAv); failPutRuta = null;
+  P(db.mes_sorteo === 'Octubre' && aAdmins().length === 1 && aAdmins()[0].text.includes('Noviembre') && aAdmins()[0].text.includes('a mano'), 'q: si no se puede cambiar el mes, aviso a los admins');
+
+  telegram = []; failPutResult = true; githubFalla = true;
+  db = { sorteo_prueba: { status: 'programado', targetTime: Date.now() - 1000, rawLines: '1-@Uno', rawBlacklist: '', prueba: true } };
+  await run(envAv); failPutResult = false; githubFalla = false;
+  P(telegram.length === 0, 'q: las tiradas de prueba nunca avisan');
+
+  telegram = []; githubFalla = true;
+  db = { sorteo_actual: programado() };
+  await run({ GITHUB_TOKEN: 'x', TELEGRAM_BOT_TOKEN: 'BOT123', TELEGRAM_CHAT_ID: '@canal_sorteo' }); githubFalla = false;
+  P(telegram.length === 1 && telegram[0].chat_id === '@canal_sorteo', 'q: sin TELEGRAM_ADMIN_CHAT_ID no se avisa a nadie más');
+}
 
 globalThis.setTimeout = realTimeout;
 

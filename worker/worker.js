@@ -28,8 +28,9 @@ const URL_WEB_SORTEO = "https://kb-retro.github.io/Sorteo-HoF-Patrulla-Retro/";
 
 // Envía un mensaje de texto con el bot de Telegram. Si faltan el token o el
 // chat, no hace nada. Un fallo de Telegram nunca interrumpe el sorteo.
+// Devuelve true si Telegram aceptó el mensaje.
 async function enviarTelegram(env, chatId, texto) {
-  if (!env.TELEGRAM_BOT_TOKEN || !chatId) return;
+  if (!env.TELEGRAM_BOT_TOKEN || !chatId) return false;
   try {
     const respuesta = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
       method: "POST",
@@ -38,10 +39,19 @@ async function enviarTelegram(env, chatId, texto) {
     });
     if (!respuesta.ok) {
       console.error("⚠️ Telegram rechazó el mensaje:", respuesta.status, await respuesta.text());
+      return false;
     }
+    return true;
   } catch (error) {
     console.error("⚠️ No se pudo enviar el mensaje de Telegram:", error);
+    return false;
   }
+}
+
+// Aviso al chat privado de los admins (solo si TELEGRAM_ADMIN_CHAT_ID existe).
+// Nunca se usa con las tiradas de prueba.
+function avisarAdmins(env, texto) {
+  return enviarTelegram(env, env.TELEGRAM_ADMIN_CHAT_ID, `⚠️ ${texto}\n\n🌐 ${URL_WEB_SORTEO}`);
 }
 
 function numeroBoleto(ticket) {
@@ -481,6 +491,7 @@ async function procesarSorteo(env, prueba) {
   });
 
   if (!historialResponse.ok) {
+    await avisarAdmins(env, `El sorteo programado se ha quedado a medias: no se pudo guardar el ganador en el historial (Firebase: ${historialResponse.status}).\n\nSe reintentará solo dentro de 5 minutos con el MISMO ganador.`);
     throw new Error(`No se pudo guardar el historial. Firebase: ${historialResponse.status}`);
   }
 
@@ -522,6 +533,9 @@ async function procesarSorteo(env, prueba) {
   });
 
   if (!resultadoResponse.ok) {
+    if (!prueba) {
+      await avisarAdmins(env, `El sorteo programado se ha quedado a medias: no se pudo guardar el resultado (Firebase: ${resultadoResponse.status}).\n\nSe reintentará solo dentro de 5 minutos con el MISMO ganador.`);
+    }
     throw new Error(`No se pudo guardar el resultado. Firebase: ${resultadoResponse.status}`);
   }
 
@@ -541,6 +555,7 @@ async function procesarSorteo(env, prueba) {
     await crearBackupAutomatico(env, "Backup automático después del sorteo");
   } catch (backupError) {
     console.error("⚠️ Fallo en el backup automático, pero el sorteo terminó con éxito:", backupError);
+    await avisarAdmins(env, `El sorteo terminó bien (ganador: ${ganadorEncontrado.user}), pero falló la copia automática en GitHub.\n\nMotivo: ${backupError && backupError.message ? backupError.message : "desconocido"}\n\nHaz una copia manual desde el panel (Copias de Seguridad).`);
   }
 
   // -------------------------------------------------------
@@ -552,8 +567,11 @@ async function procesarSorteo(env, prueba) {
   if (env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHAT_ID) {
     const espera = resultadoFinal.revealAt - Date.now();
     if (espera > 0) await new Promise(resolve => setTimeout(resolve, espera));
-    await enviarTelegram(env, env.TELEGRAM_CHAT_ID,
+    const anunciado = await enviarTelegram(env, env.TELEGRAM_CHAT_ID,
       textoResultadoTelegram(ganadorEncontrado, mesPremio, resultadoFinal.especial, resultadoFinal.premioEspecial, resultadoFinal.arcadeGroup));
+    if (!anunciado) {
+      await avisarAdmins(env, `El sorteo terminó bien (ganador: ${ganadorEncontrado.user}), pero el bot no pudo anunciarlo en el canal. Publícalo a mano.`);
+    }
   }
 
   console.log("======================================");
@@ -611,7 +629,10 @@ async function cambiarMesSiToca(env) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(mesNuevo)
   });
-  if (!cambio.ok) throw new Error(`Firebase respondió ${cambio.status} al guardar el mes ${mesNuevo}: cámbialo a mano en el panel`);
+  if (!cambio.ok) {
+    await avisarAdmins(env, `No se pudo cambiar el mes automáticamente a ${mesNuevo} (Firebase: ${cambio.status}).\n\nCámbialo a mano en el panel (paso 1 «Mes del sorteo»).`);
+    throw new Error(`Firebase respondió ${cambio.status} al guardar el mes ${mesNuevo}: cámbialo a mano en el panel`);
+  }
   console.log(`📅 MES CAMBIADO AUTOMÁTICAMENTE: ${mesActual || "—"} → ${mesNuevo}`);
 }
 
