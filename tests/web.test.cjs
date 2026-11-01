@@ -766,6 +766,14 @@ const check = (c, msg) => { console.log((c ? 'PASS ' : 'FAIL ') + msg); if (!c) 
   await ev((g) => { obtenerJuegosMesYArcade = window.__juegosMesOrig; window.__DB__.set('juegos_proximo_sorteo', g.jp); window.__DB__.set('mes_sorteo', g.mes); window.__DB__.set('sorteo_actual', g.sa); }, guardadoJuegos);
   await page.waitForTimeout(400);
 
+  // ===== Imágenes ligeras =====
+  const logoInfo = await ev(() => { const i = document.querySelector('.header-logo'); return { src: i.getAttribute('src'), w: i.naturalWidth }; });
+  check(logoInfo.src === 'logo.webp' && logoInfo.w === 320, 'imágenes: el logo usa la versión ligera WebP y carga ' + JSON.stringify(logoInfo));
+  check(await ev(() => [...document.querySelectorAll('link[rel="icon"]')].every(l => !l.href.includes('logo.png'))), 'imágenes: el icono de la pestaña no descarga el logo grande');
+  check(await ev(() => getComputedStyle(document.body, '::before').backgroundImage.includes('fondo.webp')), 'imágenes: el fondo usa la versión ligera WebP');
+  check(fs.statSync(path.join(REPO, 'logo.webp')).size < 60000 && fs.statSync(path.join(REPO, 'fondo.webp')).size < 150000, 'imágenes: logo.webp y fondo.webp pesan poco');
+  check(!(await page.content()).includes('logo.jpg'), 'imágenes: ya no se intenta cargar logo.jpg (no existe)');
+
   // Visitor doesn't write Telegram list
   check(!errors.some(x => !/Telegram|Sheets|Cloudflare|Failed to load|500|Error iniciando sesión|integrity|Error en la copia previa|Error añadiendo ganadores manuales|Error guardando la lista de participantes/.test(x)), 'sin errores JS inesperados: ' + JSON.stringify(errors.filter(x => !/Telegram|Sheets|Cloudflare|Failed to load|500|Error iniciando sesión|integrity|Error en la copia previa|Error añadiendo ganadores manuales|Error guardando la lista de participantes/.test(x))));
   await browser.close();

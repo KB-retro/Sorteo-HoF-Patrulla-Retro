@@ -21,8 +21,7 @@
     <meta name="twitter:description" content="Entra para ver la cuenta atrás en directo y el resultado del sorteo de la Patrulla Retro.">
     <meta name="twitter:image" content="https://kb-retro.github.io/Sorteo-HoF-Patrulla-Retro/logo.png?v=2">
 
-    <link rel="icon" type="image/png" sizes="32x32" href="logo.png?v=2">
-    <link rel="icon" type="image/png" sizes="16x16" href="logo.png?v=2">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
     <link rel="apple-touch-icon" sizes="180x180" href="icono-180.png">
 
     <!-- Instalable como app en el móvil -->
@@ -94,6 +93,8 @@
             width: 100vw;
             height: 100vh;
             background-image: url('fondo.png');
+            /* Versión ligera (WebP, ~75 KB) para los navegadores que la entienden */
+            background-image: image-set(url('fondo.webp') type('image/webp'), url('fondo.png') type('image/png'));
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
@@ -1073,7 +1074,7 @@
 
 <div class="container">
     <header class="cabecera">
-        <img src="logo.png?v=2" alt="Logo Patrulla Retro" class="header-logo" onclick="contarClicksAdmin()">
+        <img src="logo.webp" width="320" height="320" alt="Logo Patrulla Retro" class="header-logo" onclick="contarClicksAdmin()">
         <h1 id="mainTitle">Hall of Fame Patrulla Retro</h1>
 
         <div id="estadoSorteo" class="estado-sorteo hidden" aria-live="polite"></div>
@@ -2777,7 +2778,8 @@
     const logoImg = document.querySelector('.header-logo');
     if (logoImg) {
         logoImg.onerror = function() {
-            if (this.src.includes('logo.png')) this.src = 'logo.jpg?v=2';
+            // Si el navegador no puede con la versión ligera, se usa la original.
+            if (!this.src.includes('logo.png')) this.src = 'logo.png?v=2';
         };
     }
 
