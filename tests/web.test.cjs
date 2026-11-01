@@ -774,6 +774,16 @@ const check = (c, msg) => { console.log((c ? 'PASS ' : 'FAIL ') + msg); if (!c) 
   check(fs.statSync(path.join(REPO, 'logo.webp')).size < 60000 && fs.statSync(path.join(REPO, 'fondo.webp')).size < 150000, 'imágenes: logo.webp y fondo.webp pesan poco');
   check(!(await page.content()).includes('logo.jpg'), 'imágenes: ya no se intenta cargar logo.jpg (no existe)');
 
+  // ===== Copias más completas =====
+  const datosCopia = await ev(() => leerDatosParaBackup());
+  check(['config_sorteo_especial', 'juegos_proximo_sorteo', 'sorteo_participantes_raw'].every(n => n in datosCopia), 'copias: incluyen casilla especial, juegos del mes y lista de participantes');
+  const anaVieja = await ev(b => analizarDatosBackup(b, { sorteo_participantes_raw: '1-@a\n2-@b' }), backup);
+  check(!anaVieja.errores.length && !anaVieja.incluidos.includes('sorteo_participantes_raw') && anaVieja.resumen.includes('Lista de participantes: 2 líneas (no viene en la copia, se mantiene)'), 'copias: una copia antigua mantiene los datos nuevos que no lleva');
+  const anaNueva = await ev(() => analizarDatosBackup({ config_sorteo_especial: { activo: true, premio: 'Mando' }, juegos_proximo_sorteo: { mes: 'Mayo', juegosMes: [{ titulo: 'X' }], juegosArcade: ['Y'] }, sorteo_participantes_raw: '1-@a' }, {}));
+  check(!anaNueva.errores.length && anaNueva.incluidos.length === 3 && anaNueva.resumen.includes('marcada (Mando)') && anaNueva.resumen.includes('Mayo (2 juegos)') && anaNueva.resumen.includes('→ 1 líneas'), 'copias: una copia nueva restaura los tres datos y los resume');
+  const anaMala = await ev(() => analizarDatosBackup({ config_sorteo_especial: 'si', juegos_proximo_sorteo: [], sorteo_participantes_raw: 5 }, {}));
+  check(anaMala.errores.length === 3, 'copias: rechaza esos datos con formato incorrecto ' + JSON.stringify(anaMala.errores));
+
   // Visitor doesn't write Telegram list
   check(!errors.some(x => !/Telegram|Sheets|Cloudflare|Failed to load|500|Error iniciando sesión|integrity|Error en la copia previa|Error añadiendo ganadores manuales|Error guardando la lista de participantes/.test(x)), 'sin errores JS inesperados: ' + JSON.stringify(errors.filter(x => !/Telegram|Sheets|Cloudflare|Failed to load|500|Error iniciando sesión|integrity|Error en la copia previa|Error añadiendo ganadores manuales|Error guardando la lista de participantes/.test(x))));
   await browser.close();

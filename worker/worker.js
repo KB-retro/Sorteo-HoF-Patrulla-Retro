@@ -765,13 +765,12 @@ function realizarTirada(rawLinesStr, rawBlacklistStr) {
 // =========================================================
 
 async function crearBackupAutomatico(env, tipoBackup) {
-  const resultados = await Promise.all([
-      fetch(firebaseUrl(env, "historial_ganadores")),
-      fetch(firebaseUrl(env, "sorteo_actual")),
-      fetch(firebaseUrl(env, "mes_sorteo")),
-      fetch(firebaseUrl(env, "regalos")),
-      fetch(firebaseUrl(env, "hall_of_fame_juegos"))
-  ]);
+  // Los mismos datos que guarda la web en sus copias (NODOS_BACKUP en index.html).
+  const nodos = [
+    "historial_ganadores", "sorteo_actual", "mes_sorteo", "regalos", "hall_of_fame_juegos",
+    "config_sorteo_especial", "juegos_proximo_sorteo", "sorteo_participantes_raw"
+  ];
+  const resultados = await Promise.all(nodos.map(nodo => fetch(firebaseUrl(env, nodo))));
 
   const fallida = resultados.find(response => !response.ok);
   if (fallida) {
@@ -780,20 +779,11 @@ async function crearBackupAutomatico(env, tipoBackup) {
       (fallida.status === 401 ? " (revisa el secreto FIREBASE_SECRET)." : "."));
   }
 
-  const historial = await resultados[0].json();
-  const sorteoActual = await resultados[1].json();
-  const mesSorteo = await resultados[2].json();
-  const regalos = await resultados[3].json();
-  const hallOfFameJuegos = await resultados[4].json();
-
-  const backupData = {
-    historial_ganadores: historial || null,
-    sorteo_actual: sorteoActual || null,
-    mes_sorteo: mesSorteo || null,
-    regalos: regalos || null,
-    hall_of_fame_juegos: hallOfFameJuegos || null,
-    tipoBackup: tipoBackup
-  };
+  const backupData = {};
+  for (let i = 0; i < nodos.length; i++) {
+    backupData[nodos[i]] = (await resultados[i].json()) || null;
+  }
+  backupData.tipoBackup = tipoBackup;
 
   const resultado = await subirBackupGitHub(backupData, env);
 

@@ -2531,7 +2531,11 @@
     }
 
     // Nodos que forman parte de una copia de seguridad.
-    const NODOS_BACKUP = ['historial_ganadores', 'sorteo_actual', 'mes_sorteo', 'hall_of_fame_juegos', 'regalos'];
+    // Los tres últimos (casilla del Sorteo Especial, juegos del mes y lista de
+    // participantes) no vienen en las copias antiguas: al restaurar una de
+    // esas, se mantiene lo que haya ahora.
+    const NODOS_BACKUP = ['historial_ganadores', 'sorteo_actual', 'mes_sorteo', 'hall_of_fame_juegos', 'regalos',
+        'config_sorteo_especial', 'juegos_proximo_sorteo', 'sorteo_participantes_raw'];
 
     function leerDatosParaBackup() {
         return Promise.all(NODOS_BACKUP.map(nodo => db.ref(nodo).once('value'))).then(function(snaps) {
@@ -2625,10 +2629,16 @@
         if ('regalos' in data && data.regalos !== null && !esObjeto(data.regalos)) errores.push('"regalos" no tiene el formato correcto.');
         if ('mes_sorteo' in data && data.mes_sorteo !== null && typeof data.mes_sorteo !== 'string') errores.push('"mes_sorteo" no tiene el formato correcto.');
         if ('sorteo_actual' in data && data.sorteo_actual !== null && !esObjeto(data.sorteo_actual)) errores.push('"sorteo_actual" no tiene el formato correcto.');
+        if ('config_sorteo_especial' in data && data.config_sorteo_especial !== null && !esObjeto(data.config_sorteo_especial)) errores.push('"config_sorteo_especial" no tiene el formato correcto.');
+        if ('juegos_proximo_sorteo' in data && data.juegos_proximo_sorteo !== null && !esObjeto(data.juegos_proximo_sorteo)) errores.push('"juegos_proximo_sorteo" no tiene el formato correcto.');
+        if ('sorteo_participantes_raw' in data && data.sorteo_participantes_raw !== null && typeof data.sorteo_participantes_raw !== 'string') errores.push('"sorteo_participantes_raw" no tiene el formato correcto.');
 
         const contar = v => esObjeto(v) ? Object.keys(v).length : 0;
         const juegos = v => esObjeto(v) ? Object.values(v).reduce((t, x) => t + (Number(x && x.total) || 0), 0) : 0;
         const estado = v => !v ? 'vacío' : (v.ganador ? 'ganador ' + v.ganador.user : (v.status || 'sin estado'));
+        const especial = v => esObjeto(v) && v.activo ? 'marcada' + (v.premio ? ' (' + v.premio + ')' : '') : 'sin marcar';
+        const juegosMes = v => esObjeto(v) ? (v.mes || 'sin mes') + ' (' + ((v.juegosMes || []).length + (v.juegosArcade || []).length) + ' juegos)' : '—';
+        const lineas = v => typeof v === 'string' && v.trim() ? v.split('\n').filter(l => l.trim()).length + ' líneas' : 'vacía';
         const linea = (nodo, texto, ahora, copia) => incluidos.includes(nodo)
             ? `• ${texto}: ${ahora} → ${copia}`
             : `• ${texto}: ${ahora} (no viene en la copia, se mantiene)`;
@@ -2638,7 +2648,10 @@
             linea('hall_of_fame_juegos', 'Hall of Fame', `${contar(actual.hall_of_fame_juegos)} usuarios / ${juegos(actual.hall_of_fame_juegos)} juegos`, `${contar(data.hall_of_fame_juegos)} usuarios / ${juegos(data.hall_of_fame_juegos)} juegos`),
             linea('regalos', 'Regalos', contar(actual.regalos), contar(data.regalos)),
             linea('mes_sorteo', 'Mes del sorteo', actual.mes_sorteo || '—', data.mes_sorteo || '—'),
-            linea('sorteo_actual', 'Sorteo actual', estado(actual.sorteo_actual), estado(data.sorteo_actual))
+            linea('sorteo_actual', 'Sorteo actual', estado(actual.sorteo_actual), estado(data.sorteo_actual)),
+            linea('config_sorteo_especial', 'Casilla Sorteo Especial', especial(actual.config_sorteo_especial), especial(data.config_sorteo_especial)),
+            linea('juegos_proximo_sorteo', 'Juegos del mes', juegosMes(actual.juegos_proximo_sorteo), juegosMes(data.juegos_proximo_sorteo)),
+            linea('sorteo_participantes_raw', 'Lista de participantes', lineas(actual.sorteo_participantes_raw), lineas(data.sorteo_participantes_raw))
         ].join('\n');
 
         let aviso = '';
