@@ -3,7 +3,7 @@
 Documento de traspaso: qué es el proyecto, cómo funciona, cómo se trabaja en él
 y qué decisiones ha tomado el dueño. Pensado para quien continúe el trabajo
 (una persona u otra sesión de Claude). Estado a 1 de noviembre de 2026
-(`main` = PR #21 fusionado; PR #22 en curso).
+(`main` = PR #22 fusionado; PR #23 en curso).
 
 ## 1. Qué es
 
@@ -34,6 +34,8 @@ Worker (cron) ──> realiza sorteos programados (real y de prueba)
               ──> copia automática en GitHub tras cada sorteo real
               ──> anuncia el resultado en Telegram (bot)
               ──> avisa al chat de admins si algo falla
+Telegram ──POST /telegram──> Worker: fotos que mencionan a @M_1_c_h_3_l
+              ──> se le reenvían por privado con botón «☐ Marcar como apuntado»
               ──> cambia el mes solo 25 h después de un sorteo programado
 ```
 
@@ -72,8 +74,9 @@ deben coincidir). El registro de cuentas nuevas está desactivado en Firebase Au
 ### Secretos del Worker (en Cloudflare, nunca en el repositorio)
 
 `FIREBASE_SECRET`, `FIREBASE_API_KEY`, `ADMIN_UIDS`, `GITHUB_TOKEN`,
-`TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` y, opcional, `TELEGRAM_ADMIN_CHAT_ID`
-(avisos de error). **Nunca pedir al dueño que pegue sus valores en el chat.**
+`TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` y, opcionales, `TELEGRAM_ADMIN_CHAT_ID`
+(avisos de error; el dueño no lo quiere usar) y `TELEGRAM_MENCIONES_CHAT_ID`
+(número de chat de @M_1_c_h_3_l para los avisos de menciones con foto). **Nunca pedir al dueño que pegue sus valores en el chat.**
 Si falta `ADMIN_UIDS`, `/backup` deniega a todos.
 
 ## 3. Cómo funciona un sorteo programado
@@ -104,6 +107,17 @@ Si falta `ADMIN_UIDS`, `/backup` deniega a todos.
 Sorteo inmediato (sin hora): lo hace la propia web, sin cuenta atrás, sin
 Telegram y sin cambio de mes automático. Tirada de prueba: solo la ven los
 admins; ni historial, ni Hall of Fame, ni copia, ni Telegram.
+
+### Avisos de menciones con foto
+
+- Con `TELEGRAM_MENCIONES_CHAT_ID` configurado, el cron conecta el bot con el
+  Worker (`setWebhook` a `/telegram`, solo `message` y `callback_query`). Si el
+  bot ya enviaba a otra URL no la toca. La clave del webhook se deriva del token.
+- Mensaje de grupo con imagen (foto o archivo de imagen) que menciona a
+  `USUARIO_MENCIONES` → `forwardMessage` + aviso con enlace y botón. El botón
+  edita el aviso a «✅ Apuntado el …» y permite desmarcar. No se guarda nada.
+- El bot tiene que ser administrador del supergrupo para leer todos los mensajes.
+- Uso: 1 petición por mensaje del grupo; el Worker usaba ~1.430/día de 100.000.
 
 ## 4. Despliegue
 
@@ -159,6 +173,7 @@ npm test        # web.test.cjs (Chromium + Firebase simulado) y worker.test.mjs
 | #20 | Cambio de mes automático 25 h después de un sorteo programado. |
 | #21 | El bot anuncia también a los del Arcade en los Sorteos Especiales. |
 | #22 | Imágenes WebP, copias más completas, avisos de error al chat de admins, recordatorio en Telegram, aviso de Sorteo Especial al programar, botón Compartir y estadísticas en la ficha. |
+| #23 | Avisos por privado a @M_1_c_h_3_l cuando le mencionan con fotos, con botón de apuntado. |
 
 ## 8. Decisiones del dueño (no volver a proponer sin motivo)
 

@@ -28,6 +28,17 @@ const RECORDATORIO_MIN_MS = 10 * 60 * 1000;
 const CACHE_TELEGRAM_MS = 60000;
 let cacheTelegram = { html: "", hora: 0 };
 
+// Avisos de menciones: cuando alguien menciona a este usuario en el grupo con
+// una o varias fotos, el bot se lo reenvía por privado con un botón para
+// marcarlo como apuntado. Solo funciona si existe el secreto
+// TELEGRAM_MENCIONES_CHAT_ID (el número de chat de ese usuario).
+const USUARIO_MENCIONES = "@M_1_c_h_3_l";
+const URL_WORKER = "https://dawn-band-8bc8.microbiops.workers.dev";
+const RUTA_TELEGRAM = "/telegram";
+// Cada cuánto se comprueba que Telegram sigue enviando los mensajes al Worker.
+const COMPROBAR_WEBHOOK_MS = 10 * 60 * 1000;
+let webhookComprobadoA = 0;
+
 // Única web desde la que se puede usar el Worker.
 const ORIGEN_WEB = "https://kb-retro.github.io";
 const URL_WEB_SORTEO = "https://kb-retro.github.io/Sorteo-HoF-Patrulla-Retro/";
@@ -143,7 +154,8 @@ export default {
       procesarSorteo(env, false).catch(error => console.error("❌ ERROR EJECUTANDO EL CRON:", error)),
       procesarSorteo(env, true).catch(error => console.error("❌ ERROR EN LA TIRADA DE PRUEBA:", error)),
       cambiarMesSiToca(env).catch(error => console.error("❌ ERROR EN EL CAMBIO DE MES AUTOMÁTICO:", error)),
-      recordatorioSiToca(env).catch(error => console.error("❌ ERROR EN EL RECORDATORIO DE TELEGRAM:", error))
+      recordatorioSiToca(env).catch(error => console.error("❌ ERROR EN EL RECORDATORIO DE TELEGRAM:", error)),
+      conectarWebhookSiFalta(env).catch(error => console.error("❌ ERROR CONECTANDO EL BOT CON EL WORKER:", error))
     ]);
   },
 
@@ -167,6 +179,14 @@ export default {
 
     if (request.method === "OPTIONS") {
       return new Response(null, { status: 204, headers: corsHeaders });
+    }
+
+    // =========================================================
+    // 0. MENSAJES DEL GRUPO QUE TELEGRAM ENVÍA AL BOT
+    // =========================================================
+
+    if (urlObj.pathname === RUTA_TELEGRAM) {
+      return atenderTelegram(request, env);
     }
 
     // =========================================================
@@ -663,6 +683,177 @@ async function recordatorioSiToca(env) {
 
   await enviarTelegram(env, env.TELEGRAM_CHAT_ID, textoRecordatorioTelegram(sorteo, Date.now()));
   console.log("⏰ RECORDATORIO ENVIADO para el sorteo de", new Date(objetivo).toISOString());
+}
+
+
+// =========================================================
+// AVISOS DE MENCIONES CON FOTO
+// =========================================================
+
+// Llama a la API del bot y devuelve su respuesta ({ ok, result }) o null.
+async function llamarTelegram(env, metodo, datos) {
+  try {
+    const respuesta = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/${metodo}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(datos || {})
+    });
+    const json = await respuesta.json().catch(() => null);
+    if (!respuesta.ok || !json || !json.ok) {
+      console.error(`⚠️ Telegram rechazó ${metodo}:`, respuesta.status, json && json.description);
+      return null;
+    }
+    return json;
+  } catch (error) {
+    console.error(`⚠️ No se pudo llamar a Telegram (${metodo}):`, error);
+    return null;
+  }
+}
+
+function avisosMencionesActivos(env) {
+  return !!(env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_MENCIONES_CHAT_ID);
+}
+
+// Clave que Telegram manda en cada envío para demostrar que es él. Se saca del
+// token del bot, así no hace falta otro secreto en Cloudflare.
+async function claveWebhook(env) {
+  const datos = new TextEncoder().encode("webhook-menciones:" + env.TELEGRAM_BOT_TOKEN);
+  const hash = new Uint8Array(await crypto.subtle.digest("SHA-256", datos));
+  return [...hash].map(b => b.toString(16).padStart(2, "0")).join("").slice(0, 48);
+}
+
+// Desde el cron: si Telegram no está enviando los mensajes del grupo al
+// Worker, lo conecta. Si el bot ya los envía a OTRO sitio, no lo toca.
+async function conectarWebhookSiFalta(env) {
+  if (!avisosMencionesActivos(env)) return;
+  if (Date.now() - webhookComprobadoA < COMPROBAR_WEBHOOK_MS) return;
+  webhookComprobadoA = Date.now();
+
+  const destino = URL_WORKER + RUTA_TELEGRAM;
+  const info = await llamarTelegram(env, "getWebhookInfo");
+  if (!info) return;
+  const actual = (info.result && info.result.url) || "";
+  if (actual === destino) return;
+  if (actual) {
+    console.error(`⚠️ El bot ya envía sus mensajes a otro sitio (${actual}): no se cambia. Los avisos de menciones no funcionarán con este bot.`);
+    return;
+  }
+  const conectado = await llamarTelegram(env, "setWebhook", {
+    url: destino,
+    secret_token: await claveWebhook(env),
+    // Solo mensajes nuevos y pulsaciones de botones: nada de ediciones, reacciones, etc.
+    allowed_updates: ["message", "callback_query"],
+    drop_pending_updates: true
+  });
+  if (conectado) console.log("🤖 BOT CONECTADO: Telegram enviará los mensajes del grupo al Worker.");
+}
+
+// ¿Menciona el mensaje al usuario vigilado? Vale "@usuario" escrito (sin
+// distinguir mayúsculas) o tocar su nombre al escribir (mención sin @).
+function mencionaAlUsuario(mensaje, env) {
+  const texto = mensaje.caption || mensaje.text || "";
+  const entidades = mensaje.caption_entities || mensaje.entities || [];
+  const usuario = USUARIO_MENCIONES.toLowerCase();
+  const idUsuario = String(env.TELEGRAM_MENCIONES_CHAT_ID);
+  const porEntidad = entidades.some(e =>
+    (e.type === "mention" && texto.substr(e.offset, e.length).toLowerCase() === usuario) ||
+    (e.type === "text_mention" && e.user && String(e.user.id) === idUsuario)
+  );
+  if (porEntidad) return true;
+  const escapado = usuario.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(escapado + "(?![A-Za-z0-9_])", "i").test(texto);
+}
+
+function tieneImagen(mensaje) {
+  if (Array.isArray(mensaje.photo) && mensaje.photo.length) return true;
+  const doc = mensaje.document;
+  return !!(doc && String(doc.mime_type || "").startsWith("image/"));
+}
+
+function enlaceMensaje(mensaje) {
+  const chat = mensaje.chat || {};
+  if (chat.username) return `https://t.me/${chat.username}/${mensaje.message_id}`;
+  const id = String(chat.id || "");
+  return id.startsWith("-100") ? `https://t.me/c/${id.slice(4)}/${mensaje.message_id}` : "";
+}
+
+function fechaCorta(ms) {
+  const f = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" })
+    .formatToParts(ms).reduce((o, p) => (o[p.type] = p.value, o), {});
+  const dos = v => String(v).padStart(2, "0");
+  return `${dos(f.day)}/${dos(f.month)} a las ${dos(f.hour)}:${dos(f.minute)}`;
+}
+
+const BOTON_APUNTAR = { inline_keyboard: [[{ text: "☐ Marcar como apuntado", callback_data: "apuntado" }]] };
+const BOTON_DESMARCAR = { inline_keyboard: [[{ text: "↩️ Desmarcar", callback_data: "desmarcar" }]] };
+const MARCA_APUNTADO = "\n\n✅ Apuntado el ";
+
+async function atenderTelegram(request, env) {
+  // Telegram reintenta si no recibe 200: se responde siempre "ok" salvo si
+  // la petición no viene de Telegram.
+  const ok = () => new Response("ok");
+  if (request.method !== "POST" || !avisosMencionesActivos(env)) return new Response("No disponible", { status: 404 });
+  if (request.headers.get("X-Telegram-Bot-Api-Secret-Token") !== await claveWebhook(env)) {
+    return new Response("No autorizado", { status: 401 });
+  }
+  let update;
+  try { update = await request.json(); } catch (error) { return ok(); }
+
+  try {
+    if (update.callback_query) await atenderBoton(update.callback_query, env);
+    else if (update.message) await atenderMensaje(update.message, env);
+  } catch (error) {
+    console.error("⚠️ Error atendiendo un mensaje de Telegram:", error);
+  }
+  return ok();
+}
+
+async function atenderMensaje(mensaje, env) {
+  const chat = mensaje.chat || {};
+  if (chat.type !== "group" && chat.type !== "supergroup") return;
+  if (!tieneImagen(mensaje) || !mencionaAlUsuario(mensaje, env)) return;
+  const destino = env.TELEGRAM_MENCIONES_CHAT_ID;
+  const autor = mensaje.from || {};
+  if (String(autor.id) === String(destino)) return;   // se menciona a sí mismo
+
+  const reenviado = await llamarTelegram(env, "forwardMessage", {
+    chat_id: destino, from_chat_id: chat.id, message_id: mensaje.message_id
+  });
+
+  const nombre = autor.username ? "@" + autor.username : [autor.first_name, autor.last_name].filter(Boolean).join(" ") || "Alguien";
+  const comentario = String(mensaje.caption || "").trim();
+  const enlace = enlaceMensaje(mensaje);
+  const lineas = [
+    `📸 ${nombre} te ha mencionado con ${mensaje.media_group_id ? "varias fotos" : "una foto"}`,
+    `🕘 ${fechaCorta((Number(mensaje.date) || 0) * 1000)}`
+  ];
+  if (comentario) lineas.push(`💬 ${comentario.length > 200 ? comentario.slice(0, 200) + "…" : comentario}`);
+  if (enlace) lineas.push(`🔗 ${enlace}`);
+
+  const aviso = { chat_id: destino, text: lineas.join("\n"), reply_markup: BOTON_APUNTAR, disable_web_page_preview: true };
+  if (reenviado && reenviado.result && reenviado.result.message_id) {
+    aviso.reply_parameters = { message_id: reenviado.result.message_id, allow_sending_without_reply: true };
+  }
+  await llamarTelegram(env, "sendMessage", aviso);
+}
+
+async function atenderBoton(pulsacion, env) {
+  const mensaje = pulsacion.message;
+  const esSuChat = mensaje && mensaje.chat && String(mensaje.chat.id) === String(env.TELEGRAM_MENCIONES_CHAT_ID);
+  if (esSuChat && (pulsacion.data === "apuntado" || pulsacion.data === "desmarcar")) {
+    const base = String(mensaje.text || "").split(MARCA_APUNTADO)[0];
+    const apuntar = pulsacion.data === "apuntado";
+    await llamarTelegram(env, "editMessageText", {
+      chat_id: mensaje.chat.id,
+      message_id: mensaje.message_id,
+      text: apuntar ? base + MARCA_APUNTADO + fechaCorta(Date.now()) : base,
+      reply_markup: apuntar ? BOTON_DESMARCAR : BOTON_APUNTAR,
+      disable_web_page_preview: true
+    });
+    await llamarTelegram(env, "answerCallbackQuery", { callback_query_id: pulsacion.id, text: apuntar ? "✅ Marcado como apuntado" : "Desmarcado" });
+    return;
+  }
+  await llamarTelegram(env, "answerCallbackQuery", { callback_query_id: pulsacion.id });
 }
 
 
