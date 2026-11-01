@@ -323,7 +323,7 @@ P(!urls.some(u => u.includes('api.telegram.org')), 'n: sin secretos de Telegram 
 // o. tiradas de prueba
 telegram = []; github = []; urls = [];
 const envTodo = { ...envTg, TELEGRAM_ADMIN_CHAT_ID: '-100999' };
-const realFuturo = programado({ targetTime: Date.now() + 3600000 });
+const realFuturo = programado({ targetTime: Date.now() + 5 * 3600000 });   // fuera de la hora del recordatorio
 db = { sorteo_actual: realFuturo, historial_ganadores: { h1: { user: '@Viejo' } },
        sorteo_prueba: { status: 'programado', targetTime: Date.now() - 1000, rawLines: '1-@Uno\n2-@Dos\n3-@Tres', rawBlacklist: '@uno\n@dos', mesPremio: 'Octubre 2026', prueba: true } };
 await run(envTodo);
@@ -394,6 +394,43 @@ P(db.sorteo_actual.ganador && db.sorteo_actual.ganador.user === '@Real', 'o: un 
   db = { sorteo_actual: programado() };
   await run({ GITHUB_TOKEN: 'x', TELEGRAM_BOT_TOKEN: 'BOT123', TELEGRAM_CHAT_ID: '@canal_sorteo' }); githubFalla = false;
   P(telegram.length === 1 && telegram[0].chat_id === '@canal_sorteo', 'q: sin TELEGRAM_ADMIN_CHAT_ID no se avisa a nadie más');
+}
+
+// r. recordatorio en el canal antes del sorteo
+{
+  const envR = { GITHUB_TOKEN: 'x', TELEGRAM_BOT_TOKEN: 'BOT123', TELEGRAM_CHAT_ID: '@canal_sorteo', TELEGRAM_ADMIN_CHAT_ID: '-100999' };
+  // Sorteo dentro de dos horas
+  const objetivo = Date.now() + 2 * 3600000;
+  telegram = [];
+  db = { sorteo_actual: programado({ targetTime: objetivo, rawLines: '1-@Ana\n2-@Bea\n3-@ana PUNTO EXTRA\nsin usuario', mesPremio: 'Noviembre 2026' }) };
+  await run(envR);
+  const rec = telegram.filter(t => t.chat_id === '@canal_sorteo');
+  const horaEsp = new Intl.DateTimeFormat('es-ES', { timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(objetivo);
+  P(rec.length === 1 && rec[0].text.includes('⏰') && rec[0].text.includes('Sorteo HoF de Noviembre 2026') && rec[0].text.includes('a las ' + horaEsp) && rec[0].text.includes('kb-retro.github.io'), 'r: faltando menos de 3 h se envía el recordatorio al canal con mes, hora y enlace');
+  P(rec.length === 1 && rec[0].text.includes('3 boletos de 2 participantes'), 'r: el recordatorio cuenta boletos y personas distintas');
+  P(db.sorteo_actual.status === 'programado' && db.estado_bot.recordatorio === objetivo, 'r: no toca el sorteo y apunta que ya se recordó');
+  await run(envR); await run(envR);
+  P(telegram.length === 1, 'r: solo se envía una vez por sorteo');
+  db.sorteo_actual.targetTime = objetivo + 600000; await run(envR);
+  P(telegram.length === 2, 'r: si se vuelve a programar a otra hora, hay recordatorio nuevo');
+
+  telegram = [];
+  db = { sorteo_actual: programado({ targetTime: Date.now() + 4 * 3600000 }) }; await run(envR);
+  P(telegram.length === 0 && !db.estado_bot, 'r: faltando más de 3 h todavía no se envía');
+  db = { sorteo_actual: programado({ targetTime: Date.now() + 5 * 60000 }) }; await run(envR);
+  P(telegram.length === 0, 'r: faltando menos de 10 min no se envía');
+  db = { sorteo_prueba: { status: 'programado', targetTime: Date.now() + 3600000, rawLines: '1-@Uno', prueba: true } }; await run(envR);
+  P(telegram.length === 0, 'r: las tiradas de prueba no tienen recordatorio');
+  db = { sorteo_actual: programado({ targetTime: Date.now() + 3600000 }) }; await run({ GITHUB_TOKEN: 'x' });
+  P(telegram.length === 0 && !db.estado_bot, 'r: sin secretos de Telegram no se envía nada');
+  db = { sorteo_actual: programado({ targetTime: Date.now() + 3600000, sorteoEspecial: true, premioEspecial: 'Mando retro', mesPremio: 'Diciembre 2026' }) }; await run(envR);
+  P(telegram.length === 1 && telegram[0].text.includes('Sorteo Especial de Diciembre 2026') && telegram[0].text.includes('Premio: Mando retro'), 'r: Sorteo Especial con su premio');
+  telegram = [];
+  db = { sorteo_actual: programado({ targetTime: Date.now() + 3600000 }), estado_bot: { recordatorio: 1 } };
+  const realF2 = globalThis.fetch;
+  globalThis.fetch = async (url, opt = {}) => { if (url.includes('estado_bot') && (opt.method || 'GET') === 'PUT') { db.estado_bot = { recordatorio: 999 }; } return realF2(url, opt); };
+  await run(envR); globalThis.fetch = realF2;
+  P(telegram.length === 0, 'r: si otra ejecución lo apunta a la vez, no se envía dos veces');
 }
 
 globalThis.setTimeout = realTimeout;
