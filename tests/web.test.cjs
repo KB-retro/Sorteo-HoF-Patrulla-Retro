@@ -373,6 +373,7 @@ const check = (c, msg) => { console.log((c ? 'PASS ' : 'FAIL ') + msg); if (!c) 
   check((await page.$$eval('.slot-reel', els => els.map(e => e.textContent).join(''))) === '853' && !(await page.isVisible('#winnerCard')), 'prueba: rodillos con cuenta atrás para el admin');
   await page.waitForTimeout(2200);
   check(await page.isVisible('#winnerCard') && (await page.textContent('#winnerName')).includes('@Tres'), 'prueba: tras la cuenta atrás se muestra el ganador de prueba');
+  check(!(await page.isVisible('#compartirGanadorBtn')), 'compartir: la tirada de prueba no tiene botón de compartir');
   // Error en la prueba
   await ev(() => window.__DB__.set('sorteo_prueba', { status: 'error', error: 'Sin participantes', prueba: true, targetTime: 1 }));
   await page.waitForTimeout(400);
@@ -813,6 +814,26 @@ const check = (c, msg) => { console.log((c ? 'PASS ' : 'FAIL ') + msg); if (!c) 
     conf = await intentar({ especial: true, hora: '' });
     check(conf.length === 1 && conf[0].includes('de inmediato') && conf[0].includes('SORTEO ESPECIAL'), 'especial: el sorteo inmediato también avisa de que será Especial');
     await ev(g => { window.__DB__.set('sorteo_actual', g.sa); window.__DB__.set('sorteo_privado', g.priv); window.__DB__.set('hall_of_fame_juegos', g.hof); }, { sa: saAntes, priv: privAntes, hof: hofAntes });
+    await page.waitForTimeout(300);
+  }
+
+  // ===== Compartir el resultado =====
+  {
+    const saAntes = await db('sorteo_actual');
+    await ev(() => window.__DB__.set('sorteo_actual', { ganador: { user: '@Afortunado', ticket: '42-@Afortunado' }, arcadeGroup: [{ user: '@Uno', ticket: '40-@Uno' }, { user: '@Dos', ticket: '41-@Dos' }, { user: '@Afortunado', ticket: '42-@Afortunado' }], timestamp: Date.now() - 5000, revealAt: Date.now() - 4000, mesPremio: 'Noviembre 2026', especial: true, premioEspecial: 'Mando retro', rawLines: 'x' }));
+    await page.waitForTimeout(400);
+    check(await page.isVisible('#compartirGanadorBtn'), 'compartir: la tarjeta del ganador tiene botón "Compartir resultado"');
+    const compartido = await ev(async () => { let d = null; navigator.share = async x => { d = x; }; await compartirGanador(); delete navigator.share; return d; });
+    check(compartido && compartido.text.includes('Sorteo Especial de Noviembre 2026: @Afortunado (boleto Nº 42)') && compartido.text.includes('Premio: Mando retro') && compartido.text.includes('@Uno, @Dos, @Afortunado') && /index\.html$/.test(compartido.url), 'compartir: en el móvil abre el menú de compartir con ganador, premio y Arcade ' + JSON.stringify(compartido));
+    const copiado = await ev(async () => { const orig = navigator.share; navigator.share = undefined; let t = null;
+      Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async x => { t = x; } } });
+      await compartirGanador(); navigator.share = orig; return { t, boton: document.getElementById('compartirGanadorBtn').textContent }; });
+    check(copiado.t && copiado.t.includes('@Afortunado') && copiado.t.includes('🌐 ') && copiado.boton.includes('Copiado'), 'compartir: sin menú de compartir, copia el texto con el enlace y lo indica ' + JSON.stringify(copiado));
+    const cerrado = await ev(async () => { let copias = 0; navigator.share = async () => { const e = new Error('x'); e.name = 'AbortError'; throw e; };
+      Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async () => { copias++; } } });
+      await compartirGanador(); delete navigator.share; return copias; });
+    check(cerrado === 0, 'compartir: si se cierra el menú, no copia nada');
+    await ev(g => window.__DB__.set('sorteo_actual', g), saAntes);
     await page.waitForTimeout(300);
   }
 

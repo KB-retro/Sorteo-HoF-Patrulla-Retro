@@ -364,6 +364,18 @@
             text-align: center;
         }
 
+        button.btn-compartir {
+            display: block;
+            width: auto;
+            margin: 14px auto 0;
+            padding: 9px 18px;
+            background: transparent;
+            border: 1px solid var(--gold);
+            color: var(--gold);
+            border-radius: 999px;
+        }
+        button.btn-compartir:hover { background: rgba(245, 158, 11, 0.15); }
+
         .arcade-box {
             background: rgba(15, 23, 42, 0.8);
             border: 1px solid var(--accent);
@@ -1028,7 +1040,7 @@
                letrero y luces más grandes */
             #slotMachineCard {
                 max-width: none;
-                min-height: 470px;
+                min-height: 516px;   /* incluye el botón "Compartir resultado" */
                 padding: 22px 22px 20px;
                 flex-direction: column;
             }
@@ -1137,6 +1149,8 @@
             <div class="arcade-title">🕹️ Eligen el Arcade del Mes (5 Usuarios):</div>
             <ul id="arcadeList" class="custom-list"></ul>
         </div>
+
+        <button type="button" id="compartirGanadorBtn" class="btn-compartir" onclick="compartirGanador()">📤 Compartir resultado</button>
     </div>
 
     <div id="waitingCard" class="card hidden" style="text-align: center;">
@@ -3743,6 +3757,11 @@
                 }
                 const repeatNotice = document.getElementById('repeatNotice');
                 if (repeatNotice && (data.especial || data.prueba)) repeatNotice.classList.add('hidden');
+
+                // Las tiradas de prueba no se comparten.
+                datosGanadorCompartir = data.prueba ? null : data;
+                const compartirBtn = document.getElementById('compartirGanadorBtn');
+                if (compartirBtn) compartirBtn.classList.toggle('hidden', !!data.prueba);
                 
                 let numeroBoleto = data.ganador.ticket;
                 const matchNum = String(data.ganador.ticket || '').match(/^(\d+)/);
@@ -3783,6 +3802,63 @@
         } catch (e) {
             console.error("Error al mostrar el sorteo:", e);
         }
+    }
+
+    // ============================================================
+    //  COMPARTIR EL RESULTADO
+    // ============================================================
+    var datosGanadorCompartir = null;   // var: se usa desde el listener de Firebase
+
+    function textoCompartirGanador(data) {
+        const boleto = String(data.ganador.ticket || '').match(/^(\d+)/);
+        const lineas = [
+            (data.especial ? '🎁 Ganador del Sorteo Especial' : '🏆 Ganador del Sorteo HoF') + (data.mesPremio ? ' de ' + data.mesPremio : '') + ': ' +
+                data.ganador.user + (boleto ? ' (boleto Nº ' + boleto[1] + ')' : '')
+        ];
+        if (data.especial && data.premioEspecial) lineas.push('🎁 Premio: ' + data.premioEspecial);
+        const grupo = (data.arcadeGroup || []).filter(p => p && p.user).map(p => p.user);
+        if (grupo.length) lineas.push('🕹️ Eligen el Arcade del Mes: ' + grupo.join(', '));
+        return lineas.join('\n');
+    }
+
+    // En el móvil abre el menú normal de compartir (Telegram, WhatsApp…); si el
+    // navegador no lo tiene, copia el texto para pegarlo donde se quiera.
+    async function compartirGanador() {
+        const data = datosGanadorCompartir;
+        const btn = document.getElementById('compartirGanadorBtn');
+        if (!data || !data.ganador) return;
+        const texto = textoCompartirGanador(data);
+        const url = location.origin + location.pathname;
+
+        if (navigator.share) {
+            try {
+                await navigator.share({ title: 'Sorteo HoF Patrulla Retro', text: texto, url: url });
+                return;
+            } catch (error) {
+                if (error && error.name === 'AbortError') return;   // lo ha cerrado la persona
+            }
+        }
+
+        const completo = texto + '\n\n🌐 ' + url;
+        let copiado = false;
+        try {
+            await navigator.clipboard.writeText(completo);
+            copiado = true;
+        } catch (error) {
+            const area = document.createElement('textarea');
+            area.value = completo;
+            area.setAttribute('readonly', '');
+            area.style.position = 'fixed';
+            area.style.opacity = '0';
+            document.body.appendChild(area);
+            area.select();
+            try { copiado = document.execCommand('copy'); } catch (e) { copiado = false; }
+            area.remove();
+        }
+        if (!btn) return;
+        btn.textContent = copiado ? '✅ Copiado: pégalo donde quieras' : '❌ No se pudo copiar';
+        clearTimeout(btn._restaurar);
+        btn._restaurar = setTimeout(() => { btn.textContent = '📤 Compartir resultado'; }, 2500);
     }
 
     function mostrarGanador(data) {
