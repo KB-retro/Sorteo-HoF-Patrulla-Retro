@@ -593,6 +593,7 @@ const check = (c, msg) => { console.log((c ? 'PASS ' : 'FAIL ') + msg); if (!c) 
   // ===== Parte 4: instalable como app =====
   const manifiesto = JSON.parse(fs.readFileSync(path.join(REPO, 'manifest.webmanifest'), 'utf8'));
   check(manifiesto.display === 'standalone' && manifiesto.start_url === './' && manifiesto.icons.length === 3, 'app: manifiesto con modo app, inicio y tres iconos');
+  check(manifiesto.orientation === 'any', 'app: instalada se puede girar (vertical u horizontal, p. ej. en consolas portátiles)');
   check(manifiesto.icons.every(i => fs.existsSync(path.join(REPO, i.src))), 'app: los iconos del manifiesto existen');
   check(await ev(() => !!document.querySelector('link[rel="manifest"][href="manifest.webmanifest"]') && !!document.querySelector('meta[name="theme-color"]')), 'app: la página enlaza el manifiesto');
   check(!(await page.isVisible('#instalarAppBtn')), 'app: el botón de instalar está oculto si el navegador no lo ofrece');
