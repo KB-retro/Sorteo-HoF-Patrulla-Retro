@@ -8,6 +8,7 @@ const leerCopias = dir => fs.readdirSync(dir, { recursive: true })
   .filter(f => String(f).endsWith('.json'))
   .map(f => JSON.parse(fs.readFileSync(path.join(dir, String(f)), 'utf8')));
 
+let telegramHtml = null;
 let window_backupAuth = null; let backupCalls = 0; let backupFail = false;
 const REPO = path.join(__dirname, '..');
 const backup = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures', 'backup.json'), 'utf8'));
@@ -34,6 +35,7 @@ const check = (c, msg) => { console.log((c ? 'PASS ' : 'FAIL ') + msg); if (!c) 
       if (backupFail) return route.fulfill({ status: 500, body: JSON.stringify({ ok: false, error: 'GitHub caído' }), contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*' } });
       return route.fulfill({ status: 200, body: JSON.stringify({ ok: true, archivo: 'backups/x.json' }), contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*' } }); }
     if (u.includes('workers.dev') && !u.includes('/backup')) workerUrls.push({ u, auth: route.request().headers()['authorization'] || '' });
+    if (u.includes('workers.dev') && !u.includes('/backup') && telegramHtml) return route.fulfill({ status: 200, body: telegramHtml, contentType: 'text/html', headers: { 'Access-Control-Allow-Origin': '*' } });
     if (u.includes('firebase-database-compat')) return route.fulfill({ body: '', contentType: 'application/javascript' });
     if (u.includes('canvas-confetti')) return route.fulfill({ body: 'window.confetti=function(){}', contentType: 'application/javascript' });
     if (u.startsWith('file://')) return route.continue();
@@ -864,6 +866,30 @@ const check = (c, msg) => { console.log((c ? 'PASS ' : 'FAIL ') + msg); if (!c) 
     await page.waitForTimeout(400);
   }
 
+  // Lista de participantes: la de Telegram no la pisa una lectura vieja de Firebase
+  {
+    const adminAntes = await ev(() => isAdminLoggedIn);
+    await ev(() => { isAdminLoggedIn = false; isUserEditingList = false; listaDesdeTelegram = false; });
+    telegramHtml = '<div class="tgme_widget_message_text">Lista<br>1-@Nuevo1<br>2-@Nuevo2</div>';
+    await ev(() => importarDesdeTelegram(false)); await page.waitForTimeout(300);
+    check((await page.$eval('#listInput', e => e.value)) === '1-@Nuevo1\n2-@Nuevo2' && await ev(() => listaDesdeTelegram), 'lista: se carga la de Telegram');
+    await ev(() => { listaFirebaseLeida = false; window.__DB__.set('sorteo_participantes_raw', '1-@Viejo'); }); await page.waitForTimeout(100);
+    check((await page.$eval('#listInput', e => e.value)) === '1-@Nuevo1\n2-@Nuevo2', 'lista: la primera lectura de Firebase (vieja) no pisa la de Telegram');
+    await ev(() => window.__DB__.set('sorteo_participantes_raw', '1-@Editado')); await page.waitForTimeout(100);
+    check((await page.$eval('#listInput', e => e.value)) === '1-@Editado', 'lista: los cambios posteriores de Firebase sí se muestran');
+    // Al volver a la web tras un rato en segundo plano se vuelve a leer Telegram
+    telegramHtml = '<div class="tgme_widget_message_text">Lista<br>1-@Nuevo1<br>2-@Nuevo2<br>3-@Nuevo3</div>';
+    const antes = workerUrls.length;
+    const visibilidad = oculta => ev(o => { Object.defineProperty(document, 'hidden', { configurable: true, get: () => o }); document.dispatchEvent(new Event('visibilitychange')); }, oculta);
+    await visibilidad(true); await visibilidad(false); await page.waitForTimeout(300);
+    check(workerUrls.length === antes, 'volver enseguida: no vuelve a descargar la lista');
+    await visibilidad(true); await ev(() => { ocultaDesde = Date.now() - 31000; }); await visibilidad(false); await page.waitForTimeout(300);
+    check(workerUrls.length === antes + 1 && (await page.$eval('#listInput', e => e.value)).includes('3-@Nuevo3'), 'volver tras 30 s: recarga la lista de Telegram con los boletos nuevos');
+    await ev(() => { isUserEditingList = true; }); telegramHtml = '<div class="tgme_widget_message_text">1-@Otro</div>';
+    await ev(() => importarDesdeTelegram(false)); await page.waitForTimeout(300);
+    check(!(await page.$eval('#listInput', e => e.value)).includes('@Otro'), 'lista: Telegram no pisa lo que el admin está escribiendo');
+    await ev(a => { isUserEditingList = false; isAdminLoggedIn = a; }, adminAntes); telegramHtml = null;
+  }
   // Visitor doesn't write Telegram list
   check(!errors.some(x => !/Telegram|Sheets|Cloudflare|Failed to load|500|Error iniciando sesión|integrity|Error en la copia previa|Error añadiendo ganadores manuales|Error guardando la lista de participantes/.test(x)), 'sin errores JS inesperados: ' + JSON.stringify(errors.filter(x => !/Telegram|Sheets|Cloudflare|Failed to load|500|Error iniciando sesión|integrity|Error en la copia previa|Error añadiendo ganadores manuales|Error guardando la lista de participantes/.test(x))));
   await browser.close();
