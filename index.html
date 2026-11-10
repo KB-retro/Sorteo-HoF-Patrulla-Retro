@@ -1914,8 +1914,17 @@
     // ============================================================
     //  FUNCIONES DE FIREBASE (Participantes y HoF)
     // ============================================================
+    // La lista de Telegram es la más reciente. Si la primera lectura de Firebase
+    // llega después que ella, no la pisa (Firebase puede tener una lista vieja
+    // si el admin no ha entrado desde el último mensaje); los cambios
+    // posteriores de Firebase sí se muestran.
+    let listaFirebaseLeida = false;
+    let listaDesdeTelegram = false;
     db.ref('sorteo_participantes_raw').on('value', function(snapshot) {
+        const primeraLectura = !listaFirebaseLeida;
+        listaFirebaseLeida = true;
         if (isUserEditingList) return;
+        if (primeraLectura && listaDesdeTelegram) return;
         const val = snapshot.val();
         const textarea = document.getElementById('listInput');
         if (val !== null && textarea) {
@@ -1983,6 +1992,23 @@
         clearTimeout(guardarListaTimer);
         guardarListaTimer = setTimeout(guardarParticipantesFirebase, 500);
     });
+
+    // Al volver a la web sin recargarla (app instalada o pestaña en segundo
+    // plano, sobre todo en el móvil) el navegador enseña la página tal como
+    // estaba. Si ha estado oculta un rato, se reconecta Firebase y se vuelve a
+    // leer la lista de Telegram para que salgan los boletos nuevos.
+    const VOLVER_REFRESCA_MS = 30000;
+    let ocultaDesde = 0;
+    function refrescarAlVolver() {
+        ocultaDesde = 0;
+        try { if (db.goOffline && db.goOnline) { db.goOffline(); db.goOnline(); } } catch (e) {}
+        importarDesdeTelegram(false, isAdminLoggedIn);
+    }
+    document.addEventListener('visibilitychange', function() {
+        if (document.hidden) { ocultaDesde = Date.now(); return; }
+        if (ocultaDesde && Date.now() - ocultaDesde >= VOLVER_REFRESCA_MS) refrescarAlVolver();
+    });
+    window.addEventListener('pageshow', function(event) { if (event.persisted) refrescarAlVolver(); });
 
     window.addEventListener('DOMContentLoaded', function() {
         importarDesdeTelegram(false);
@@ -2892,6 +2918,8 @@
                 }
             }
             if (ultimaListaEncontrada) {
+                if (isUserEditingList) return;   // no pisar lo que el admin está escribiendo
+                listaDesdeTelegram = true;
                 const listInput = document.getElementById('listInput');
                 if(listInput) listInput.value = ultimaListaEncontrada;
                 // Los visitantes solo la ven; guardarla en Firebase es cosa del admin,

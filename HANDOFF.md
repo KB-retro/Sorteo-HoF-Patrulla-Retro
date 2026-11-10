@@ -3,7 +3,7 @@
 Documento de traspaso: qué es el proyecto, cómo funciona, cómo se trabaja en él
 y qué decisiones ha tomado el dueño. Pensado para quien continúe el trabajo
 (una persona u otra sesión de Claude). Estado a 1 de noviembre de 2026
-(`main` = PR #22 fusionado; PR #23 en curso).
+(`main` = PR #24 fusionado; PR #25 en curso).
 
 ## 1. Qué es
 
@@ -174,6 +174,8 @@ npm test        # web.test.cjs (Chromium + Firebase simulado) y worker.test.mjs
 | #21 | El bot anuncia también a los del Arcade en los Sorteos Especiales. |
 | #22 | Imágenes WebP, copias más completas, avisos de error al chat de admins, recordatorio en Telegram, aviso de Sorteo Especial al programar, botón Compartir y estadísticas en la ficha. |
 | #23 | Avisos por privado a @M_1_c_h_3_l cuando le mencionan con fotos, con botón de apuntado. |
+| #24 | La app instalada se puede girar a horizontal (consolas portátiles). |
+| #25 | Lista de participantes al día: la de Telegram no la pisa una lectura vieja de Firebase y se vuelve a leer al volver a la web tras 30 s en segundo plano. |
 
 ## 8. Decisiones del dueño (no volver a proponer sin motivo)
 
